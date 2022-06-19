@@ -1,0 +1,3 @@
+- [ ] Go through the tutorials: https://int8.io/monte-carlo-tree-search-beginners-guide/
+- [ ] Go through the c++ implementation: https://github.com/PetterS/monte-carlo-tree-search
+- [ ] Start code design and implemtation
