@@ -239,6 +239,9 @@ public:
   void do_move(Move move) {
     // std::cout << "do move " << move << std::endl;
     // TODO check if valid
+    if (finger_index != move){
+      n_transition += 1;
+    }
     bool is_valid_transition =
         object_trajectory.valid_state_transition(timestep, finger_index, move);
 
@@ -310,7 +313,7 @@ public:
     // std::cout << "get result " << is_valid << std::endl;
     // std::cout << "current finger index " << finger_index << std::endl;
     if (is_valid) {
-      return 1.0;
+      return 1.0 - 0.2*n_transition/(double)object_trajectory.total_timesteps;
     } else {
       return 0.0;
     }
@@ -330,4 +333,5 @@ private:
   int move_steplength;
   bool is_valid;
   ObjectTrajectory object_trajectory;
+  double n_transition=0;
 };

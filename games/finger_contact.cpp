@@ -8,7 +8,7 @@ void main_program(){
     // create initial state
 
     MCTS::ComputeOptions options;
-    options.max_iterations = 100;
+    options.max_iterations = 1000;
     options.verbose = true;
     // options.number_of_threads = 8;
 
