@@ -28,7 +28,7 @@ public:
 
     void do_action(int action) { m_mode_idx = action; }
 
-    State & operator= (const State & state_){
+    State &operator=(const State &state_) {
       this->m_pose = state_.m_pose;
       this->m_mode_idx = state_.m_mode_idx;
       this->modes = state_.modes;
@@ -46,7 +46,7 @@ public:
     SearchOptions() {}
 
     SearchOptions(const SearchOptions &opts) : X_l(opts.X_l), X_u(opts.X_u) {}
-    SearchOptions & operator= (const SearchOptions & opts){
+    SearchOptions &operator=(const SearchOptions &opts) {
       X_l = opts.X_l;
       X_u = opts.X_u;
       return *this;
@@ -63,9 +63,9 @@ public:
   void initialize(const Vector7d &start_object_pose_,
                   const Vector7d &goal_object_pose_,
                   const SearchOptions &options) {
-    start_object_pose = start_object_pose_;
-    goal_object_pose = goal_object_pose_;
-    search_options = options;
+    this->start_object_pose = start_object_pose_;
+    this->goal_object_pose = goal_object_pose_;
+    this->search_options = options;
   }
 
   State get_start_state() const { return generate_state(start_object_pose); }
@@ -97,15 +97,18 @@ public:
     std::vector<State> path_;
 
     if (double(std::rand() / RAND_MAX) < 0.5) {
-      Vector7d mid_pose = start_object_pose;
+      Vector7d mid_pose;
+      mid_pose.tail(4) = this->start_object_pose.tail(4);
       mid_pose.head(3) =
-          (start_object_pose.head(3) + goal_object_pose.head(3)) / 2;
+          (this->start_object_pose.head(3) + this->goal_object_pose.head(3)) /
+          2;
 
       path_.push_back(generate_state(mid_pose));
-      path_.push_back(generate_state(goal_object_pose));
+      path_.push_back(generate_state(this->goal_object_pose));
     } else {
       for (int k = 0; k < 2; ++k) {
-        Vector7d mid_pose = start_object_pose;
+        Vector7d mid_pose;
+        mid_pose.tail(4) = this->start_object_pose.tail(4);
         Eigen::Vector3d t(double(std::rand() / RAND_MAX),
                           double(std::rand() / RAND_MAX),
                           double(std::rand() / RAND_MAX));

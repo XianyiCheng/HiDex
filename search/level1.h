@@ -94,10 +94,12 @@ public:
         int action;
         if (node->m_type == "pose") {
           action = this->select_action(node);
+          node = this->next_node(node, action);
+          node->m_type = "mode";
         }
 
         else if (node->m_type == "mode") {
-          if (pow(node->m_visits, m_alpha) < node->number_of_next_actions) {
+          if (pow(node->m_visits, m_alpha) <= node->number_of_next_actions) {
             // Todo: use rrt to expand
             // rrt adds a path of nodes to the node, and return a terminal node
             std::vector<State> state_path =
@@ -134,23 +136,20 @@ public:
               new_node->m_type = "pose";
               node = new_node;
             }
-
             break;
 
           } else {
             action = this->select_action(node);
+            node = this->next_node(node, action);
           }
 
         } else {
           // error information: wrong node type
-          std::cerr << "Incorrect state type. The state type can only be pose "
+          std::cerr << "Level1Tree::grow_tree. Incorrect state type. The state type can only be pose "
                        "or mode. "
                     << std::endl;
           exit(-1);
         }
-
-        // check if this action has child, if not add a new node.
-        node = this->next_node(node, action);
       }
 
       double reward = this->get_result(node);

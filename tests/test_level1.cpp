@@ -35,7 +35,7 @@ int main() {
       tree(task, start_state);
 
   HMP::ComputeOptions compute_options;
-  compute_options.max_iterations = 100;
+  compute_options.max_iterations = 10;
 
   HMP::Node<ConstrainedManipulationTask::State> *current_node = tree.m_root_node.get();
 
