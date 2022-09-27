@@ -1,9 +1,9 @@
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <random>
 #include <string>
 #include <vector>
-#include <algorithm>
 
 namespace HMP {
 
@@ -22,9 +22,9 @@ struct ComputeOptions {
 template <typename State> class Node {
 
 public:
-  double m_value;
-  int m_visits;
-  double m_heuristics;
+  double m_value = 0.0;
+  int m_visits = 0;
+  double m_heuristics = 0.0;
 
   std::string m_type; // store any type information for interleaving node types
 
@@ -33,8 +33,6 @@ public:
   int number_of_next_actions = 0; // action actions are stored in state
   State m_state;
   std::vector<Node *> m_children;
-
-  bool is_terminal_node;
 
   Node() : m_value(0), m_visits(0), m_parent(nullptr) {}
 
@@ -61,16 +59,16 @@ public:
 template <typename State, typename Task> class Tree {
 
 public:
-
   std::shared_ptr<Task> m_task; // a shared pointer for Task
   std::unique_ptr<Node<State>>
-      m_root_node;          // unique pointer for root node to store everything
+      m_root_node; // unique pointer for root node to store everything
   Node<State> *m_current_node; // observe pointer for current node
 
   Tree() {}
   Tree(std::shared_ptr<Task> task_, State start_state) {
     this->m_root_node = std::make_unique<Node<State>>(start_state, -1, nullptr);
     this->m_current_node = this->m_root_node.get();
+    m_task = task_;
   }
   ~Tree() {}
 
@@ -84,7 +82,7 @@ public:
   Node<State> *add_child(Node<State> *node, int action_, const State &state_) {
     auto child_node = new Node<State>(state_, action_, node);
     node->m_children.push_back(child_node);
-    return node;
+    return child_node;
   }
 
   Node<State> *next_node(Node<State> *node, int action) {
@@ -106,16 +104,17 @@ public:
   }
 
   virtual Node<State> *best_child(Node<State> *node) {
-    return *std::max_element(
-        node->m_children.begin(), node->m_children.end(),
-        [](Node<State> *a, Node<State> *b) { return a->m_visits < b->m_visits; });
-    ;
+    // return *std::max_element(
+    //     node->m_children.begin(), node->m_children.end(),
+    //     [](Node<State> *a, Node<State> *b) { return a->m_visits <
+    //     b->m_visits; });
+    // ;
 
     // max value
-    //   return *std::max_element(
-    //       node->m_children.begin(), node->m_children.end(),
-    //       [](Node *a, Node *b) { return a->value < b->value; });
-    //   ;
+    return *std::max_element(
+        node->m_children.begin(), node->m_children.end(),
+        [](Node<State> *a, Node<State> *b) { return a->m_value < b->m_value; });
+    ;
   }
 
   virtual int select_action(Node<State> *node) {
@@ -125,8 +124,10 @@ public:
     int action_idx = 0;
 
     if (node->number_of_next_actions == 0) {
-      std::cerr << "Error in Tree::select_action. No next action found. "
-                << std::endl;
+      std::cerr
+          << "Error in Tree::select_action (base.h). No next action found. "
+          << std::endl;
+      exit(-1);
       return -1;
     }
 
@@ -134,11 +135,11 @@ public:
 
     for (int k = 0; k < node->number_of_next_actions; ++k) {
 
-      Node<State> *new_node = this->next_node(node,k);
+      Node<State> *new_node = this->next_node(node, k);
 
       double U = new_node->m_value + ita * (1 / node->number_of_next_actions) *
-                                          std::sqrt(double(node->m_visits)) /
-                                          (1 + new_node->m_visits);
+                                         std::sqrt(double(node->m_visits)) /
+                                         (1 + new_node->m_visits);
 
       if (U > U_max) {
         U_max = U;
@@ -148,9 +149,10 @@ public:
     return action_idx;
   }
 
-  virtual void grow_tree(Node<State> *grow_node, const ComputeOptions &options) = 0;
+  virtual void grow_tree(Node<State> *grow_node,
+                         const ComputeOptions &options) = 0;
   virtual State generate_next_state(Node<State> *node, int action) = 0;
-  virtual double get_result(Node<State> *node) = 0;
+  virtual double get_result(Node<State> *node) const = 0;
   virtual bool is_terminal(Node<State> *node) = 0;
 };
 

@@ -7,7 +7,6 @@
 // this header file includes ObjectState (State), and
 // ConstrainedManipulationTask (Task)
 
-
 int main() {
 
   // Test it with an example of planning to push an object in the plane
@@ -31,22 +30,27 @@ int main() {
   // generate start_state from task
   ConstrainedManipulationTask::State start_state = task->get_start_state();
 
-  HMP::Level1Tree<ConstrainedManipulationTask::State, ConstrainedManipulationTask>
+  HMP::Level1Tree<ConstrainedManipulationTask::State,
+                  ConstrainedManipulationTask>
       tree(task, start_state);
 
   HMP::ComputeOptions compute_options;
-  compute_options.max_iterations = 10;
+  compute_options.max_iterations = 100;
 
-  HMP::Node<ConstrainedManipulationTask::State> *current_node = tree.m_root_node.get();
+  HMP::Node<ConstrainedManipulationTask::State> *current_node =
+      tree.m_root_node.get();
 
-  while (!current_node->is_terminal_node) {
+  while (!tree.is_terminal(current_node)) {
     tree.grow_tree(current_node, compute_options);
     current_node = tree.best_child(current_node);
   }
 
   // backtrack the tree to get the path
   while (current_node != nullptr) {
-    std::cout << current_node->m_state.m_pose << std::endl;
+    std::cout << "Node type: " << current_node->m_type << " Pose "
+              << current_node->m_state.m_pose.transpose()
+              << " Value: " << current_node->m_value
+              << " Visits: " << current_node->m_visits << std::endl;
     current_node = current_node->m_parent;
   }
 }

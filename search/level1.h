@@ -8,9 +8,9 @@ namespace HMP {
 template <typename State, typename Task>
 class Level1Tree : public Tree<State, Task> {
 public:
-  double m_alpha; // the parameter for expanding new continuous node
+  double m_alpha = 0.5; // the parameter for expanding new continuous node
 
-  Level1Tree() { m_alpha = 0.7; }
+  Level1Tree() {}
   Level1Tree(std::shared_ptr<Task> task, State start_state)
       : Tree<State, Task>(task, start_state) {
     // specify the type of the root node
@@ -39,7 +39,7 @@ public:
     return new_state;
   }
 
-  virtual double get_result(Node<State> *node) {
+  virtual double get_result(Node<State> *node) const {
 
     // TODO: evaluate the result initialing another tree search
 
@@ -49,12 +49,13 @@ public:
 
     state_path.push_back(node->m_state);
 
-    while (node != nullptr) {
+    Node<State> *node_ = node;
 
-      if (node->m_type == "mode") {
-        state_path.push_back(node->m_state);
+    while (node_ != 0) {
+      if (node_->m_type == "mode") {
+        state_path.push_back(node_->m_state);
       }
-      node = node->m_parent;
+      node_ = node_->m_parent;
     }
 
     std::reverse(state_path.begin(), state_path.end());
@@ -72,7 +73,7 @@ public:
       // node type is "pose"
       if (node->m_parent == nullptr) {
         // root node cannot be a terminal node
-        return true;
+        return false;
       } else {
         // all non-terminal pose node have at least one children (from the
         // initial rrt tree growth)
@@ -88,18 +89,25 @@ public:
 
     for (int iter = 1;
          iter <= options.max_iterations || options.max_iterations < 0; ++iter) {
+      std::cout << "Iter " << iter << std::endl;
       Node<State> *node = grow_node;
 
-      while (!node->is_terminal_node) {
+      while (!this->is_terminal(node)) {
         int action;
         if (node->m_type == "pose") {
           action = this->select_action(node);
           node = this->next_node(node, action);
-          node->m_type = "mode";
+
+          // if the node hasn't been initialized yet
+          if (node->m_type.empty()) {
+            node->m_type = "mode";
+            node->number_of_next_actions = 0;
+          }
+
         }
 
         else if (node->m_type == "mode") {
-          if (pow(node->m_visits, m_alpha) <= node->number_of_next_actions) {
+          if (node->number_of_next_actions <= pow(node->m_visits, m_alpha)) {
             // Todo: use rrt to expand
             // rrt adds a path of nodes to the node, and return a terminal node
             std::vector<State> state_path =
@@ -114,6 +122,7 @@ public:
                     this->add_child(node, node->number_of_next_actions, state_);
                 node->number_of_next_actions++;
                 new_node->m_type = "pose";
+                new_node->number_of_next_actions = state_.modes.size();
                 node = new_node;
               }
 
@@ -121,7 +130,6 @@ public:
                 auto new_node =
                     this->add_child(node, state_.m_mode_idx, state_);
                 new_node->m_type = "mode";
-                new_node->number_of_next_actions = state_.modes.size();
                 node = new_node;
               }
             }
@@ -134,18 +142,27 @@ public:
                   this->add_child(node, node->number_of_next_actions, state_);
               node->number_of_next_actions++;
               new_node->m_type = "pose";
-              node = new_node;
+
+              node = new_node; // the last node has node->number_of_next_actions
+                               // = 0
             }
+
             break;
 
           } else {
             action = this->select_action(node);
             node = this->next_node(node, action);
+
+            if (this->is_terminal(node)) {
+
+              std::cout << "Got to the end through node selection" << std::endl;
+            }
           }
 
         } else {
           // error information: wrong node type
-          std::cerr << "Level1Tree::grow_tree. Incorrect state type. The state type can only be pose "
+          std::cerr << "Level1Tree::grow_tree. Incorrect state type. The state "
+                       "type can only be pose "
                        "or mode. "
                     << std::endl;
           exit(-1);
@@ -153,6 +170,7 @@ public:
       }
 
       double reward = this->get_result(node);
+      // std::cout << "Evaluation: " << reward << std::endl;
 
       this->backprop_reward(node, reward);
     }

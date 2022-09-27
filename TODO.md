@@ -1,3 +1,1 @@
-- [ ] Task search parameters, refer to my cmgmp search
-- [ ] Task initialization
-- [ ] search with RRT simple replacement & compute options
+- [ ] Debug run line by line
