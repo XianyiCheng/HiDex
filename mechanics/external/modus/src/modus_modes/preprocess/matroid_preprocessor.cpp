@@ -1,11 +1,10 @@
-#include <modus/modes/preprocess/matroid_preprocessor.hpp>
-#include <modus/common/linear_algebra.hpp>
 #include <iostream>
+#include <modus/common/linear_algebra.hpp>
+#include <modus/modes/preprocess/matroid_preprocessor.hpp>
 
-
-void modus::MatroidPreprocessor::Preprocess
-  (const Eigen::MatrixXd& A, double epsilon, double exclusion_factor)
-{
+void modus::MatroidPreprocessor::Preprocess(const Eigen::MatrixXd &A,
+                                            double epsilon,
+                                            double exclusion_factor) {
   // Store variables.
   A_ = A;
   A_prime_ = A;
@@ -32,6 +31,9 @@ void modus::MatroidPreprocessor::Preprocess
     A_prime_ = GetRows(A_prime_, idx);
     index_array_ = GetRows(index_array_, idx);
     // Get unique rows.
+    if (A_prime_.size() == 0) {
+      break;
+    }
     idx = UniqueRowsReoriented(A_prime_, epsilon_);
     A_prime_ = GetRows(A_prime_, idx);
     index_array_ = GetRows(index_array_, idx);
@@ -46,10 +48,11 @@ void modus::MatroidPreprocessor::Preprocess
         }
       }
     }
-    if (empty) { 
+    if (empty) {
       break;
     }
-    // MODUS_ASSERT_WARNING(empty, "Warning: increasing epsilon from %f to %f", epsilon_, 2*epsilon_);
+    // MODUS_ASSERT_WARNING(empty, "Warning: increasing epsilon from %f to %f",
+    // epsilon_, 2*epsilon_);
     epsilon_ *= 2;
   }
   // Reorder rows in increasing index order.
@@ -58,11 +61,10 @@ void modus::MatroidPreprocessor::Preprocess
   index_array_ = GetRows(index_array_, idx);
   // Verbose summary.
   if (verbose_) {
-    std::cout 
-    << "Matroid Preprocessor" << std::endl
-    << PrettyMatrix(A_, "A ") << std::endl
-    << "eps: " << epsilon << " -> " << epsilon_ << std::endl
-    << "idx: " << index_array_.transpose() << std::endl
-    << PrettyMatrix(A_prime_, "A'") << std::endl;
+    std::cout << "Matroid Preprocessor" << std::endl
+              << PrettyMatrix(A_, "A ") << std::endl
+              << "eps: " << epsilon << " -> " << epsilon_ << std::endl
+              << "idx: " << index_array_.transpose() << std::endl
+              << PrettyMatrix(A_prime_, "A'") << std::endl;
   }
 }

@@ -74,7 +74,11 @@ void ss_mode_enumeration(const MatrixXd& A, const MatrixXd& T, VectorXi cs_mode,
 
     IncidenceGraph* ss_graph = 0;
     // std::cout << "A" << A << "\n T" << T << std::endl;
-    ss_graph = modus::EnumerateSSModes(-A, -T, s, eps, options);
+    try {
+        ss_graph = modus::EnumerateSSModes(-A, -T, s, eps, options);
+    } catch (...) {
+        std::cout << "FAIL TO ENUMERATE SS MODES! CS MODE: " << cs_mode.transpose() << std::endl;
+    }
     if (ss_graph == 0){
         std::cout << "FAIL TO ENUMERATE SS MODES! CS MODE: " << cs_mode.transpose() << std::endl;
         return;

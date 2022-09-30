@@ -133,6 +133,7 @@ public:
       m_pose = state_.m_pose;
       m_mode_idx = state_.m_mode_idx;
       modes = state_.modes;
+      envs = state_.envs;
     }
 
     void do_action(int action) { m_mode_idx = action; }
@@ -141,6 +142,7 @@ public:
       this->m_pose = state_.m_pose;
       this->m_mode_idx = state_.m_mode_idx;
       this->modes = state_.modes;
+      this->envs = state_.envs;
       return *this;
     }
   };
@@ -157,26 +159,6 @@ public:
     Vector3d sample_rotation_axis;
 
     SearchOptions() {}
-
-    SearchOptions(const SearchOptions &opts) {
-      this->x_lb = opts.x_lb;
-      this->x_ub = opts.x_ub;
-      this->sampleSO3 = opts.sampleSO3;
-      this->goal_biased_prob = opts.goal_biased_prob;
-      this->max_samples = opts.max_samples;
-      if (!opts.sampleSO3)
-        this->sample_rotation_axis = opts.sample_rotation_axis;
-    }
-    SearchOptions &operator=(const SearchOptions &opts) {
-      this->x_lb = opts.x_lb;
-      this->x_ub = opts.x_ub;
-      this->sampleSO3 = opts.sampleSO3;
-      this->goal_biased_prob = opts.goal_biased_prob;
-      this->max_samples = opts.max_samples;
-      if (!opts.sampleSO3)
-        this->sample_rotation_axis = opts.sample_rotation_axis;
-      return *this;
-    }
   };
 
   CMGTASK() { this->cons = std::make_unique<ContactConstraints>(2); }
@@ -185,6 +167,7 @@ public:
                   const Vector7d &goal_object_pose, double goal_thr, double wa,
                   double wt, double charac_len, double mu_env, double mu_mnp,
                   Matrix6d object_inertia, Vector6d f_gravity,
+                  std::shared_ptr<WorldTemplate> world,
                   const SearchOptions &options) {
     this->start_object_pose = start_object_pose;
     this->goal_object_pose = goal_object_pose;
@@ -198,6 +181,7 @@ public:
     this->f_gravity = f_gravity;
     this->search_options = options;
     this->m_initialized = true;
+    this->m_world = world;
   }
 
   State get_start_state() const { return generate_state(start_object_pose); }

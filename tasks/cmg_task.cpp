@@ -2,46 +2,49 @@
 #include "../mechanics/contacts/contact_kinematics.h"
 #include "../mechanics/utilities/eiquadprog.hpp"
 
-
 // ---------------------------
 // Utility functions
 
-double dist_vel(const Vector6d& v, const Vector6d& v0, double wt, double wa){
-    double d = wt*(v-v0).block(0,0,3,1).norm() + wa*(v-v0).block(3,0,3,1).norm();
-    return d;
+double dist_vel(const Vector6d &v, const Vector6d &v0, double wt, double wa) {
+  double d = wt * (v - v0).block(0, 0, 3, 1).norm() +
+             wa * (v - v0).block(3, 0, 3, 1).norm();
+  return d;
 }
 
-Vector6d weight_w2o(const Vector7d& x, const Vector6d& f_ext_w){
-    Matrix4d T = pose2SE3(x);
-    Matrix6d Adg = SE32Adj(T);
+Vector6d weight_w2o(const Vector7d &x, const Vector6d &f_ext_w) {
+  Matrix4d T = pose2SE3(x);
+  Matrix6d Adg = SE32Adj(T);
 
-    Matrix4d T_;
-    T_.setIdentity();
-    T_.block(0,0,3,3) = T.block(0,0,3,3);
-    Vector6d f_ext_o = SE32Adj(T_).transpose()*f_ext_w;
-    return f_ext_o;
+  Matrix4d T_;
+  T_.setIdentity();
+  T_.block(0, 0, 3, 3) = T.block(0, 0, 3, 3);
+  Vector6d f_ext_o = SE32Adj(T_).transpose() * f_ext_w;
+  return f_ext_o;
 }
 
-void copy_pts(const std::vector<ContactPoint>& pts, std::vector<ContactPoint>* pts_new){
-    for(auto& pt:pts){
-        pts_new->push_back(pt);
-    }
+void copy_pts(const std::vector<ContactPoint> &pts,
+              std::vector<ContactPoint> *pts_new) {
+  for (auto &pt : pts) {
+    pts_new->push_back(pt);
+  }
 }
 
-Vector7d steer_config(Vector7d x_near, Vector7d x_rand, double epsilon_translation, double epsilon_angle){
-    
-    // double epsilon_translation = 1.5;
-    // double epsilon_angle = 3.14*100/180;
+Vector7d steer_config(Vector7d x_near, Vector7d x_rand,
+                      double epsilon_translation, double epsilon_angle) {
 
-    Vector3d p_rand = x_rand.head(3);
-    Vector3d p_near = x_near.head(3);
-    Quaterniond q_near(x_near[6], x_near[3], x_near[4], x_near[5]); 
-    Quaterniond q_rand(x_rand[6], x_rand[3], x_rand[4], x_rand[5]); 
-    p_rand = steer_position(p_near, p_rand, epsilon_translation);
-    q_rand = steer_quaternion(q_near, q_rand, epsilon_angle);
-    Vector7d x_steer;
-    x_steer << p_rand[0], p_rand[1], p_rand[2], double(q_rand.x()),  double(q_rand.y()),  double(q_rand.z()),  double(q_rand.w());
-    return x_steer;
+  // double epsilon_translation = 1.5;
+  // double epsilon_angle = 3.14*100/180;
+
+  Vector3d p_rand = x_rand.head(3);
+  Vector3d p_near = x_near.head(3);
+  Quaterniond q_near(x_near[6], x_near[3], x_near[4], x_near[5]);
+  Quaterniond q_rand(x_rand[6], x_rand[3], x_rand[4], x_rand[5]);
+  p_rand = steer_position(p_near, p_rand, epsilon_translation);
+  q_rand = steer_quaternion(q_near, q_rand, epsilon_angle);
+  Vector7d x_steer;
+  x_steer << p_rand[0], p_rand[1], p_rand[2], double(q_rand.x()),
+      double(q_rand.y()), double(q_rand.z()), double(q_rand.w());
+  return x_steer;
 }
 bool ifConstraintsSatisfied(const VectorXd &x, const MatrixXd A,
                             const VectorXd &b, const MatrixXd G,
@@ -489,7 +492,8 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
     T_.setIdentity();
     T_.block(0, 0, 3, 3) = T.block(0, 0, 3, 3);
 
-    Vector6d v_b = EnvironmentConstrainedVelocity(v_star, envs, env_mode, *this->cons);
+    Vector6d v_b =
+        EnvironmentConstrainedVelocity(v_star, envs, env_mode, *this->cons);
 
     if (v_b.norm() < thr) {
       std::cout << "v_b < thr : " << v_b.transpose() << std::endl;
@@ -617,10 +621,10 @@ void enumerate_ss_modes(ContactConstraints &cons,
 }
 
 // -----------------------------------------------------------
-// CMGTASK 
+// CMGTASK
 
 CMGTASK::State CMGTASK::generate_state(const Vector7d &object_pose) const {
-  State state_;
+  CMGTASK::State state_;
   state_.m_pose = object_pose;
   this->m_world->getObjectContacts(&state_.envs, object_pose);
   enumerate_cs_modes(*this->cons.get(), state_.envs, &state_.modes);
@@ -629,7 +633,7 @@ CMGTASK::State CMGTASK::generate_state(const Vector7d &object_pose) const {
 }
 
 std::vector<CMGTASK::State>
-CMGTASK::search_a_new_path(const State &start_state) {
+CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
   // search a new path towards the end, given the START_STATE and M_MODE_IDX!!!
 
   // during the search, it figure out the constriants (modes) for the states
@@ -658,7 +662,8 @@ CMGTASK::search_a_new_path(const State &start_state) {
     // bias sample toward the goal
     Vector7d x_rand;
     int near_idx;
-    if ((randd() > this->search_options.goal_biased_prob) && (kk >= 1)) {
+    // if ((randd() > this->search_options.goal_biased_prob) && (kk >= 1)) {
+    if (randd() > this->search_options.goal_biased_prob) {
       Vector3d p_rand;
       Quaterniond q_rand;
       p_rand =
@@ -765,9 +770,8 @@ CMGTASK::search_a_new_path(const State &start_state) {
         std::vector<Vector7d> path;
 
         // move
-        this->forward_integration(
-            rrt_tree.nodes[near_idx].config, x_rand,
-            rrt_tree.nodes[near_idx].envs, mode, &path);
+        this->forward_integration(rrt_tree.nodes[near_idx].config, x_rand,
+                                  rrt_tree.nodes[near_idx].envs, mode, &path);
 
         // if integration is successful
         if (path.size() > 1) {
@@ -807,7 +811,7 @@ CMGTASK::search_a_new_path(const State &start_state) {
 
   /// end of search
 
-  std::vector<State> path_;
+  std::vector<CMGTASK::State> path_;
 
   if (ifsuccess) {
     std::vector<int> node_path;
@@ -815,32 +819,34 @@ CMGTASK::search_a_new_path(const State &start_state) {
     std::reverse(node_path.begin(), node_path.end());
     for (int k = 1; k < node_path.size() - 1; k++) {
       int kn = node_path[k];
-      VectorXi mode = rrt_tree.edges[rrt_tree.nodes[kn + 1].edge].mode;
+      int k_child = node_path[k+1];
+      VectorXi mode = rrt_tree.edges[rrt_tree.nodes[k_child].edge].mode;
       int mode_idx = -1;
       for (int idx = 0; idx < rrt_tree.nodes[kn].modes.size(); ++idx) {
-        if ((mode - rrt_tree.nodes[kn].modes[idx]).norm() == 0) {
+        if ((mode.head(rrt_tree.nodes[kn].modes[idx].size()) - rrt_tree.nodes[kn].modes[idx]).norm() == 0) {
           mode_idx = idx;
           break;
         }
       }
-      State new_state(rrt_tree.nodes[kn].config, rrt_tree.nodes[kn].envs,
-                      mode_idx, rrt_tree.nodes[kn].modes);
+      CMGTASK::State new_state(rrt_tree.nodes[kn].config,
+                               rrt_tree.nodes[kn].envs, mode_idx,
+                               rrt_tree.nodes[kn].modes);
       path_.push_back(new_state);
     }
-    State new_state(rrt_tree.nodes[node_path.back()].config,
-                    rrt_tree.nodes[node_path.back()].envs, -1,
-                    rrt_tree.nodes[node_path.back()].modes);
+    CMGTASK::State new_state(rrt_tree.nodes[node_path.back()].config,
+                             rrt_tree.nodes[node_path.back()].envs, -1,
+                             rrt_tree.nodes[node_path.back()].modes);
     path_.push_back(new_state);
   }
 
   return path_;
 }
 
-double CMGTASK::evaluate_path(const std::vector<State> &path) const {
+double CMGTASK::evaluate_path(const std::vector<CMGTASK::State> &path) const {
   // return the REWARD of the path: larger reward -> better path
 
   // TODO: define reward
-  double reward = 1 / double(path.size());
+  double reward = 1 / (double(path.size()-7)*double(path.size()-7)+1);
 
   return reward;
 }
