@@ -1,0 +1,3 @@
+[submodule "mechanics/external/dartsim"]
+	path = mechanics/external/dartsim
+	url = https://github.com/dartsim/dart.git

@@ -1,9 +1,17 @@
 
+
 #include "../search/level1.h"
 
 #include "../tasks/cmg_task.h"
 
 #include "../mechanics/utilities/utilities.h"
+
+#include "../mechanics/worlds/DartWorld.h"
+
+#ifndef DART_UTILS
+#define DART_UTILS
+    #include "../mechanics/dart_utils/dart_utils.h"
+#endif
 
 int main()
 {
@@ -12,7 +20,7 @@ int main()
 
     // create world, create environment, an object sliding on the table
 
-    std::shared_ptr<DartWorld> world = std::make_share<DartWorld>();
+    std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
 
     SkeletonPtr object = createFreeBox("box_object", 0.05 * Vector3d(1, 1, 1));
     SkeletonPtr env1 = createFixedBox("ground", Vector3d(2, 2, 0.2), Vector3d(0, 0, -0.1));
@@ -35,6 +43,11 @@ int main()
     double mu_env = 0.4;
     double mu_mnp = 0.8;
 
+    double charac_len = 1;
+
+    Vector6d f_g;
+    f_g << 0,0,-0.1,0,0,0;
+
     Matrix6d oi;
     oi << 1, 0, 0, 0, 0, 0,
         0, 1, 0, 0, 0, 0,
@@ -55,5 +68,5 @@ int main()
     rrt_options.max_samples = 50;
 
     // pass the world and task parameters to the task through task->initialize
-    task->initialize(x_start, x_goal, goal_thr, wa, wt, mu_env, mu_mnp, oi, rrt_options);
+    task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env, mu_mnp, oi, f_g, rrt_options);
 }

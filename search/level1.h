@@ -46,7 +46,7 @@ namespace HMP
       return new_state;
     }
 
-    virtual double get_result(Node<State> *node) const
+    virtual double get_result(Node<State> *node)
     {
 
       // TODO: evaluate the result initialing another tree search

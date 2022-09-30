@@ -177,7 +177,7 @@ namespace HMP
     virtual void grow_tree(Node<State> *grow_node,
                            const ComputeOptions &options) = 0;
     virtual State generate_next_state(Node<State> *node, int action) = 0;
-    virtual double get_result(Node<State> *node) const = 0;
+    virtual double get_result(Node<State> *node) = 0;
     virtual bool is_terminal(Node<State> *node) = 0;
   };
 

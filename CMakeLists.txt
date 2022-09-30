@@ -93,9 +93,12 @@ INCLUDE_DIRECTORIES(third-party/Catch)
 
 FILE(GLOB MCTS_HEADERS ${CMAKE_SOURCE_DIR}/*.h)
 
-set(external_dirs
-  "${PROJECT_SOURCE_DIR}/mechanics/external/eigen3"
-)
+# find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
+# if (BULLET_FOUND)
+#     message("find bullet")
+# else()
+#     message("cannot find bullet")
+# endif()
 
 # ADD_SUBDIRECTORY(games)
 ADD_SUBDIRECTORY(tests)
