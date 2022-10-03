@@ -97,6 +97,9 @@ int main(int argc, char* argv[]) {
               << current_node->m_state.m_pose.transpose()
               << " Value: " << current_node->m_value
               << " Visits: " << current_node->m_visits << std::endl;
+    if (current_node->m_type == "mode"){
+      std::cout << "Mode " << current_node->m_state.modes[current_node->m_action].transpose() << std::endl;
+    }
     object_traj.push_back(current_node->m_state.m_pose);
     current_node = current_node->m_parent;
   }

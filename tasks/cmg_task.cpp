@@ -847,6 +847,17 @@ double CMGTASK::evaluate_path(const std::vector<CMGTASK::State> &path) const {
 
   // TODO: define reward
   // double reward = 1 / (double(path.size()-7)*double(path.size()-7)+1);
+  
+  // double avg_maintain_contact = 0;
+  // for (auto s:path){
+  //   if (s.m_mode_idx!=-1){
+  //     VectorXi mode = s.modes[s.m_mode_idx];
+  //     avg_maintain_contact += 1 - (double(mode.sum())+1)/(double(mode.size())+1);
+  //   }
+  // }
+  // avg_maintain_contact = avg_maintain_contact/double(path.size());
+
+  // double reward = 1 / double(path.size()) + avg_maintain_contact;
   double reward = 1 / double(path.size());
 
   return reward;
