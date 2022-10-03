@@ -13,7 +13,7 @@
 #include "../mechanics/dart_utils/dart_utils.h"
 #endif
 
-int main() {
+int main(int argc, char* argv[]) {
 
   std::shared_ptr<CMGTASK> task = std::make_shared<CMGTASK>();
 
@@ -33,7 +33,9 @@ int main() {
   Vector7d x_start;
   Vector7d x_goal;
   x_start << 0, 0, 0.025 * 0.9999, 0, 0, 0, 1;
-  x_goal << 0.48, 0, 0.025 * 0.9999, 0, 0, 0, 1;
+  // x_goal << 0.48, 0, 0.025 * 0.9999, 0, 0, 0, 1;
+  x_goal << 0.1, 0, 0.025 * 0.9999, 0, 0.7071, 0, 0.7071;
+
 
   double goal_thr = 0.05 * 3.14 * 30 / 180;
 
@@ -60,10 +62,10 @@ int main() {
   rrt_options.x_lb << -1, -1, 0.0;
 
   rrt_options.eps_trans = 0.5;
-  rrt_options.eps_angle = 3.14 * 90 / 180;
+  rrt_options.eps_angle = 3.14 * 95 / 180;
   rrt_options.max_samples = 20;
 
-  rrt_options.goal_biased_prob = 0.1;
+  rrt_options.goal_biased_prob = 0.7;
 
   // pass the world and task parameters to the task through task->initialize
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
@@ -79,17 +81,27 @@ int main() {
 
   HMP::Node<CMGTASK::State> *current_node = tree.m_root_node.get();
 
+  int iter = 0;
   while (!tree.is_terminal(current_node)) {
+    if (iter < 5){
     tree.grow_tree(current_node, compute_options);
+    }
+    iter++;
     current_node = tree.best_child(current_node);
   }
 
+  std::vector<Vector7d> object_traj;
   // backtrack the tree to get the path
   while (current_node != nullptr) {
     std::cout << "Node type: " << current_node->m_type << " Pose "
               << current_node->m_state.m_pose.transpose()
               << " Value: " << current_node->m_value
               << " Visits: " << current_node->m_visits << std::endl;
+    object_traj.push_back(current_node->m_state.m_pose);
     current_node = current_node->m_parent;
   }
+  world->setObjectTrajectory(object_traj);
+
+  world->startWindow(&argc, argv);
+  
 }

@@ -846,7 +846,8 @@ double CMGTASK::evaluate_path(const std::vector<CMGTASK::State> &path) const {
   // return the REWARD of the path: larger reward -> better path
 
   // TODO: define reward
-  double reward = 1 / (double(path.size()-7)*double(path.size()-7)+1);
+  // double reward = 1 / (double(path.size()-7)*double(path.size()-7)+1);
+  double reward = 1 / double(path.size());
 
   return reward;
 }
