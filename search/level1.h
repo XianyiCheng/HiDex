@@ -83,7 +83,7 @@ namespace HMP
 
       MCTSOptions compute_options_2;
       compute_options_2.max_iterations =
-          20; // maximum iteration for search from the root node
+          30; // maximum iteration for search from the root node
 
       double final_best_reward = tree2.search_tree(compute_options_2)->m_value;
 
@@ -266,6 +266,7 @@ namespace HMP
       this->m_task->saved_object_trajectory = *object_trajectory;
 
       Level2Tree<State2, Task> tree2(this->m_task, this->m_task->get_start_state2());
+      tree2.ita = 0.1;
 
       MCTSOptions compute_options_2;
       compute_options_2.max_iterations =

@@ -171,7 +171,7 @@ public:
     int timestep = 0;
     int finger_index; // current finger index
     bool is_valid;
-    State2(){}
+    State2() {}
     State2(int t, int idx) : timestep(t), finger_index(idx) {}
     void do_action(int action)
     {
@@ -243,36 +243,41 @@ public:
   {
 
     int number_of_finger_changes = 0;
+    double finger_number = 0;
     for (int k = 0; k < path.size() - 1; ++k)
     {
       if (path[k].finger_index != path[k + 1].finger_index)
       {
         number_of_finger_changes++;
+        
       }
+      finger_number += double(abs(path[k].finger_index - 3))/5;
     }
 
-    double reward_finger_stay = 1 - double(number_of_finger_changes) / double(path.size());
+    double reward_finger_stay = 1.0 - double(number_of_finger_changes) / double(path.size());
 
-    double reward_path_size = 1 / double(path.size());
+    double reward_path_size = 1.0 / double(path.size());
 
-    return reward_finger_stay + reward_path_size;
+    double reward_finger_1 = 1.0 - finger_number/double(path.size());
+
+    return reward_finger_stay + reward_path_size + reward_finger_1;
   }
 
-  double estimate_next_state_value(State2 state, int action)
+  double estimate_next_state_value(const State2 & state, int action)
   {
     return 0.0;
     // return 0.0 for now, can use neural networks to estimate values
   }
 
-  int get_number_of_robot_actions(State2 state)
+  int get_number_of_robot_actions(const State2 & state)
   {
     // return combination of fingers for now
     return pow(this->object_surface_pts.size(), this->number_of_robot_contacts);
   }
 
-  bool is_terminal(State2 state)
+  bool is_terminal(const State2 &state)
   { // check if terminal, also check if valid, if not valid it is also terminal
-    if (state.is_valid)
+    if (!state.is_valid)
     {
       return true;
     }
@@ -285,13 +290,15 @@ public:
     }
     return false;
   }
-  bool is_valid(State2 state)
+  bool is_valid(const State2 & state)
   {
     // TODO: check for collision, balance
     return true;
   }
 
   std::vector<State> saved_object_trajectory;
+  std::vector<ContactPoint> object_surface_pts;
+  int number_of_robot_contacts;
 
 private:
   bool m_initialized = false;
@@ -308,9 +315,6 @@ private:
 
   Matrix6d object_inertia;
   Vector6d f_gravity;
-
-  std::vector<ContactPoint> object_surface_pts;
-  int number_of_robot_contacts;
 
   std::shared_ptr<WorldTemplate>
       m_world; // save the object, environment, do collision detections, ...

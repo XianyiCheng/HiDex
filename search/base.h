@@ -86,6 +86,18 @@ namespace HMP
     }
     ~Tree() {}
 
+    int number_of_nodes_in_subtree(Node<State> *node){
+      int n = node->m_children.size();
+      for (auto child: node->m_children){
+        n += this->number_of_nodes_in_subtree(child);
+      }
+      return n;
+    }
+
+    int number_of_tree_nodes(){
+      return this->number_of_nodes_in_subtree(this->m_root_node.get());
+    }
+
     void backprop_reward(Node<State> *node, double reward)
     {
       while (node != nullptr)

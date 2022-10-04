@@ -7,13 +7,15 @@
 #include "../mechanics/utilities/utilities.h"
 
 #include "../mechanics/worlds/DartWorld.h"
+#include "../mechanics/utilities/parser.hpp"
 
 #ifndef DART_UTILS
 #define DART_UTILS
 #include "../mechanics/dart_utils/dart_utils.h"
 #endif
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[])
+{
 
   std::shared_ptr<CMGTASK> task = std::make_shared<CMGTASK>();
 
@@ -35,7 +37,6 @@ int main(int argc, char* argv[]) {
   x_start << 0, 0, 0.025 * 0.9999, 0, 0, 0, 1;
   // x_goal << 0.48, 0, 0.025 * 0.9999, 0, 0, 0, 1;
   x_goal << 0.1, 0, 0.025 * 0.9999, 0, 0.7071, 0, 0.7071;
-
 
   double goal_thr = 0.05 * 3.14 * 30 / 180;
 
@@ -70,12 +71,30 @@ int main(int argc, char* argv[]) {
   // pass the world and task parameters to the task through task->initialize
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
                    mu_mnp, oi, f_g, world, rrt_options);
-  
+
   // read surface point, add robot contacts
+
+  std::ifstream f(std::string(SRC_DIR)+"/data/test_finger_contact/surface_contacts.csv");
+  aria::csv::CsvParser parser(f);
+
+  for (auto &row : parser)
+  {
+    int n_cols = row.size();
+    assert(n_cols == 6);
+
+    Vector6d v;
+    for (int j = 0; j < 6; ++j)
+    {
+      v(j) = std::stod(row[j]);
+    }
+    ContactPoint p(v.head(3), v.tail(3));
+    task->object_surface_pts.push_back(p);
+  }
+  task->number_of_robot_contacts = 1;
 
   CMGTASK::State start_state = task->get_start_state();
 
-  HMP::Level1Tree<CMGTASK::State,CMGTASK::State2, CMGTASK> tree(task, start_state);
+  HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(task, start_state);
 
   HMP::MCTSOptions compute_options;
   compute_options.max_iterations =
@@ -89,7 +108,8 @@ int main(int argc, char* argv[]) {
 
   std::vector<Vector7d> object_traj;
 
-  for (int kk = 0; kk < object_trajectory.size(); ++kk){
+  for (int kk = 0; kk < object_trajectory.size(); ++kk)
+  {
     std::cout << "Timestep " << kk << std::endl;
     std::cout << "Pose " << object_trajectory[kk].m_pose.transpose() << std::endl;
     std::cout << "Action " << action_trajectory[kk].finger_index << std::endl;
@@ -110,5 +130,4 @@ int main(int argc, char* argv[]) {
   world->setObjectTrajectory(object_traj);
 
   world->startWindow(&argc, argv);
-  
 }

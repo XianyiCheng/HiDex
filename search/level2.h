@@ -1,5 +1,8 @@
 #include "base.h"
-
+#ifndef UTILS_H
+#define UTILS_H
+    #include "../mechanics/utilities/utilities.h"
+#endif
 namespace HMP
 {
     // 'State' is a different state than the 'State' in level1tree
@@ -15,6 +18,7 @@ namespace HMP
         {
             this->m_root_node->number_of_next_actions =
                 this->m_task->get_number_of_robot_actions(start_state);
+            this->m_root_node->m_state.is_valid = true;
         }
         ~Level2Tree() {}
 
@@ -35,6 +39,7 @@ namespace HMP
                     int action;
                     action = this->select_action(node);
                     node = this->next_node(node, action);
+                    node->number_of_next_actions = this->m_task->get_number_of_robot_actions(node->m_state);
                 }
 
                 double reward = this->get_result(node);
@@ -114,6 +119,8 @@ namespace HMP
                 explored_actions.push_back(child->m_action);
             }
 
+            // for unexplored actions
+            // TODO better add some randomness here
             for (int k = 0; k < node->number_of_next_actions; ++k)
             {
 
@@ -130,6 +137,7 @@ namespace HMP
                     {
                         U_max = U;
                         action_idx = k;
+                        action_idx = randi(6);
                     }
                 }
             }
