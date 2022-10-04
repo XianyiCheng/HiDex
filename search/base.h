@@ -8,14 +8,14 @@
 namespace HMP
 {
 
-  struct ComputeOptions
+  struct MCTSOptions
   {
     int number_of_threads;
     int max_iterations;
     double max_time;
     bool verbose;
 
-    ComputeOptions()
+    MCTSOptions()
         : number_of_threads(8), max_iterations(10000),
           max_time(-1.0), // default is no time limit.
           verbose(false)
@@ -71,6 +71,7 @@ namespace HMP
   {
 
   public:
+    double ita = 0.1;             // hyper-parameter controlling the degree of exploration
     std::shared_ptr<Task> m_task; // a shared pointer for Task
     std::unique_ptr<Node<State>>
         m_root_node;             // unique pointer for root node to store everything
@@ -122,6 +123,18 @@ namespace HMP
       return next_node;
     }
 
+    std::vector<State> backtrack_state_path(Node<State> *terminal_node)
+    {
+      std::vector<State> path;
+      Node<State> *node = terminal_node;
+      while(node != nullptr){
+        path.push_back(node->m_state);
+        node = node->m_parent;
+      }
+      std::reverse(path.begin(), path.end());
+      return path;
+    }
+
     virtual Node<State> *best_child(Node<State> *node)
     {
       // return *std::max_element(
@@ -142,7 +155,6 @@ namespace HMP
     {
       // TODO: return an action that either unexplored or have the best UCT
 
-      double ita = 0.1; // hyper-parameter controlling the degree of exploration
       int action_idx = 0;
 
       if (node->number_of_next_actions == 0)
@@ -175,11 +187,10 @@ namespace HMP
     }
 
     virtual void grow_tree(Node<State> *grow_node,
-                           const ComputeOptions &options) = 0;
+                           const MCTSOptions &options) = 0;
     virtual State generate_next_state(Node<State> *node, int action) = 0;
     virtual double get_result(Node<State> *node) = 0;
     virtual bool is_terminal(Node<State> *node) = 0;
   };
 
 } // namespace HMP
-

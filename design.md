@@ -31,11 +31,8 @@ struct State
 
     State() {}
 
-    State(const State &state_) {// implement copy constructor}
-
     void do_action(int action);
 
-    State &operator=(const State &state_) {//implement operator = }
   };
 ```
 
@@ -46,6 +43,8 @@ class Task
 
 public:
   // it's better to define the task spefic state here
+  struct State1 {}
+  struct State2 {bool is_valid}
   
   Task() {}
 
@@ -58,9 +57,18 @@ public:
     // every state need to be associated with m_mode_idx (mode to this state)
   }
 
-  double evaluate_path(const std::vector<State> &path)
+  double evaluate_path(const std::vector<State2> &path)
   {
     // return the REWARD of the path: larger reward -> better path
+    // if path.back() is not valid, return 0;
+  }
+
+  int get_number_of_robot_actions(State2 state){
+
+  }
+  bool is_state2_terminal(State2 state){
+    // check if state2 is terminal
+    // if state2 is not valid it is also terminal
   }
   private:
     // add whatever members you want

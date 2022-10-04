@@ -1,12 +1,11 @@
-#include "base.h"
-
+#include "level2.h"
 #include <algorithm>
 
 namespace HMP
 {
 
   // level one tree should be compatible with many different tasks
-  template <typename State, typename Task>
+  template <typename State, typename State2, typename Task>
   class Level1Tree : public Tree<State, Task>
   {
   public:
@@ -17,7 +16,7 @@ namespace HMP
         : Tree<State, Task>(task, start_state)
     {
       // specify the type of the root node
-      this->m_root_node = std::make_unique<Node<State>>(start_state, -1, nullptr);
+      // this->m_root_node = std::make_unique<Node<State>>(start_state, -1, nullptr); // already done in Tree
       this->m_root_node->m_type = "pose";
       this->m_root_node->number_of_next_actions =
           this->m_root_node->m_state.modes.size();
@@ -76,8 +75,20 @@ namespace HMP
 
       std::reverse(state_path.begin(), state_path.end());
 
-      // pass in the std::vector<State> to the task to get the score
-      double path_score = this->m_task->evaluate_path(state_path);
+      // TODO: create a level 2 tree to search for the robot contact path
+      // TODO: do this->m_task->evaluate_path within level2
+      this->m_task->saved_object_trajectory = state_path;
+
+      Level2Tree<State2, Task> tree2(this->m_task, this->m_task->get_start_state2());
+
+      MCTSOptions compute_options_2;
+      compute_options_2.max_iterations =
+          20; // maximum iteration for search from the root node
+
+      double final_best_reward = tree2.search_tree(compute_options_2)->m_value;
+
+      double path_score = final_best_reward; // TODO: can also add something else from level 1
+      this->m_task->saved_object_trajectory.clear();
 
       return path_score;
     }
@@ -106,7 +117,7 @@ namespace HMP
     }
 
     virtual void grow_tree(Node<State> *grow_node,
-                           const ComputeOptions &options)
+                           const MCTSOptions &options)
     {
 
       // std::mt19937_64 random_engine(initial_seed);
@@ -210,6 +221,62 @@ namespace HMP
 
         this->backprop_reward(node, reward);
       }
+    }
+
+    Node<State> * search_tree(MCTSOptions compute_options)
+    {
+      Node<State> *current_node = this->m_root_node.get();
+
+      int iter = 0;
+      while (!this->is_terminal(current_node))
+      {
+        if (iter < 5)
+        {
+          this->grow_tree(current_node, compute_options);
+        }
+        iter++;
+        current_node = this->best_child(current_node);
+      }
+      // double best_final_reward = current_node->m_value;
+      return current_node;
+    }
+
+    void get_final_results(Node<State>* best_terminal_node, std::vector<State>* object_trajectory, std::vector<State2>* action_trajectory){
+      if (!this->is_terminal(best_terminal_node))
+      {
+        std::cerr<< "This is not a terminal node!" << std::endl;
+        return;
+      }
+
+      object_trajectory->push_back(best_terminal_node->m_state);
+
+      Node<State> *node_ = best_terminal_node;
+
+      while (node_ != 0)
+      {
+        if (node_->m_type == "mode")
+        {
+          object_trajectory->push_back(node_->m_state);
+        }
+        node_ = node_->m_parent;
+      }
+
+      std::reverse(object_trajectory->begin(), object_trajectory->end());
+
+      this->m_task->saved_object_trajectory = *object_trajectory;
+
+      Level2Tree<State2, Task> tree2(this->m_task, this->m_task->get_start_state2());
+
+      MCTSOptions compute_options_2;
+      compute_options_2.max_iterations =
+          20; // maximum iteration for search from the root node
+
+      Node<State2>* final_node_2 = tree2.search_tree(compute_options_2);
+
+      *action_trajectory = tree2.backtrack_state_path(final_node_2);
+
+      return;
+
     }
   };
 } // namespace HMP

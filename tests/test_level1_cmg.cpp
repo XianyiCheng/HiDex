@@ -70,39 +70,43 @@ int main(int argc, char* argv[]) {
   // pass the world and task parameters to the task through task->initialize
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
                    mu_mnp, oi, f_g, world, rrt_options);
+  
+  // read surface point, add robot contacts
 
   CMGTASK::State start_state = task->get_start_state();
 
-  HMP::Level1Tree<CMGTASK::State, CMGTASK> tree(task, start_state);
+  HMP::Level1Tree<CMGTASK::State,CMGTASK::State2, CMGTASK> tree(task, start_state);
 
-  HMP::ComputeOptions compute_options;
+  HMP::MCTSOptions compute_options;
   compute_options.max_iterations =
       20; // maximum iteration for search from the root node
 
-  HMP::Node<CMGTASK::State> *current_node = tree.m_root_node.get();
+  HMP::Node<CMGTASK::State> *current_node = tree.search_tree(compute_options);
 
-  int iter = 0;
-  while (!tree.is_terminal(current_node)) {
-    if (iter < 5){
-    tree.grow_tree(current_node, compute_options);
-    }
-    iter++;
-    current_node = tree.best_child(current_node);
-  }
+  std::vector<CMGTASK::State> object_trajectory;
+  std::vector<CMGTASK::State2> action_trajectory;
+  tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
 
   std::vector<Vector7d> object_traj;
-  // backtrack the tree to get the path
-  while (current_node != nullptr) {
-    std::cout << "Node type: " << current_node->m_type << " Pose "
-              << current_node->m_state.m_pose.transpose()
-              << " Value: " << current_node->m_value
-              << " Visits: " << current_node->m_visits << std::endl;
-    if (current_node->m_type == "mode"){
-      std::cout << "Mode " << current_node->m_state.modes[current_node->m_action].transpose() << std::endl;
-    }
-    object_traj.push_back(current_node->m_state.m_pose);
-    current_node = current_node->m_parent;
+
+  for (int kk = 0; kk < object_trajectory.size(); ++kk){
+    std::cout << "Timestep " << kk << std::endl;
+    std::cout << "Pose " << object_trajectory[kk].m_pose.transpose() << std::endl;
+    std::cout << "Action " << action_trajectory[kk].finger_index << std::endl;
+    object_traj.push_back(object_trajectory[kk].m_pose);
   }
+  // // backtrack the tree to get the path
+  // while (current_node != nullptr) {
+  //   std::cout << "Node type: " << current_node->m_type << " Pose "
+  //             << current_node->m_state.m_pose.transpose()
+  //             << " Value: " << current_node->m_value
+  //             << " Visits: " << current_node->m_visits << std::endl;
+  //   if (current_node->m_type == "mode"){
+  //     std::cout << "Mode " << current_node->m_state.modes[current_node->m_action].transpose() << std::endl;
+  //   }
+  //   object_traj.push_back(current_node->m_state.m_pose);
+  //   current_node = current_node->m_parent;
+  // }
   world->setObjectTrajectory(object_traj);
 
   world->startWindow(&argc, argv);
