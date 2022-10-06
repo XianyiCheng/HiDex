@@ -113,20 +113,13 @@ int main(int argc, char *argv[])
     std::cout << "Timestep " << kk << std::endl;
     std::cout << "Pose " << object_trajectory[kk].m_pose.transpose() << std::endl;
     std::cout << "Action " << action_trajectory[kk].finger_index << std::endl;
-    object_traj.push_back(object_trajectory[kk].m_pose);
+    // object_traj.push_back(object_trajectory[kk].m_pose);
+    object_traj.insert(object_traj.end(), object_trajectory[kk].m_path.begin(), object_trajectory[kk].m_path.end());
   }
-  // // backtrack the tree to get the path
-  // while (current_node != nullptr) {
-  //   std::cout << "Node type: " << current_node->m_type << " Pose "
-  //             << current_node->m_state.m_pose.transpose()
-  //             << " Value: " << current_node->m_value
-  //             << " Visits: " << current_node->m_visits << std::endl;
-  //   if (current_node->m_type == "mode"){
-  //     std::cout << "Mode " << current_node->m_state.modes[current_node->m_action].transpose() << std::endl;
-  //   }
-  //   object_traj.push_back(current_node->m_state.m_pose);
-  //   current_node = current_node->m_parent;
-  // }
+
+  for (auto p: object_traj){
+    std::cout<< p.transpose() << std::endl;
+  }
   world->setObjectTrajectory(object_traj);
 
   world->startWindow(&argc, argv);

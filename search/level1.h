@@ -25,17 +25,18 @@ namespace HMP
 
     virtual State generate_next_state(Node<State> *node, int action)
     {
+      // this function is only used to generate new state from node type "pose", (to choose a mode)
       State new_state;
       if (node->m_type == "pose")
       {
-        // TODO: from state.contact_modes
+        // from state.contact_modes
         new_state = node->m_state;
         new_state.do_action(action);
       }
       else
       { // node->m_type == "mode"
         //
-        // TODO: Error, new state for node type "mode" can only be generated from
+        // Error, new state for node type "mode" can only be generated from
         // RRT
         std::cerr << "Error in generate_next_state. Wrong node type. New state "
                      "for node type mode can only be generated from RRT"
@@ -48,14 +49,13 @@ namespace HMP
     virtual double get_result(Node<State> *node)
     {
 
-      // TODO: evaluate the result initialing another tree search
+      // evaluate the result initialing another tree search
 
       // backtrack to get the a std::vector<State> for all mode nodes (except for
       // the last node)
 
       if (!this->is_terminal(node))
       {
-        // couldn't find a path in search_a_new_path
         return 0.0;
       }
       std::vector<State> state_path;
@@ -75,8 +75,8 @@ namespace HMP
 
       std::reverse(state_path.begin(), state_path.end());
 
-      // TODO: create a level 2 tree to search for the robot contact path
-      // TODO: do this->m_task->evaluate_path within level2
+      // create a level 2 tree to search for the robot contact path
+      // do this->m_task->evaluate_path within level2
       this->m_task->saved_object_trajectory = state_path;
 
       Level2Tree<State2, Task> tree2(this->m_task, this->m_task->get_start_state2());
@@ -87,7 +87,9 @@ namespace HMP
 
       double final_best_reward = tree2.search_tree(compute_options_2)->m_value;
 
-      double path_score = final_best_reward; // TODO: can also add something else from level 1
+      // try to capture all the task specific evaluation in the task->evaluate_path
+      // only consider add reward terms here if they are a MCTS thing
+      double path_score = final_best_reward; 
       this->m_task->saved_object_trajectory.clear();
 
       return path_score;
@@ -148,7 +150,7 @@ namespace HMP
           {
             if (node->number_of_next_actions <= pow(node->m_visits, m_alpha))
             {
-              // Todo: use rrt to expand
+              
               // rrt adds a path of nodes to the node, and return a terminal node
               std::vector<State> state_path =
                   this->m_task->search_a_new_path(node->m_state);

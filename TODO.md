@@ -1,1 +1,0 @@
-- [ ] what if cannot find solutions in the level2tree? when to stop?

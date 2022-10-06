@@ -151,7 +151,7 @@ namespace HMP
 
             while (!this->is_terminal(current_node))
             {
-                this->grow_tree(current_node, compute_options);
+                this->grow_tree(current_node, compute_options); // grow the tree to the end (simulation) for compute_options.max_iteration
                 current_node = this->best_child(current_node);
             }
 

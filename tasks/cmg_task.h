@@ -20,11 +20,9 @@
 #include "../mechanics/worlds/WorldTemplate.h"
 #endif
 
-class RRTTree
-{
+class RRTTree {
 public:
-  struct Node
-  {
+  struct Node {
     Vector7d config; // x, y, z, qx, qy, qz, qw
     int parent = -1;
     int edge = -1; // index of edge from parent to this
@@ -34,10 +32,10 @@ public:
     Node(Vector7d data) { config = data; }
   };
 
-  struct Edge
-  {
+  struct Edge {
     VectorXi mode;
-    Edge(VectorXi m) : mode(m) {}
+    std::vector<Vector7d> path;
+    Edge(VectorXi m, std::vector<Vector7d> &p) : mode(m), path(p) {}
   };
 
   std::vector<Node> nodes;
@@ -46,8 +44,7 @@ public:
   double translation_weight;
   RRTTree(const double &a_weight, const double &p_weight)
       : angle_weight(a_weight), translation_weight(p_weight) {}
-  double dist(const Vector7d &q1, const Vector7d &q2)
-  {
+  double dist(const Vector7d &q1, const Vector7d &q2) {
     Vector3d p1(q1[0], q1[1], q1[2]);
     Vector3d p2(q2[0], q2[1], q2[2]);
     Quaterniond quat1(q1[6], q1[3], q1[4], q1[5]); // Quaterniond: w, x, y, z
@@ -60,56 +57,46 @@ public:
     return d;
   }
 
-  int nearest_neighbor(const Vector7d &q)
-  {
+  int nearest_neighbor(const Vector7d &q) {
     int near_idx;
     double min_d = DBL_MAX;
-    for (int i = 0; i < nodes.size(); i++)
-    {
+    for (int i = 0; i < nodes.size(); i++) {
       double d = this->dist(nodes[i].config, q);
-      if (d < min_d)
-      {
+      if (d < min_d) {
         near_idx = i;
         min_d = d;
       }
     }
     return near_idx;
   }
-  int nearest_unextended_to_goal(const Vector7d &q)
-  {
+  int nearest_unextended_to_goal(const Vector7d &q) {
     int near_idx;
     double min_d = DBL_MAX;
-    for (int i = 0; i < nodes.size(); i++)
-    {
+    for (int i = 0; i < nodes.size(); i++) {
       double d = this->dist(nodes[i].config, q);
-      if ((d < min_d) && (!nodes[i].is_extended_to_goal))
-      {
+      if ((d < min_d) && (!nodes[i].is_extended_to_goal)) {
         near_idx = i;
         min_d = d;
       }
     }
-    if (min_d == DBL_MAX)
-    {
+    if (min_d == DBL_MAX) {
       return -1;
     }
 
     return near_idx;
   }
-  void backtrack(int last_node_idx, std::vector<int> *node_path)
-  {
+  void backtrack(int last_node_idx, std::vector<int> *node_path) {
     int cur_node = last_node_idx;
     node_path->push_back(cur_node);
     bool is_start_node = nodes[cur_node].parent != -1;
-    while (is_start_node)
-    {
+    while (is_start_node) {
       cur_node = nodes[cur_node].parent;
       node_path->push_back(cur_node);
       is_start_node = nodes[cur_node].parent != -1;
     }
     return;
   }
-  void add_node(Node *n, int parent_idx, Edge *e)
-  {
+  void add_node(Node *n, int parent_idx, Edge *e) {
     // int node_idx = nodes.size();
     int edge_idx = edges.size();
     n->parent = parent_idx;
@@ -120,24 +107,24 @@ public:
     return;
   }
 
-  void initial_node(Node *n)
-  {
+  void initial_node(Node *n) {
     n->parent = -1;
     nodes.push_back(*n);
     return;
   }
 };
 
-class CMGTASK
-{
+class CMGTASK {
 
 public:
-  struct State
-  {
+  struct State {
     Vector7d m_pose;
     std::vector<ContactPoint> envs;
     int m_mode_idx = -1; // the mode chosen for this state, to the next state
     std::vector<Eigen::VectorXi> modes;
+    std::vector<Vector7d>
+        m_path; // the path to this state (TODO: only save this path when
+                // m_mode_idx = -1 (node type: "pose"))
 
     State() {}
 
@@ -145,43 +132,40 @@ public:
           const std::vector<Eigen::VectorXi> &modes_)
         : m_pose(pose), envs(envs_), m_mode_idx(mode_idx), modes(modes_) {}
 
-    State(const State &state_)
-    {
+    State(const State &state_) {
       // copy constructor
       m_pose = state_.m_pose;
       m_mode_idx = state_.m_mode_idx;
       modes = state_.modes;
       envs = state_.envs;
+      m_path = state_.m_path;
     }
 
     void do_action(int action) { m_mode_idx = action; }
 
-    State &operator=(const State &state_)
-    {
+    State &operator=(const State &state_) {
       this->m_pose = state_.m_pose;
       this->m_mode_idx = state_.m_mode_idx;
       this->modes = state_.modes;
       this->envs = state_.envs;
+      this->m_path = state_.m_path;
       return *this;
     }
   };
 
-  struct State2
-  {
+  struct State2 {
     int timestep = 0;
     int finger_index; // current finger index
     bool is_valid;
     State2() {}
     State2(int t, int idx) : timestep(t), finger_index(idx) {}
-    void do_action(int action)
-    {
+    void do_action(int action) {
       this->finger_index = action;
       this->timestep++;
     }
   };
 
-  struct SearchOptions
-  {
+  struct SearchOptions {
     // the search options for search_a_new_path using RRT
     Eigen::Vector3d x_lb;
     Eigen::Vector3d x_ub;
@@ -202,8 +186,7 @@ public:
                   double wt, double charac_len, double mu_env, double mu_mnp,
                   Matrix6d object_inertia, Vector6d f_gravity,
                   std::shared_ptr<WorldTemplate> world,
-                  const SearchOptions &options)
-  {
+                  const SearchOptions &options) {
     this->start_object_pose = start_object_pose;
     this->goal_object_pose = goal_object_pose;
     this->goal_thr = goal_thr;
@@ -226,72 +209,83 @@ public:
 
   std::vector<State> search_a_new_path(const State &start_state);
 
-  double evaluate_path(const std::vector<State> &path) const;
-
   bool forward_integration(const Vector7d &x_start, const Vector7d &x_goal,
                            const std::vector<ContactPoint> &envs_,
                            const VectorXi &env_mode_,
                            std::vector<Vector7d> *path);
 
+  double evaluate_path(const std::vector<State> &path) const {
+    // return the REWARD of the path: larger reward -> better path
+
+    // TODO: define reward
+    // double reward = 1 / (double(path.size()-7)*double(path.size()-7)+1);
+
+    // double avg_maintain_contact = 0;
+    // for (auto s:path){
+    //   if (s.m_mode_idx!=-1){
+    //     VectorXi mode = s.modes[s.m_mode_idx];
+    //     avg_maintain_contact += 1 -
+    //     (double(mode.sum())+1)/(double(mode.size())+1);
+    //   }
+    // }
+    // avg_maintain_contact = avg_maintain_contact/double(path.size());
+
+    // double reward = 1 / double(path.size()) + avg_maintain_contact;
+    double reward = 1 / double(path.size());
+
+    return reward;
+  }
+
   // --- Level 2 Tree functions for robot contact planning ----
-  State2 get_start_state2() const
-  {
+  
+  State2 get_start_state2() const {
     State2 state(0, -1);
     return state;
   }
-  double evaluate_path(const std::vector<State2> &path) const
-  {
+  double evaluate_path(const std::vector<State2> &path) const {
 
     int number_of_finger_changes = 0;
     double finger_number = 0;
-    for (int k = 0; k < path.size() - 1; ++k)
-    {
-      if (path[k].finger_index != path[k + 1].finger_index)
-      {
+    for (int k = 0; k < path.size() - 1; ++k) {
+      if (path[k].finger_index != path[k + 1].finger_index) {
         number_of_finger_changes++;
-        
       }
-      finger_number += double(abs(path[k].finger_index - 3))/5;
+      finger_number += double(abs(path[k].finger_index - 3)) / 5;
     }
 
-    double reward_finger_stay = 1.0 - double(number_of_finger_changes) / double(path.size());
+    double reward_finger_stay =
+        1.0 - double(number_of_finger_changes) / double(path.size());
 
     double reward_path_size = 1.0 / double(path.size());
 
-    double reward_finger_1 = 1.0 - finger_number/double(path.size());
+    double reward_finger_1 = 1.0 - finger_number / double(path.size());
 
     return reward_finger_stay + reward_path_size + reward_finger_1;
   }
 
-  double estimate_next_state_value(const State2 & state, int action)
-  {
+  double estimate_next_state_value(const State2 &state, int action) {
     return 0.0;
     // return 0.0 for now, can use neural networks to estimate values
   }
 
-  int get_number_of_robot_actions(const State2 & state)
-  {
+  int get_number_of_robot_actions(const State2 &state) {
     // return combination of fingers for now
     return pow(this->object_surface_pts.size(), this->number_of_robot_contacts);
   }
 
-  bool is_terminal(const State2 &state)
-  { // check if terminal, also check if valid, if not valid it is also terminal
-    if (!state.is_valid)
-    {
+  bool
+  is_terminal(const State2 &state) { // check if terminal, also check if valid,
+                                     // if not valid it is also terminal
+    if (!state.is_valid) {
       return true;
-    }
-    else
-    {
-      if (state.timestep >= this->saved_object_trajectory.size() - 1)
-      {
+    } else {
+      if (state.timestep >= this->saved_object_trajectory.size() - 1) {
         return true;
       }
     }
     return false;
   }
-  bool is_valid(const State2 & state)
-  {
+  bool is_valid(const State2 &state) {
     // TODO: check for collision, balance
     return true;
   }

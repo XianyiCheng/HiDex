@@ -777,7 +777,7 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
         if (path.size() > 1) {
 
           RRTTree::Node new_node(path.back());
-          RRTTree::Edge new_edge(mode);
+          RRTTree::Edge new_edge(mode, path);
 
           rrt_tree.add_node(&new_node, near_idx, &new_edge);
         }
@@ -831,34 +831,15 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
       CMGTASK::State new_state(rrt_tree.nodes[kn].config,
                                rrt_tree.nodes[kn].envs, mode_idx,
                                rrt_tree.nodes[kn].modes);
+      new_state.m_path = rrt_tree.edges[rrt_tree.nodes[kn].edge].path;
       path_.push_back(new_state);
     }
     CMGTASK::State new_state(rrt_tree.nodes[node_path.back()].config,
                              rrt_tree.nodes[node_path.back()].envs, -1,
                              rrt_tree.nodes[node_path.back()].modes);
+    new_state.m_path = rrt_tree.edges[rrt_tree.nodes[node_path.back()].edge].path;
     path_.push_back(new_state);
   }
 
   return path_;
-}
-
-double CMGTASK::evaluate_path(const std::vector<CMGTASK::State> &path) const {
-  // return the REWARD of the path: larger reward -> better path
-
-  // TODO: define reward
-  // double reward = 1 / (double(path.size()-7)*double(path.size()-7)+1);
-  
-  // double avg_maintain_contact = 0;
-  // for (auto s:path){
-  //   if (s.m_mode_idx!=-1){
-  //     VectorXi mode = s.modes[s.m_mode_idx];
-  //     avg_maintain_contact += 1 - (double(mode.sum())+1)/(double(mode.size())+1);
-  //   }
-  // }
-  // avg_maintain_contact = avg_maintain_contact/double(path.size());
-
-  // double reward = 1 / double(path.size()) + avg_maintain_contact;
-  double reward = 1 / double(path.size());
-
-  return reward;
 }
