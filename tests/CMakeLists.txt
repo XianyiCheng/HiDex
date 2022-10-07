@@ -25,7 +25,7 @@ set(dart_libs dart dart-utils-urdf dart-gui dart-collision-bullet)
 # target_include_directories(test_level1 PRIVATE ${external_dirs})
 # target_link_libraries(test_level1 PRIVATE mcts-mechanics)
 
-add_executable(test_cmg test_level1_cmg.cpp ../tasks/cmg_task.cpp)
+add_executable(test_cmg test_level1_cmg.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
 
 # target_include_directories(test_cmg PUBLIC ${example_include_dirs})
 # target_include_directories(test_cmg PRIVATE ${example_include_dirs})

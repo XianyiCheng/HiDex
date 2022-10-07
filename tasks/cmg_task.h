@@ -20,6 +20,10 @@
 #include "../mechanics/worlds/WorldTemplate.h"
 #endif
 
+#define CMG_QUASISTATIC 0
+#define CMG_QUASIDYNAMIC 1
+#define CMG_NODYNAMICS -1
+
 class RRTTree {
 public:
   struct Node {
@@ -69,6 +73,21 @@ public:
     }
     return near_idx;
   }
+
+  std::vector<int> nearest_neighbors(const Vector7d &q) {
+    int near_idx = this->nearest_neighbor(q);
+    double min_d = this->dist(nodes[near_idx].config,q);
+
+    std::vector<int> near_idxes;
+    for (int i = 0; i < nodes.size(); i++) {
+      double d = this->dist(nodes[i].config, q);
+      if ((d - min_d)*(d - min_d) < 1e-3) {
+        near_idxes.push_back(i);
+      }
+    }
+    return near_idxes;
+  }
+
   int nearest_unextended_to_goal(const Vector7d &q) {
     int near_idx;
     double min_d = DBL_MAX;
@@ -237,12 +256,49 @@ public:
   }
 
   // --- Level 2 Tree functions for robot contact planning ----
-  
+
+  std::vector<int> get_finger_locations(int finger_location_index) {
+
+    int N = this->object_surface_pts.size();
+    int n = this->number_of_robot_contacts;
+    int x = finger_location_index;
+
+    std::vector<int> finger_locations;
+    for (int k = 0; k < n; ++k) {
+      int a = int(x / pow(N, (n - k - 1)));
+      x -= a * (int)pow(N, (n - k - 1));
+
+      finger_locations.push_back(a);
+    }
+    return finger_locations;
+  }
+
+  VectorXd get_robot_config_from_action_idx(int action_index) {
+
+    std::vector<int> finger_locations =
+        this->get_finger_locations(action_index);
+
+    // for point fingers
+    VectorXd mnp_config(6 * finger_locations.size());
+    for (int k = 0; k < finger_locations.size(); ++k) {
+      mnp_config.block(6 * k, 0, 3, 1) =
+          this->object_surface_pts[finger_locations[k]].p;
+      mnp_config.block(6 * k + 3, 0, 3, 1) =
+          this->object_surface_pts[finger_locations[k]].n;
+    }
+
+    return mnp_config;
+  }
+
   State2 get_start_state2() const {
     State2 state(0, -1);
     return state;
   }
   double evaluate_path(const std::vector<State2> &path) const {
+
+    if (!path.back().is_valid) {
+      return 0.0;
+    }
 
     int number_of_finger_changes = 0;
     double finger_number = 0;
@@ -258,9 +314,9 @@ public:
 
     double reward_path_size = 1.0 / double(path.size());
 
-    double reward_finger_1 = 1.0 - finger_number / double(path.size());
+    // double reward_finger_1 = 1.0 - finger_number / double(path.size());
 
-    return reward_finger_stay + reward_path_size + reward_finger_1;
+    return reward_finger_stay + reward_path_size;
   }
 
   double estimate_next_state_value(const State2 &state, int action) {
@@ -273,9 +329,9 @@ public:
     return pow(this->object_surface_pts.size(), this->number_of_robot_contacts);
   }
 
-  bool
-  is_terminal(const State2 &state) { // check if terminal, also check if valid,
-                                     // if not valid it is also terminal
+  bool is_terminal(const State2 &state) {
+    // check if terminal, also check if valid,
+    // if not valid it is also terminal
     if (!state.is_valid) {
       return true;
     } else {
@@ -285,14 +341,14 @@ public:
     }
     return false;
   }
-  bool is_valid(const State2 &state) {
-    // TODO: check for collision, balance
-    return true;
-  }
+
+  bool is_valid(const State2 &state);
 
   std::vector<State> saved_object_trajectory;
   std::vector<ContactPoint> object_surface_pts;
   int number_of_robot_contacts;
+
+  int task_dynamics_type = CMG_QUASISTATIC;
 
 private:
   bool m_initialized = false;

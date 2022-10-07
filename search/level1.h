@@ -192,6 +192,9 @@ namespace HMP
                   node = new_node; // the last node has node->number_of_next_actions
                                    // = 0
                 }
+              } else {
+                // couldn't find a new path through search, update this node with zero reward for one simulation
+                node->update(0.0);
               }
               break;
             }

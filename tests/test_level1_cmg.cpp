@@ -6,39 +6,45 @@
 
 #include "../mechanics/utilities/utilities.h"
 
-#include "../mechanics/worlds/DartWorld.h"
 #include "../mechanics/utilities/parser.hpp"
+#include "../mechanics/worlds/DartWorld.h"
+#include "../mechanics/manipulators/DartPointManipulator.h"
 
 #ifndef DART_UTILS
 #define DART_UTILS
 #include "../mechanics/dart_utils/dart_utils.h"
 #endif
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 
   std::shared_ptr<CMGTASK> task = std::make_shared<CMGTASK>();
 
   // create world, create environment, an object sliding on the table
 
+  double box_length = 0.05;
+
   std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
 
-  SkeletonPtr object = createFreeBox("box_object", 0.05 * Vector3d(1, 1, 1));
+  SkeletonPtr object = createFreeBox("box_object", box_length * Vector3d(1, 1, 1));
   SkeletonPtr env1 =
       createFixedBox("ground", Vector3d(2, 2, 0.2), Vector3d(0, 0, -0.1));
 
   world->addObject(object);
   world->addEnvironmentComponent(env1);
 
+  int n_robot_contacts = 1;
+  DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, box_length*0.2);
+  world->addRobot(rpt);
+
   // set the task parameters, start, goal, object inertial, etc....
 
   Vector7d x_start;
   Vector7d x_goal;
-  x_start << 0, 0, 0.025 * 0.9999, 0, 0, 0, 1;
+  x_start << 0, 0, box_length/2 * 0.9999, 0, 0, 0, 1;
   // x_goal << 0.48, 0, 0.025 * 0.9999, 0, 0, 0, 1;
-  x_goal << 0.1, 0, 0.025 * 0.9999, 0, 0.7071, 0, 0.7071;
+  x_goal << 0.1, 0, box_length/2 * 0.9999, 0, 0.7071, 0, 0.7071;
 
-  double goal_thr = 0.05 * 3.14 * 30 / 180;
+  double goal_thr = box_length * 3.14 * 30 / 180;
 
   double wa = 0.3;
   double wt = 10;
@@ -74,27 +80,27 @@ int main(int argc, char *argv[])
 
   // read surface point, add robot contacts
 
-  std::ifstream f(std::string(SRC_DIR)+"/data/test_finger_contact/surface_contacts.csv");
+  std::ifstream f(std::string(SRC_DIR) +
+                  "/data/test_finger_contact/surface_contacts.csv");
   aria::csv::CsvParser parser(f);
 
-  for (auto &row : parser)
-  {
+  for (auto &row : parser) {
     int n_cols = row.size();
     assert(n_cols == 6);
 
     Vector6d v;
-    for (int j = 0; j < 6; ++j)
-    {
+    for (int j = 0; j < 6; ++j) {
       v(j) = std::stod(row[j]);
     }
-    ContactPoint p(v.head(3), v.tail(3));
+    ContactPoint p(box_length/2*v.head(3), v.tail(3));
     task->object_surface_pts.push_back(p);
   }
   task->number_of_robot_contacts = 1;
 
   CMGTASK::State start_state = task->get_start_state();
 
-  HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(task, start_state);
+  HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(task,
+                                                                 start_state);
 
   HMP::MCTSOptions compute_options;
   compute_options.max_iterations =
@@ -108,19 +114,20 @@ int main(int argc, char *argv[])
 
   std::vector<Vector7d> object_traj;
 
-  for (int kk = 0; kk < object_trajectory.size(); ++kk)
-  {
+  for (int kk = 0; kk < object_trajectory.size(); ++kk) {
     std::cout << "Timestep " << kk << std::endl;
-    std::cout << "Pose " << object_trajectory[kk].m_pose.transpose() << std::endl;
+    std::cout << "Pose " << object_trajectory[kk].m_pose.transpose()
+              << std::endl;
     std::cout << "Action " << action_trajectory[kk].finger_index << std::endl;
     // object_traj.push_back(object_trajectory[kk].m_pose);
-    object_traj.insert(object_traj.end(), object_trajectory[kk].m_path.begin(), object_trajectory[kk].m_path.end());
+    object_traj.insert(object_traj.end(), object_trajectory[kk].m_path.begin(),
+                       object_trajectory[kk].m_path.end());
   }
 
-  for (auto p: object_traj){
-    std::cout<< p.transpose() << std::endl;
+  for (auto p : object_traj) {
+    std::cout << p.transpose() << std::endl;
   }
-  world->setObjectTrajectory(object_traj);
 
-  world->startWindow(&argc, argv);
+  // world->setObjectTrajectory(object_traj);
+  // world->startWindow(&argc, argv);
 }

@@ -71,7 +71,7 @@ namespace HMP
   {
 
   public:
-    double ita = 0.1;             // hyper-parameter controlling the degree of exploration
+    double ita = 0.2;             // hyper-parameter controlling the degree of exploration
     std::shared_ptr<Task> m_task; // a shared pointer for Task
     std::unique_ptr<Node<State>>
         m_root_node;             // unique pointer for root node to store everything
