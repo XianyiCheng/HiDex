@@ -185,9 +185,9 @@ namespace HMP
 
         Node<State> *new_node = this->next_node(node, k);
 
-        double U = new_node->m_value + ita * (1 / node->number_of_next_actions) *
+        double U = new_node->m_value + ita * (1 / double(node->number_of_next_actions)) *
                                            std::sqrt(double(node->m_visits)) /
-                                           (1 + new_node->m_visits);
+                                           (1 + double(new_node->m_visits));
 
         if (U > U_max)
         {

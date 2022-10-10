@@ -41,8 +41,8 @@ int main(int argc, char *argv[]) {
   Vector7d x_start;
   Vector7d x_goal;
   x_start << 0, 0, box_length/2 * 0.9999, 0, 0, 0, 1;
-  // x_goal << 0.48, 0, 0.025 * 0.9999, 0, 0, 0, 1;
-  x_goal << 0.1, 0, box_length/2 * 0.9999, 0, 0.7071, 0, 0.7071;
+  x_goal << 0.48, 0, 0.025 * 0.9999, 0, 0, 0, 1;
+  // x_goal << 0.1, 0, box_length/2 * 0.9999, 0, 0.7071, 0, 0.7071;
 
   double goal_thr = box_length * 3.14 * 30 / 180;
 
@@ -108,11 +108,15 @@ int main(int argc, char *argv[]) {
 
   HMP::Node<CMGTASK::State> *current_node = tree.search_tree(compute_options);
 
+  
+
   std::vector<CMGTASK::State> object_trajectory;
   std::vector<CMGTASK::State2> action_trajectory;
   tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
 
   std::vector<Vector7d> object_traj;
+
+  std::cout << "Best value " << current_node->m_value << std::endl;
 
   for (int kk = 0; kk < object_trajectory.size(); ++kk) {
     std::cout << "Timestep " << kk << std::endl;

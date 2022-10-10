@@ -144,6 +144,7 @@ public:
     std::vector<Vector7d>
         m_path; // the path to this state (TODO: only save this path when
                 // m_mode_idx = -1 (node type: "pose"))
+    VectorXi path_ss_mode; // store the ss_mode of the path to this state
 
     State() {}
 
@@ -151,25 +152,25 @@ public:
           const std::vector<Eigen::VectorXi> &modes_)
         : m_pose(pose), envs(envs_), m_mode_idx(mode_idx), modes(modes_) {}
 
-    State(const State &state_) {
-      // copy constructor
-      m_pose = state_.m_pose;
-      m_mode_idx = state_.m_mode_idx;
-      modes = state_.modes;
-      envs = state_.envs;
-      m_path = state_.m_path;
-    }
+    // State(const State &state_) {
+    //   // copy constructor
+    //   m_pose = state_.m_pose;
+    //   m_mode_idx = state_.m_mode_idx;
+    //   modes = state_.modes;
+    //   envs = state_.envs;
+    //   m_path = state_.m_path;
+    // }
 
     void do_action(int action) { m_mode_idx = action; }
 
-    State &operator=(const State &state_) {
-      this->m_pose = state_.m_pose;
-      this->m_mode_idx = state_.m_mode_idx;
-      this->modes = state_.modes;
-      this->envs = state_.envs;
-      this->m_path = state_.m_path;
-      return *this;
-    }
+    // State &operator=(const State &state_) {
+    //   this->m_pose = state_.m_pose;
+    //   this->m_mode_idx = state_.m_mode_idx;
+    //   this->modes = state_.modes;
+    //   this->envs = state_.envs;
+    //   this->m_path = state_.m_path;
+    //   return *this;
+    // }
   };
 
   struct State2 {

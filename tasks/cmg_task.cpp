@@ -451,6 +451,8 @@ bool isQuasistatic(const std::vector<ContactPoint> &mnps,
                    const VectorXi &env_mode, const Vector6d &f_ext_w,
                    const Vector7d object_pose, double mu_env, double mu_mnp,
                    ContactConstraints *cons) {
+  
+  // std::cout << env_mode << std::endl;
 
   if (mnps.size() + envs.size() == 0) {
     return false;
@@ -515,22 +517,24 @@ bool isQuasistatic(const std::vector<ContactPoint> &mnps,
 
   bool result = lp(C, -G, -h, A, b, xl, xu, &x, &optimal_cost);
 
-  VectorXd sigma = VectorXd::Constant(b.size(), 1e-4);
-  MatrixXd A_relax;
-  MatrixXd G_relax(G.rows() + 2 * A.rows(), n_var);
-  VectorXd b_relax;
-  VectorXd h_relax(G.rows() + 2 * A.rows());
-  h_relax.setZero();
-  G_relax.block(0, 0, G.rows(), n_var) = G;
-  G_relax.block(G.rows(), 0, A.rows(), n_var) = A;
-  G_relax.block(G.rows() + A.rows(), 0, A.rows(), n_var) = -A;
-  h_relax.block(G.rows(), 0, A.rows(), 1) = b - sigma;
-  h_relax.block(G.rows() + A.rows(), 0, A.rows(), 1) = -(b + sigma);
+  return result;
 
-  bool result_relax =
-      lp(C, -G_relax, -h_relax, A_relax, b_relax, xl, xu, &x, &optimal_cost);
+  // VectorXd sigma = VectorXd::Constant(b.size(), 1e-4);
+  // MatrixXd A_relax;
+  // MatrixXd G_relax(G.rows() + 2 * A.rows(), n_var);
+  // VectorXd b_relax;
+  // VectorXd h_relax(G.rows() + 2 * A.rows());
+  // h_relax.setZero();
+  // G_relax.block(0, 0, G.rows(), n_var) = G;
+  // G_relax.block(G.rows(), 0, A.rows(), n_var) = A;
+  // G_relax.block(G.rows() + A.rows(), 0, A.rows(), n_var) = -A;
+  // h_relax.block(G.rows(), 0, A.rows(), 1) = b - sigma;
+  // h_relax.block(G.rows() + A.rows(), 0, A.rows(), 1) = -(b + sigma);
 
-  return result_relax;
+  // bool result_relax =
+  //     lp(C, -G_relax, -h_relax, A_relax, b_relax, xl, xu, &x, &optimal_cost);
+
+  // return result_relax;
 }
 
 bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
@@ -987,7 +991,8 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
                       this->goal_object_pose) <= goal_thr) {
       printf("Found goal node in %d samples. \n", kk + 1);
 
-    // if there are multiple nearest neighbor, we need to choose the one with most constraints
+      // if there are multiple nearest neighbor, we need to choose the one with
+      // most constraints
       std::vector<int> goal_near_idxes =
           rrt_tree.nearest_neighbors(this->goal_object_pose);
       int max_n_constraints = 0;
@@ -995,22 +1000,26 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
         int n_constraints = 0;
         std::vector<int> node_path;
         rrt_tree.backtrack(idx, &node_path);
-        for (int k = 1; k < node_path.size() - 1; k++) {
+        std::reverse(node_path.begin(), node_path.end());
+        for (int k = 0; k < node_path.size() - 1; k++) {
           int kn = node_path[k];
           int k_child = node_path[k + 1];
-          VectorXi mode_goal_path = rrt_tree.edges[rrt_tree.nodes[k_child].edge].mode;
-          if (mode_goal_path.size()!=0){
-          VectorXi cs_mode_goal_path = mode_goal_path.head(rrt_tree.nodes[kn].modes[0].size());
+          VectorXi mode_goal_path =
+              rrt_tree.edges[rrt_tree.nodes[k_child].edge].mode;
+          if (mode_goal_path.size() != 0) {
+            VectorXi cs_mode_goal_path =
+                mode_goal_path.head(rrt_tree.nodes[kn].modes[0].size());
             n_constraints += cs_mode_goal_path.size() - cs_mode_goal_path.sum();
           }
         }
-        if (n_constraints>max_n_constraints){
+        if (n_constraints >
+            max_n_constraints) { // TODO: this may cause some mode path
+                                 // consitently got ignored
           goal_idx = idx;
         }
       }
       break;
     }
-
   }
 
   bool ifsuccess = false;
@@ -1053,6 +1062,7 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
                                rrt_tree.nodes[kn].envs, mode_idx,
                                rrt_tree.nodes[kn].modes);
       new_state.m_path = rrt_tree.edges[rrt_tree.nodes[kn].edge].path;
+      new_state.path_ss_mode = rrt_tree.edges[rrt_tree.nodes[kn].edge].mode;
       path_.push_back(new_state);
     }
     CMGTASK::State new_state(rrt_tree.nodes[node_path.back()].config,
@@ -1060,6 +1070,8 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
                              rrt_tree.nodes[node_path.back()].modes);
     new_state.m_path =
         rrt_tree.edges[rrt_tree.nodes[node_path.back()].edge].path;
+    new_state.path_ss_mode =
+        rrt_tree.edges[rrt_tree.nodes[node_path.back()].edge].mode;
     path_.push_back(new_state);
   }
 
@@ -1067,12 +1079,17 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
 }
 
 bool CMGTASK::is_valid(const CMGTASK::State2 &state) {
-
-  if ((state.timestep == 0) ||
-      (state.timestep >= this->saved_object_trajectory.size() - 1)) {
+  // TODO: we need finer path to calculate both quasistatic feasibility and
+  // quasidynamic feasibility finer that state1 path (maybe modify the
+  // saved_object_trajectory)
+  if (state.timestep == 0) {
     return true;
   }
-  Vector7d x_object = this->saved_object_trajectory[state.timestep].m_pose;
+
+
+  // consider the transition from previous timestep to current state is valid
+  int pre_timestep = state.timestep - 1;
+  Vector7d x_object = this->saved_object_trajectory[pre_timestep].m_pose;
   this->m_world->updateObjectPose(x_object);
 
   int finger_idx = state.finger_index;
@@ -1109,42 +1126,45 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state) {
 
   bool dynamic_feasibility = true;
 
-  std::vector<VectorXi> ss_modes;
-  enumerate_ss_modes(
-      *this->cons.get(), this->saved_object_trajectory[state.timestep].envs,
-      this->saved_object_trajectory[state.timestep]
-          .modes[this->saved_object_trajectory[state.timestep].m_mode_idx],
-      &ss_modes);
+  // std::vector<VectorXi> ss_modes;
+  // enumerate_ss_modes(
+  //     *this->cons.get(), this->saved_object_trajectory[pre_timestep].envs,
+  //     this->saved_object_trajectory[pre_timestep]
+  //         .modes[this->saved_object_trajectory[pre_timestep].m_mode_idx],
+  //     &ss_modes);
+
+  VectorXi ss_mode = this->saved_object_trajectory[state.timestep].path_ss_mode;
 
   if (this->task_dynamics_type == CMG_QUASISTATIC) {
 
-    // TODO: this is hacky! Write the solutions without enumerating ss modes
-    for (auto ss_mode : ss_modes) {
-      dynamic_feasibility = isQuasistatic(
-          mnps, this->saved_object_trajectory[state.timestep].envs, ss_mode,
-          this->f_gravity, x_object, this->mu_env, this->mu_mnp,
-          this->cons.get());
-      if (dynamic_feasibility) {
-        break;
-      }
-    }
+    // TODO: this is wrong!!! You must have ss_modes saved.
+    // for (auto ss_mode : ss_modes) {
+      dynamic_feasibility =
+          isQuasistatic(mnps, this->saved_object_trajectory[pre_timestep].envs,
+                        ss_mode, this->f_gravity, x_object, this->mu_env,
+                        this->mu_mnp, this->cons.get());
+    //   if (dynamic_feasibility) {
+    //     break;
+    //   }
+    // }
   } else if (this->task_dynamics_type == CMG_QUASIDYNAMIC) {
     double h_time = 0.01;
     Vector6d v = compute_rbvel_body(
-        x_object, this->saved_object_trajectory[state.timestep + 1].m_pose);
-    for (auto ss_mode : ss_modes) {
+        x_object, this->saved_object_trajectory[state.timestep].m_pose);
+    // for (auto ss_mode : ss_modes) {
       dynamic_feasibility = isQuasidynamic(
-          v, mnps, this->saved_object_trajectory[state.timestep].envs, ss_mode,
+          v, mnps, this->saved_object_trajectory[pre_timestep].envs, ss_mode,
           this->f_gravity, this->object_inertia, x_object, this->mu_env,
-          this->mu_mnp, this->wa, this->wt, 0.01, this->cons.get());
+          this->mu_mnp, this->wa, this->wt, h_time, this->cons.get());
 
-      if (dynamic_feasibility) {
-        break;
-      }
-    }
+    //   if (dynamic_feasibility) {
+    //     break;
+    //   }
+    // }
   }
 
   // TODO: also check if the relocation is feasible
 
   return dynamic_feasibility;
+
 }
