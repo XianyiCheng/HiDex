@@ -35,7 +35,7 @@ namespace HMP
     std::string m_type; // store any type information for interleaving node types
 
     Node *m_parent;
-    int m_action = -1;
+    int m_action = -1; // action that lead to this node
     int number_of_next_actions = 0; // action actions are stored in state
     State m_state;
     std::vector<Node *> m_children;

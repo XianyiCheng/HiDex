@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
   Vector7d x_start;
   Vector7d x_goal;
   x_start << 0, 0, box_length/2 * 0.9999, 0, 0, 0, 1;
-  x_goal << 0.48, 0, 0.025 * 0.9999, 0, 0, 0, 1;
+  x_goal << 0.48, 0, box_length/2 * 0.9999, 0, 0, 0, 1;
   // x_goal << 0.1, 0, box_length/2 * 0.9999, 0, 0.7071, 0, 0.7071;
 
   double goal_thr = box_length * 3.14 * 30 / 180;
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
   rrt_options.x_ub << 1, 1, 0.1;
   rrt_options.x_lb << -1, -1, 0.0;
 
-  rrt_options.eps_trans = 0.5;
+  rrt_options.eps_trans = 0.1;
   rrt_options.eps_angle = 3.14 * 95 / 180;
   rrt_options.max_samples = 20;
 
@@ -105,8 +105,11 @@ int main(int argc, char *argv[]) {
   HMP::MCTSOptions compute_options;
   compute_options.max_iterations =
       20; // maximum iteration for search from the root node
+  HMP::MCTSOptions compute_options_1st;
+  compute_options_1st.max_iterations =
+      50; // maximum iteration for search from the root node
 
-  HMP::Node<CMGTASK::State> *current_node = tree.search_tree(compute_options);
+  HMP::Node<CMGTASK::State> *current_node = tree.search_tree(compute_options_1st, compute_options);
 
   
 
