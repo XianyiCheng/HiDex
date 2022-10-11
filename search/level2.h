@@ -1,7 +1,7 @@
 #include "base.h"
 #ifndef UTILS_H
 #define UTILS_H
-    #include "../mechanics/utilities/utilities.h"
+#include "../mechanics/utilities/utilities.h"
 #endif
 namespace HMP
 {
@@ -72,6 +72,11 @@ namespace HMP
             {
                 return 0.0;
             }
+
+            if (node->m_visits > 0)
+            {
+                return node->m_value;
+            }
             std::vector<State> state_path;
 
             state_path.push_back(node->m_state);
@@ -104,6 +109,12 @@ namespace HMP
             // TODO: need to improve this!
             double U_max = -1.0;
             int action_idx = -1;
+
+            // Specific to the planning robot contact problem: with 0.5 probability, we will select the current action
+            if ((randd() > 0.5) && (node->m_action != -1))
+            {
+                return node->m_action;
+            }
 
             std::vector<int> explored_actions;
 
@@ -144,7 +155,7 @@ namespace HMP
             return action_idx;
         }
 
-        Node<State>* search_tree(const MCTSOptions &compute_options)
+        Node<State> *search_tree(const MCTSOptions &compute_option_1st_iter, const MCTSOptions &compute_options)
         {
 
             Node<State> *current_node = this->m_root_node.get();
