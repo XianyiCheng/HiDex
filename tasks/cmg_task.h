@@ -453,18 +453,19 @@ public:
     }
 
     int number_of_finger_changes = 0;
-    double finger_number = 0;
     for (int k = 0; k < path.size() - 1; ++k) {
       if (path[k].finger_index != path[k + 1].finger_index) {
         number_of_finger_changes++;
       }
-      finger_number += double(abs(path[k].finger_index - 3)) / 5;
     }
 
+    // double reward_finger_stay =
+    //     1.0 - (double(number_of_finger_changes)) / double(path.size());
     double reward_finger_stay =
-        1.0 - (double(number_of_finger_changes)) / double(path.size());
+        1.0 - (double(number_of_finger_changes*number_of_finger_changes)) / (2* double(path.size()));
+    reward_finger_stay = std::max(reward_finger_stay, 0.0);
 
-    double reward_path_size = 1.0 / double(path.size());
+    double reward_path_size = 3.0 / double(path.size());
 
     // double reward_finger_1 = 1.0 - finger_number / double(path.size());
 

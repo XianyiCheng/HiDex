@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
   rrt_options.x_ub << 1, 1, 0.1;
   rrt_options.x_lb << -1, -1, 0.0;
 
-  rrt_options.eps_trans = 0.07;
+  rrt_options.eps_trans = 0.1;
   rrt_options.eps_angle = 3.14 * 95 / 180;
   rrt_options.max_samples = 20;
 
