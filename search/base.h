@@ -44,8 +44,9 @@ namespace HMP
 
     Node(const State &state_) { m_state = state_; }
 
-    Node(const State &state_, int action_, Node *parent_) : Node(state_)
+    Node(const State &state_, int action_, Node *parent_)
     {
+      m_state = state_;
       m_action = action_;
       m_parent = parent_;
     }

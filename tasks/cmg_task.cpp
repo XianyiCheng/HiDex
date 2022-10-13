@@ -390,14 +390,8 @@ Vector6d EnvironmentConstrainedVelocity(const Vector6d &v_goal,
   VectorXd b;
   VectorXd h;
 
-  // std::cout << "A_env\n" << A_env.block(0,0,A_env.rows(),6) << std::endl;
-  // std::cout << "G_env\n" << G_env.block(0,0,G_env.rows(),6) << std::endl;
-
   deleteZeroRows(A_env.block(0, 0, A_env.rows(), 6), b_env, &A, &b);
   deleteZeroRows(G_env.block(0, 0, G_env.rows(), 6), h_env, &G, &h);
-
-  // std::cout << "A\n" << A << std::endl;
-  // std::cout << "G\n" << G << std::endl;
 
   mergeDependentRows(A, b, &A, &b);
 
@@ -451,7 +445,7 @@ bool isQuasistatic(const std::vector<ContactPoint> &mnps,
                    const VectorXi &env_mode, const Vector6d &f_ext_w,
                    const Vector7d object_pose, double mu_env, double mu_mnp,
                    ContactConstraints *cons) {
-  
+
   // std::cout << env_mode << std::endl;
 
   if (mnps.size() + envs.size() == 0) {
@@ -646,7 +640,8 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
                                   const VectorXi &env_mode_,
                                   std::vector<Vector7d> *path) {
 
-  std::cout << "Forward integration from: " << x_start.transpose() << std::endl;
+  // std::cout << "Forward integration from: " << x_start.transpose() <<
+  // std::endl;
 
   double thr = 1e-4;
 
@@ -675,7 +670,7 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
     Vector6d v_star = compute_rbvel_body(x, x_goal);
 
     if (v_star.norm() < thr) {
-      std::cout << "v_star < thr : " << v_star.transpose() << std::endl;
+      // std::cout << "v_star < thr : " << v_star.transpose() << std::endl;
       break;
     }
 
@@ -690,12 +685,12 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
         EnvironmentConstrainedVelocity(v_star, envs, env_mode, *this->cons);
 
     if (v_b.norm() < thr) {
-      std::cout << "v_b < thr : " << v_b.transpose() << std::endl;
+      // std::cout << "v_b < thr : " << v_b.transpose() << std::endl;
       break;
     }
 
     if ((v_b_pre.transpose() * v_b)[0] < -1e-5) {
-      printf("v_b back and forth. \n");
+      // printf("v_b back and forth. \n");
       break;
     }
 
@@ -728,8 +723,8 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
       x = x_new;
       envs.clear();
       this->m_world->getObjectContacts(&envs, x_new);
-      printf("Made new contacts! \n");
-      print_contacts(envs);
+      // printf("Made new contacts! \n");
+      // print_contacts(envs);
       break;
     }
 
@@ -746,7 +741,7 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
           delete_c++;
           if (delete_c > 4)
             break;
-          printf("Collision Detection delelte contacting mode \n");
+          // printf("Collision Detection delelte contacting mode \n");
           Vector6d v_corr =
               recoverContactingContacts(envs_pre, env_mode, remain_idx);
           x_new = SE32pose(pose2SE3(x_new) * se32SE3(v_corr));
@@ -772,11 +767,11 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
     path->push_back(x);
 
     if (counter == max_counter - 1) {
-      printf("Reach the end.\n");
+      // printf("Reach the end.\n");
     }
   }
 
-  std::cout << "counter:" << counter << " x: " << x.transpose() << std::endl;
+  // std::cout << "counter:" << counter << " x: " << x.transpose() << std::endl;
 
   return true;
 }
@@ -817,6 +812,37 @@ void enumerate_ss_modes(ContactConstraints &cons,
 // -----------------------------------------------------------
 // CMGTASK
 
+void CMGTASK::initialize(const Vector7d &start_object_pose,
+                         const Vector7d &goal_object_pose, double goal_thr,
+                         double wa, double wt, double charac_len, double mu_env,
+                         double mu_mnp, Matrix6d object_inertia,
+                         Vector6d f_gravity,
+                         std::shared_ptr<WorldTemplate> world,
+                         const SearchOptions &options) {
+  this->start_object_pose = start_object_pose;
+  this->goal_object_pose = goal_object_pose;
+  this->goal_thr = goal_thr;
+  this->wa = wa;
+  this->wt = wt;
+  this->charac_len = charac_len;
+  this->mu_env = mu_env;
+  this->mu_mnp = mu_mnp;
+  this->object_inertia = object_inertia;
+  this->f_gravity = f_gravity;
+  this->search_options = options;
+  this->m_initialized = true;
+  this->m_world = world;
+
+  // initialize the shared RRT
+  shared_rrt =
+      std::make_shared<ReusableRRT>(this->wa, this->charac_len * this->wt);
+  ReusableRRT::Node start_node(start_object_pose);
+
+  this->m_world->getObjectContacts(&(start_node.envs), start_node.config);
+  enumerate_cs_modes(*this->cons.get(), start_node.envs, &start_node.modes);
+  shared_rrt->initial_node(&start_node);
+}
+
 CMGTASK::State CMGTASK::generate_state(const Vector7d &object_pose) const {
   CMGTASK::State state_;
   state_.m_pose = object_pose;
@@ -827,7 +853,7 @@ CMGTASK::State CMGTASK::generate_state(const Vector7d &object_pose) const {
 }
 
 std::vector<CMGTASK::State>
-CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
+CMGTASK::search_a_new_path_old(const CMGTASK::State &start_state) {
   // search a new path towards the end, given the START_STATE and M_MODE_IDX!!!
 
   // during the search, it figure out the constriants (modes) for the states
@@ -1078,6 +1104,285 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
   return path_;
 }
 
+std::vector<CMGTASK::State>
+CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
+  // search a new path towards the end, given the START_STATE and M_MODE_IDX!!!
+
+  // during the search, it figure out the constriants (modes) for the states
+  // for now just return linear interpolation towards the sampled state
+
+  // every state need to be associated with m_mode_idx (mode to this state)
+
+  // int action_idx = start_state.m_mode_idx;
+
+  // find the root node idx and the subtree_node_idxes
+  std::vector<CMGTASK::State> path_;
+
+  std::cout << "Search a new path with shared rrt" << std::endl;
+
+  int root_node_idx = shared_rrt->find_node(start_state.m_pose, start_state.path_ss_mode.size()/3);
+
+  // In this case we are allowed to expand the root_node_under our specified
+  // mode (after it has been expanded towards the goal for all modes in the
+  // first time)
+  shared_rrt->nodes[root_node_idx].is_explored = false;
+
+  if (shared_rrt->dist(start_state.m_pose,
+                       shared_rrt->nodes[root_node_idx].config) > 1e-3) {
+    std::cout << "The start state you requested is not in the shared_rrt tree. "
+                 "There is a bug in your code."
+              << std::endl;
+    exit(-1);
+  }
+
+  std::vector<int> subtree = shared_rrt->subtree_node_idxes(
+      root_node_idx, start_state.modes[start_state.m_mode_idx]);
+
+  set_rand_seed();
+
+  int goal_idx = -1;
+
+  // -------
+  bool if_extend_root_to_goal = false;
+  if (!shared_rrt->nodes[root_node_idx].has_been_root) {
+    if_extend_root_to_goal = true;
+    shared_rrt->nodes[root_node_idx].has_been_root = true;
+    shared_rrt->nodes[root_node_idx].is_extended_to_goal = true;
+  }
+
+  for (int kk = 0; kk < this->search_options.max_samples; kk++) {
+
+    // std::cout << "rrt iter: " << kk << std::endl;
+
+    // bias sample toward the goal
+    Vector7d x_rand;
+    int near_idx;
+
+    if (randd() > this->search_options.goal_biased_prob) {
+      Vector3d p_rand;
+      Quaterniond q_rand;
+      p_rand =
+          sample_position(this->search_options.x_ub, this->search_options.x_lb);
+
+      q_rand = (this->search_options.sampleSO3)
+                   ? generate_unit_quaternion()
+                   : sample_rotation(this->search_options.sample_rotation_axis);
+
+      x_rand << p_rand[0], p_rand[1], p_rand[2], q_rand.x(), q_rand.y(),
+          q_rand.z(), q_rand.w();
+      // near_idx = shared_rrt->nearest_neighbor(x_rand);
+      near_idx = shared_rrt->nearest_neighbor_subtree(x_rand, root_node_idx,
+                                                      subtree, false, true);
+    } else {
+      x_rand = this->goal_object_pose;
+      if (if_extend_root_to_goal) {
+        near_idx = root_node_idx;
+        if_extend_root_to_goal = false;
+      } else {
+        near_idx = shared_rrt->nearest_neighbor_subtree(x_rand, root_node_idx,
+                                                        subtree, true, true);
+      }
+    }
+
+    if (near_idx < 0) {
+      std::cout << "There is no unexplored nodes in this subtree. Cannot find "
+                   "a new path. "
+                << std::endl;
+      return path_;
+    }
+
+    // -----------------------------------
+
+    // extend all cs modes, best ss modes
+
+    // steer goal
+
+    // move
+    x_rand = steer_config(shared_rrt->nodes[near_idx].config, x_rand,
+                          this->search_options.eps_trans,
+                          this->search_options.eps_angle);
+
+    // move
+    Vector6d v_star =
+        compute_rbvel_body(shared_rrt->nodes[near_idx].config, x_rand);
+
+    // move
+    Vector6d f_o =
+        weight_w2o(shared_rrt->nodes[near_idx].config, this->f_gravity);
+
+    // contact mode enumeration
+    if (shared_rrt->nodes[near_idx].modes.size() == 0) {
+      this->m_world->getObjectContacts(&(shared_rrt->nodes[near_idx].envs),
+                                       shared_rrt->nodes[near_idx].config);
+      enumerate_cs_modes(*this->cons.get(), shared_rrt->nodes[near_idx].envs,
+                         &shared_rrt->nodes[near_idx].modes);
+    }
+
+    // for every mode do forward integration
+    Vector6d v_zero = Vector6d::Zero();
+    // move
+    double d_zero = dist_vel(v_zero, v_star, shared_rrt->translation_weight,
+                             shared_rrt->angle_weight);
+
+    std::vector<VectorXi> extendable_cs_modes;
+    if ((near_idx == root_node_idx) && (!if_extend_root_to_goal)) {
+      extendable_cs_modes.push_back(start_state.modes[start_state.m_mode_idx]);
+    } else {
+      extendable_cs_modes = shared_rrt->nodes[near_idx].modes;
+    }
+
+    for (const auto &cs_mode : extendable_cs_modes) {
+
+      // std::cout << "cs mode " << cs_mode.transpose() << std::endl;
+
+      std::vector<VectorXi> modes;
+
+      enumerate_ss_modes(*this->cons.get(), shared_rrt->nodes[near_idx].envs,
+                         cs_mode, &modes);
+
+      double dv_best = d_zero;
+
+      VectorXi mode_best;
+
+      std::vector<VectorXi> mode_to_extend;
+      {
+        VectorXi all_sticking_mode(3 * cs_mode.size());
+        all_sticking_mode.setZero();
+        all_sticking_mode.block(0, 0, cs_mode.size(), 1) = cs_mode;
+        // move
+        Vector6d v = EnvironmentConstrainedVelocity(
+            v_star, shared_rrt->nodes[near_idx].envs, all_sticking_mode,
+            *this->cons);
+
+        if (dist_vel(v, v_star, shared_rrt->translation_weight,
+                     shared_rrt->angle_weight) < d_zero) {
+          mode_to_extend.push_back(all_sticking_mode);
+        }
+      }
+      for (const auto &mode : modes) {
+        // move
+        Vector6d v = EnvironmentConstrainedVelocity(
+            v_star, shared_rrt->nodes[near_idx].envs, mode, *this->cons);
+        // std::cout << "mode: " << mode.transpose() <<  " velocity: " <<
+        // v.transpose() << std::endl;
+        if (dist_vel(v, v_star, shared_rrt->translation_weight,
+                     shared_rrt->angle_weight) < dv_best) {
+          dv_best = dist_vel(v, v_star, shared_rrt->translation_weight,
+                             shared_rrt->angle_weight);
+          mode_best = mode;
+        }
+      }
+      // std::cout << "best mode " << mode_best.transpose() << std::endl;
+
+      if (dv_best < d_zero - 1e-4) {
+        mode_to_extend.push_back(mode_best);
+      }
+
+      /// choose sliding mode end
+
+      for (const auto &mode : mode_to_extend) {
+
+        // std::cout << "Extend mode: " << mode.transpose() << std::endl;
+
+        std::vector<Vector7d> path;
+
+        // move
+        this->forward_integration(shared_rrt->nodes[near_idx].config, x_rand,
+                                  shared_rrt->nodes[near_idx].envs, mode,
+                                  &path);
+
+        // if integration is successful
+        if (path.size() > 1) {
+
+          ReusableRRT::Node new_node(path.back());
+          ReusableRRT::Edge new_edge(mode, path);
+
+          shared_rrt->add_node(&new_node, near_idx, &new_edge);
+
+          if (near_idx == root_node_idx) {
+            if ((cs_mode - start_state.modes[start_state.m_mode_idx]).norm() ==
+                0) {
+              subtree.push_back(shared_rrt->nodes.size() - 1);
+            }
+          } else {
+            subtree.push_back(shared_rrt->nodes.size() - 1);
+          }
+        }
+      }
+    }
+
+    //----------------------------------
+
+    int goal_near_idx = shared_rrt->nearest_neighbor_subtree(
+        this->goal_object_pose, root_node_idx, subtree, false, true);
+    if (shared_rrt->dist(shared_rrt->nodes[goal_near_idx].config,
+                         this->goal_object_pose) <= goal_thr) {
+      printf("Found goal node in %d samples. \n", kk + 1);
+      goal_idx = goal_near_idx;
+      break;
+    }
+  }
+
+  bool ifsuccess = false;
+
+  if (goal_idx != -1) {
+    ifsuccess = true;
+    printf("GOAL REACHED! \n");
+  } else {
+    ifsuccess = false;
+    std::cout << "GOAL NOT REACHED" << std::endl;
+  }
+
+  /// end of search
+
+  if (ifsuccess) {
+    // backtrack the node path until the root_node_idx, root_node_idx is included
+    std::vector<int> node_path;
+    shared_rrt->backtrack(goal_idx, &node_path, root_node_idx);
+    std::reverse(node_path.begin(), node_path.end());
+    for (int kn : node_path) {
+      shared_rrt->nodes[kn].is_explored = true;
+    }
+    for (int k = 1; k < node_path.size() - 1; k++) {
+      int kn = node_path[k];
+      int k_child = node_path[k + 1];
+      shared_rrt->nodes[k_child].is_explored = true;
+      VectorXi mode = shared_rrt->edges[shared_rrt->nodes[k_child].edge].mode;
+      int mode_idx = -1;
+      for (int idx = 0; idx < shared_rrt->nodes[kn].modes.size(); ++idx) {
+        if ((mode.head(shared_rrt->nodes[kn].modes[idx].size()) -
+             shared_rrt->nodes[kn].modes[idx])
+                .norm() == 0) {
+          mode_idx = idx;
+          break;
+        }
+      }
+      CMGTASK::State new_state(shared_rrt->nodes[kn].config,
+                               shared_rrt->nodes[kn].envs, mode_idx,
+                               shared_rrt->nodes[kn].modes);
+      new_state.m_path = shared_rrt->edges[shared_rrt->nodes[kn].edge].path;
+      new_state.path_ss_mode =
+          shared_rrt->edges[shared_rrt->nodes[kn].edge].mode;
+      path_.push_back(new_state);
+    }
+    CMGTASK::State new_state(shared_rrt->nodes[node_path.back()].config,
+                             shared_rrt->nodes[node_path.back()].envs, -1,
+                             shared_rrt->nodes[node_path.back()].modes);
+    new_state.m_path =
+        shared_rrt->edges[shared_rrt->nodes[node_path.back()].edge].path;
+    new_state.path_ss_mode =
+        shared_rrt->edges[shared_rrt->nodes[node_path.back()].edge].mode;
+
+    path_.push_back(new_state);
+  }
+
+  for (auto s : path_) {
+    std::cout << s.m_pose.transpose() << std::endl;
+  }
+
+  return path_;
+}
+
 bool CMGTASK::is_valid(const CMGTASK::State2 &state) {
   // TODO: we need finer path to calculate both quasistatic feasibility and
   // quasidynamic feasibility finer that state1 path (maybe modify the
@@ -1085,7 +1390,6 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state) {
   if (state.timestep == 0) {
     return true;
   }
-
 
   // consider the transition from previous timestep to current state is valid
   int pre_timestep = state.timestep - 1;
@@ -1143,6 +1447,7 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state) {
           isQuasistatic(mnps, this->saved_object_trajectory[pre_timestep].envs,
                         ss_mode, this->f_gravity, x_object, this->mu_env,
                         this->mu_mnp, this->cons.get());
+    
     //   if (dynamic_feasibility) {
     //     break;
     //   }
@@ -1152,10 +1457,10 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state) {
     Vector6d v = compute_rbvel_body(
         x_object, this->saved_object_trajectory[state.timestep].m_pose);
     // for (auto ss_mode : ss_modes) {
-      dynamic_feasibility = isQuasidynamic(
-          v, mnps, this->saved_object_trajectory[pre_timestep].envs, ss_mode,
-          this->f_gravity, this->object_inertia, x_object, this->mu_env,
-          this->mu_mnp, this->wa, this->wt, h_time, this->cons.get());
+    dynamic_feasibility = isQuasidynamic(
+        v, mnps, this->saved_object_trajectory[pre_timestep].envs, ss_mode,
+        this->f_gravity, this->object_inertia, x_object, this->mu_env,
+        this->mu_mnp, this->wa, this->wt, h_time, this->cons.get());
 
     //   if (dynamic_feasibility) {
     //     break;
@@ -1166,5 +1471,4 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state) {
   // TODO: also check if the relocation is feasible
 
   return dynamic_feasibility;
-
 }

@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
   rrt_options.x_ub << 1, 1, 0.1;
   rrt_options.x_lb << -1, -1, 0.0;
 
-  rrt_options.eps_trans = 0.1;
+  rrt_options.eps_trans = 0.07;
   rrt_options.eps_angle = 3.14 * 95 / 180;
   rrt_options.max_samples = 20;
 
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
       20; // maximum iteration for search from the root node
   HMP::MCTSOptions compute_options_1st;
   compute_options_1st.max_iterations =
-      50; // maximum iteration for search from the root node
+      200; // maximum iteration for search from the root node
 
   HMP::Node<CMGTASK::State> *current_node = tree.search_tree(compute_options_1st, compute_options);
 
