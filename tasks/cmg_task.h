@@ -24,9 +24,11 @@
 #define CMG_QUASIDYNAMIC 1
 #define CMG_NODYNAMICS -1
 
-class RRTTree {
+class RRTTree
+{
 public:
-  struct Node {
+  struct Node
+  {
     Vector7d config; // x, y, z, qx, qy, qz, qw
     int parent = -1;
     int edge = -1; // index of edge from parent to this
@@ -36,7 +38,8 @@ public:
     Node(Vector7d data) { config = data; }
   };
 
-  struct Edge {
+  struct Edge
+  {
     VectorXi mode;
     std::vector<Vector7d> path;
     Edge(VectorXi m, std::vector<Vector7d> &p) : mode(m), path(p) {}
@@ -48,7 +51,8 @@ public:
   double translation_weight;
   RRTTree(const double &a_weight, const double &p_weight)
       : angle_weight(a_weight), translation_weight(p_weight) {}
-  double dist(const Vector7d &q1, const Vector7d &q2) {
+  double dist(const Vector7d &q1, const Vector7d &q2)
+  {
     Vector3d p1(q1[0], q1[1], q1[2]);
     Vector3d p2(q2[0], q2[1], q2[2]);
     Quaterniond quat1(q1[6], q1[3], q1[4], q1[5]); // Quaterniond: w, x, y, z
@@ -61,12 +65,15 @@ public:
     return d;
   }
 
-  int nearest_neighbor(const Vector7d &q) {
+  int nearest_neighbor(const Vector7d &q)
+  {
     int near_idx;
     double min_d = DBL_MAX;
-    for (int i = 0; i < nodes.size(); i++) {
+    for (int i = 0; i < nodes.size(); i++)
+    {
       double d = this->dist(nodes[i].config, q);
-      if (d < min_d) {
+      if (d < min_d)
+      {
         near_idx = i;
         min_d = d;
       }
@@ -74,48 +81,58 @@ public:
     return near_idx;
   }
 
-  std::vector<int> nearest_neighbors(const Vector7d &q) {
+  std::vector<int> nearest_neighbors(const Vector7d &q)
+  {
     int near_idx = this->nearest_neighbor(q);
     double min_d = this->dist(nodes[near_idx].config, q);
 
     std::vector<int> near_idxes;
-    for (int i = 0; i < nodes.size(); i++) {
+    for (int i = 0; i < nodes.size(); i++)
+    {
       double d = this->dist(nodes[i].config, q);
-      if ((d - min_d) * (d - min_d) < 1e-3) {
+      if ((d - min_d) * (d - min_d) < 1e-3)
+      {
         near_idxes.push_back(i);
       }
     }
     return near_idxes;
   }
 
-  int nearest_unextended_to_goal(const Vector7d &q) {
+  int nearest_unextended_to_goal(const Vector7d &q)
+  {
     int near_idx;
     double min_d = DBL_MAX;
-    for (int i = 0; i < nodes.size(); i++) {
+    for (int i = 0; i < nodes.size(); i++)
+    {
       double d = this->dist(nodes[i].config, q);
-      if ((d < min_d) && (!nodes[i].is_extended_to_goal)) {
+      if ((d < min_d) && (!nodes[i].is_extended_to_goal))
+      {
         near_idx = i;
         min_d = d;
       }
     }
-    if (min_d == DBL_MAX) {
+    if (min_d == DBL_MAX)
+    {
       return -1;
     }
 
     return near_idx;
   }
-  void backtrack(int last_node_idx, std::vector<int> *node_path) {
+  void backtrack(int last_node_idx, std::vector<int> *node_path)
+  {
     int cur_node = last_node_idx;
     node_path->push_back(cur_node);
     bool is_start_node = nodes[cur_node].parent != -1;
-    while (is_start_node) {
+    while (is_start_node)
+    {
       cur_node = nodes[cur_node].parent;
       node_path->push_back(cur_node);
       is_start_node = nodes[cur_node].parent != -1;
     }
     return;
   }
-  void add_node(Node *n, int parent_idx, Edge *e) {
+  void add_node(Node *n, int parent_idx, Edge *e)
+  {
     // int node_idx = nodes.size();
     int edge_idx = edges.size();
     n->parent = parent_idx;
@@ -126,7 +143,8 @@ public:
     return;
   }
 
-  void initial_node(Node *n) {
+  void initial_node(Node *n)
+  {
     n->parent = -1;
     nodes.push_back(*n);
     return;
@@ -134,9 +152,11 @@ public:
 };
 
 // Resuable RRT
-class ReusableRRT {
+class ReusableRRT
+{
 public:
-  struct Node {
+  struct Node
+  {
     Vector7d config; // x, y, z, qx, qy, qz, qw
     int parent = -1;
     int edge = -1; // index of edge from parent to this
@@ -148,7 +168,8 @@ public:
     Node(Vector7d data) { config = data; }
   };
 
-  struct Edge {
+  struct Edge
+  {
     VectorXi mode;
     std::vector<Vector7d> path;
     Edge(VectorXi m, std::vector<Vector7d> &p) : mode(m), path(p) {}
@@ -160,7 +181,8 @@ public:
   double translation_weight;
   ReusableRRT(const double &a_weight, const double &p_weight)
       : angle_weight(a_weight), translation_weight(p_weight) {}
-  double dist(const Vector7d &q1, const Vector7d &q2) {
+  double dist(const Vector7d &q1, const Vector7d &q2)
+  {
     Vector3d p1(q1[0], q1[1], q1[2]);
     Vector3d p2(q2[0], q2[1], q2[2]);
     Quaterniond quat1(q1[6], q1[3], q1[4], q1[5]); // Quaterniond: w, x, y, z
@@ -173,22 +195,27 @@ public:
     return d;
   }
 
-  std::vector<int> subtree_node_idxes(int root_idx, VectorXi mode) {
+  std::vector<int> subtree_node_idxes(int root_idx, VectorXi mode)
+  {
     // given the root node index of a subtree, find out all the node indices in
     // the subtree
     std::vector<int> all_idxes;
     all_idxes.push_back(root_idx);
-    for (int k = root_idx + 1; k < this->nodes.size(); k++) {
+    for (int k = root_idx + 1; k < this->nodes.size(); k++)
+    {
       int kk = k;
-      while (this->nodes[kk].parent > root_idx) {
+      while (this->nodes[kk].parent > root_idx)
+      {
         kk = this->nodes[kk].parent;
       }
-      if (this->nodes[kk].parent == root_idx) {
+      if (this->nodes[kk].parent == root_idx)
+      {
         bool if_same_mode = ((this->edges[this->nodes[kk].edge].mode.head(
                                   this->nodes[root_idx].envs.size()) -
                               mode)
                                  .norm() < 1e-3);
-        if (if_same_mode) {
+        if (if_same_mode)
+        {
           all_idxes.push_back(k);
         }
       }
@@ -196,29 +223,68 @@ public:
     return all_idxes;
   }
 
-  int find_node(const Vector7d &q, int parent_env_n) {
+  int find_node(const Vector7d &q, int parent_env_n, double thr = 1e-3)
+  {
     int near_idx = 0;
     double min_d = this->dist(nodes[0].config, q);
 
-    for (int i = 1; i < nodes.size(); i++) {
-      if (nodes[nodes[i].parent].envs.size() != parent_env_n) {
+    for (int i = 1; i < nodes.size(); i++)
+    {
+      if (nodes[nodes[i].parent].envs.size() != parent_env_n)
+      {
         continue;
       }
       double d = this->dist(nodes[i].config, q);
-      if (d < min_d) {
+      if (d < min_d)
+      {
         near_idx = i;
         min_d = d;
       }
     }
-    return near_idx;
+    return (min_d < thr) ? near_idx : -1;
   }
 
-  int nearest_neighbor(const Vector7d &q) {
+  int find_node(const Vector7d &q, VectorXi ss_mode, int parent_idx, double thr = 1e-3)
+  {
+    // ss_mode: the mode that leads to this node
+    int near_idx = 0;
+    double min_d = this->dist(nodes[0].config, q);
+
+    for (int i = 1; i < nodes.size(); i++)
+    {
+      if (nodes[i].parent != parent_idx)
+      {
+        continue;
+      }
+      if (edges[nodes[i].edge].mode.size() != ss_mode.size()){
+        continue;
+      }
+
+      if ((edges[nodes[i].edge].mode - ss_mode).norm() != 0)
+      {
+        continue;
+      }
+
+      double d = this->dist(nodes[i].config, q);
+      if (d < min_d)
+      {
+        near_idx = i;
+        min_d = d;
+      }
+    }
+
+    return (min_d < thr) ? near_idx : -1;
+  }
+
+  int nearest_neighbor(const Vector7d &q)
+  {
     int near_idx;
     double min_d = DBL_MAX;
-    for (int i = 0; i < nodes.size(); i++) {
+    for (int i = 0; i < nodes.size(); i++)
+    {
       double d = this->dist(nodes[i].config, q);
-      if (d < min_d) {
+      if (d < min_d)
+      {
         near_idx = i;
         min_d = d;
       }
@@ -229,32 +295,40 @@ public:
   int nearest_neighbor_subtree(const Vector7d &q, int subtree_root_idx,
                                const std::vector<int> &subtree_idxes,
                                bool if_unextened_to_goal = false,
-                               bool if_unexplored = false) {
+                               bool if_unexplored = false)
+  {
 
     int near_idx = -1;
     double min_d = DBL_MAX;
 
-    for (int i : subtree_idxes) {
+    for (int i : subtree_idxes)
+    {
 
       if (if_unextened_to_goal &&
-          (this->nodes[i].is_extended_to_goal == true)) {
+          (this->nodes[i].is_extended_to_goal == true))
+      {
         continue;
       }
 
       double d = this->dist(nodes[i].config, q);
-      if (d < min_d) {
+      if (d < min_d)
+      {
 
-        if (if_unexplored) {
+        if (if_unexplored)
+        {
           bool is_explored = false;
           int kk = i;
-          while (kk > subtree_root_idx) {
-            if (this->nodes[kk].is_explored) {
+          while (kk > subtree_root_idx)
+          {
+            if (this->nodes[kk].is_explored)
+            {
               is_explored = true;
               break;
             }
             kk = this->nodes[kk].parent;
           }
-          if (is_explored) {
+          if (is_explored)
+          {
             continue;
           }
         }
@@ -267,16 +341,19 @@ public:
   }
 
   void backtrack(int last_node_idx, std::vector<int> *node_path,
-                 int root_idx = 0) {
+                 int root_idx = 0)
+  {
     int idx = last_node_idx;
-    while (idx > root_idx) {
+    while (idx > root_idx)
+    {
       node_path->push_back(idx);
       idx = nodes[idx].parent;
     }
     node_path->push_back(root_idx);
     return;
   }
-  void add_node(Node *n, int parent_idx, Edge *e) {
+  void add_node(Node *n, int parent_idx, Edge *e)
+  {
     // int node_idx = nodes.size();
     int edge_idx = edges.size();
     n->parent = parent_idx;
@@ -287,24 +364,27 @@ public:
     return;
   }
 
-  void initial_node(Node *n) {
+  void initial_node(Node *n)
+  {
     n->parent = -1;
     nodes.push_back(*n);
     return;
   }
 };
 
-class CMGTASK {
+class CMGTASK
+{
 
 public:
-  struct State {
+  struct State
+  {
     Vector7d m_pose;
     std::vector<ContactPoint> envs;
     int m_mode_idx = -1; // the mode chosen for this state, to the next state
     std::vector<Eigen::VectorXi> modes;
     std::vector<Vector7d>
-        m_path; // the path to this state (TODO: only save this path when
-                // m_mode_idx = -1 (node type: "pose"))
+        m_path;            // the path to this state (TODO: only save this path when
+                           // m_mode_idx = -1 (node type: "pose"))
     VectorXi path_ss_mode; // store the ss_mode of the path to this state
 
     State() {}
@@ -313,7 +393,8 @@ public:
           const std::vector<Eigen::VectorXi> &modes_)
         : m_pose(pose), envs(envs_), m_mode_idx(mode_idx), modes(modes_) {}
 
-    State(const State &state_) {
+    State(const State &state_)
+    {
       // copy constructor
       m_pose = state_.m_pose;
       m_mode_idx = state_.m_mode_idx;
@@ -325,7 +406,8 @@ public:
 
     void do_action(int action) { m_mode_idx = action; }
 
-    State &operator=(const State &state_) {
+    State &operator=(const State &state_)
+    {
       this->m_pose = state_.m_pose;
       this->m_mode_idx = state_.m_mode_idx;
       this->modes = state_.modes;
@@ -336,19 +418,22 @@ public:
     }
   };
 
-  struct State2 {
+  struct State2
+  {
     int timestep = 0;
     int finger_index; // current finger index
     bool is_valid;
     State2() {}
     State2(int t, int idx) : timestep(t), finger_index(idx) {}
-    void do_action(int action) {
+    void do_action(int action)
+    {
       this->finger_index = action;
       this->timestep++;
     }
   };
 
-  struct SearchOptions {
+  struct SearchOptions
+  {
     // the search options for search_a_new_path using RRT
     Eigen::Vector3d x_lb;
     Eigen::Vector3d x_ub;
@@ -385,7 +470,8 @@ public:
                            const VectorXi &env_mode_,
                            std::vector<Vector7d> *path);
 
-  double evaluate_path(const std::vector<State> &path) const {
+  double evaluate_path(const std::vector<State> &path) const
+  {
     // return the REWARD of the path: larger reward -> better path
 
     // TODO: define reward
@@ -409,14 +495,16 @@ public:
 
   // --- Level 2 Tree functions for robot contact planning ----
 
-  std::vector<int> get_finger_locations(int finger_location_index) {
+  std::vector<int> get_finger_locations(int finger_location_index)
+  {
 
     int N = this->object_surface_pts.size();
     int n = this->number_of_robot_contacts;
     int x = finger_location_index;
 
     std::vector<int> finger_locations;
-    for (int k = 0; k < n; ++k) {
+    for (int k = 0; k < n; ++k)
+    {
       int a = int(x / pow(N, (n - k - 1)));
       x -= a * (int)pow(N, (n - k - 1));
 
@@ -425,14 +513,16 @@ public:
     return finger_locations;
   }
 
-  VectorXd get_robot_config_from_action_idx(int action_index) {
+  VectorXd get_robot_config_from_action_idx(int action_index)
+  {
 
     std::vector<int> finger_locations =
         this->get_finger_locations(action_index);
 
     // for point fingers
     VectorXd mnp_config(6 * finger_locations.size());
-    for (int k = 0; k < finger_locations.size(); ++k) {
+    for (int k = 0; k < finger_locations.size(); ++k)
+    {
       mnp_config.block(6 * k, 0, 3, 1) =
           this->object_surface_pts[finger_locations[k]].p;
       mnp_config.block(6 * k + 3, 0, 3, 1) =
@@ -442,19 +532,24 @@ public:
     return mnp_config;
   }
 
-  State2 get_start_state2() const {
+  State2 get_start_state2() const
+  {
     State2 state(0, -1);
     return state;
   }
-  double evaluate_path(const std::vector<State2> &path) const {
+  double evaluate_path(const std::vector<State2> &path) const
+  {
 
-    if (!path.back().is_valid) {
+    if (!path.back().is_valid)
+    {
       return 0.0;
     }
 
     int number_of_finger_changes = 0;
-    for (int k = 0; k < path.size() - 1; ++k) {
-      if (path[k].finger_index != path[k + 1].finger_index) {
+    for (int k = 0; k < path.size() - 1; ++k)
+    {
+      if (path[k].finger_index != path[k + 1].finger_index)
+      {
         number_of_finger_changes++;
       }
     }
@@ -462,7 +557,7 @@ public:
     // double reward_finger_stay =
     //     1.0 - (double(number_of_finger_changes)) / double(path.size());
     double reward_finger_stay =
-        1.0 - (double(number_of_finger_changes*number_of_finger_changes)) / (2* double(path.size()));
+        1.0 - (double(number_of_finger_changes * number_of_finger_changes)) / (2 * double(path.size()));
     reward_finger_stay = std::max(reward_finger_stay, 0.0);
 
     double reward_path_size = 3.0 / double(path.size());
@@ -472,45 +567,60 @@ public:
     return reward_finger_stay + reward_path_size;
   }
 
-  double estimate_next_state_value(const State2 &state, int action) {
+  double estimate_next_state_value(const State2 &state, int action)
+  {
     return 0.0;
     // return 0.0 for now, can use neural networks to estimate values
   }
 
   int action_selection_policy_level2(const State2 &state,
-                                     const State2 &pre_state) {
+                                     const State2 &pre_state)
+  {
     // Manually assigned policy: Specific to the planning robot contact problem:
     // with 0.5 probability, we will select the current action
-    if (randd() > 0.5) {
+    if (randd() > 0.5)
+    {
       return pre_state.finger_index;
-    } else {
+    }
+    else
+    {
       return -1;
     }
   }
 
   int action_selection_policy_level1(const State &state,
-                                     const State &pre_state) {
+                                     const State &pre_state)
+  {
     // Manually assigned policy: only for select modes, select the same mode as
     // previous mode
-    if (randd() > 0.5) {
+    if (randd() > 0.5)
+    {
       return pre_state.m_mode_idx;
-    } else {
+    }
+    else
+    {
       return -1;
     }
   }
 
-  int get_number_of_robot_actions(const State2 &state) {
+  int get_number_of_robot_actions(const State2 &state)
+  {
     // return combination of fingers for now
     return pow(this->object_surface_pts.size(), this->number_of_robot_contacts);
   }
 
-  bool is_terminal(const State2 &state) {
+  bool is_terminal(const State2 &state)
+  {
     // check if terminal, also check if valid,
     // if not valid it is also terminal
-    if (!state.is_valid) {
+    if (!state.is_valid)
+    {
       return true;
-    } else {
-      if (state.timestep >= this->saved_object_trajectory.size() - 1) {
+    }
+    else
+    {
+      if (state.timestep >= this->saved_object_trajectory.size() - 1)
+      {
         return true;
       }
     }
