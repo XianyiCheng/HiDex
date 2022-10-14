@@ -149,11 +149,11 @@ namespace HMP
 
       MCTSOptions compute_options_2_1st;
       compute_options_2_1st.max_iterations =
-          300; // maximum iteration for search from the root node
+          1000; // maximum iteration for search from the root node
 
       MCTSOptions compute_options_2;
       compute_options_2.max_iterations =
-          100; // maximum iteration for search from the root node
+          300; // maximum iteration for search from the root node
 
       Node<State2> *final_node_2 =
           tree2.search_tree(compute_options_2_1st, compute_options_2);
@@ -164,6 +164,7 @@ namespace HMP
       // task->evaluate_path only consider add reward terms here if they are a
       // MCTS thing
       double path_score = final_best_reward;
+
       this->m_task->saved_object_trajectory.clear();
 
       return path_score;
@@ -234,7 +235,11 @@ namespace HMP
             if ((node->number_of_next_actions + node->number_of_invalid_attempts) <=
                 pow(node->m_visits + 1, m_alpha) - 1)
             {
-
+              // std::cout << "number_of_next_actions "
+              //           << node->number_of_next_actions 
+              //           << " number_of_invalid_attempts " 
+              //           << node->number_of_invalid_attempts 
+              //           << " m_visits " << node->m_visits << std::endl;
               // rrt adds a path of nodes to the node, and return a terminal node
               std::vector<State> state_path =
                   this->m_task->search_a_new_path(node->m_state);
@@ -283,7 +288,7 @@ namespace HMP
               else
               {
                 // couldn't find a new path through search a new path
-                // just increase this number_of_invalid_attempts 
+                // just increase this number_of_invalid_attempts
                 // and continue selecting the next node
                 node->number_of_invalid_attempts++;
                 if (node->number_of_next_actions > 0)
@@ -299,7 +304,8 @@ namespace HMP
             else
             {
               action = this->select_action(node);
-              if (action == -1){
+              if (action == -1)
+              {
                 // no child, evaluate the node (its reward should be 0.0)
                 break;
               }
@@ -377,7 +383,7 @@ namespace HMP
         if (node_->m_type == "mode")
         {
           object_trajectory->push_back(node_->m_state);
-          std::cout << "Node value: " << node_->m_value << std::endl;
+          // std::cout << "Node value: " << node_->m_value << std::endl;
         }
         node_ = node_->m_parent;
       }
@@ -388,7 +394,7 @@ namespace HMP
 
       Level2Tree<State2, Task> tree2(this->m_task,
                                      this->m_task->get_start_state2());
-      tree2.ita = 0.3;
+      tree2.ita = 0.1;
 
       MCTSOptions compute_options_2_1st;
       compute_options_2_1st.max_iterations =
@@ -396,7 +402,7 @@ namespace HMP
 
       MCTSOptions compute_options_2;
       compute_options_2.max_iterations =
-          1000; // maximum iteration for search from the root node
+          10000; // maximum iteration for search from the root node
 
       Node<State2> *final_node_2 =
           tree2.search_tree(compute_options_2_1st, compute_options_2);

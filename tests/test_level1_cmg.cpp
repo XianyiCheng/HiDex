@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
   rrt_options.x_ub << 1, 1, 0.1;
   rrt_options.x_lb << -1, -1, 0.0;
 
-  rrt_options.eps_trans = 0.1;
+  rrt_options.eps_trans = 0.07;
   rrt_options.eps_angle = 3.14 * 95 / 180;
   rrt_options.max_samples = 20;
 
@@ -131,9 +131,9 @@ int main(int argc, char *argv[]) {
                        object_trajectory[kk].m_path.end());
   }
 
-  for (auto p : object_traj) {
-    std::cout << p.transpose() << std::endl;
-  }
+  std::cout << "Total level 1 tree nodes " << tree.count_total_nodes() << std::endl;
+
+  std::cout << "Total shared rrt nodes " << tree.m_task->total_rrt_nodes() << std::endl;
 
   // world->setObjectTrajectory(object_traj);
   // world->startWindow(&argc, argv);

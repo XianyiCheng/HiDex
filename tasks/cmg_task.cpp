@@ -1631,33 +1631,23 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state)
   if (this->task_dynamics_type == CMG_QUASISTATIC)
   {
 
-    // TODO: this is wrong!!! You must have ss_modes saved.
-    // for (auto ss_mode : ss_modes) {
     dynamic_feasibility =
         isQuasistatic(mnps, this->saved_object_trajectory[pre_timestep].envs,
                       ss_mode, this->f_gravity, x_object, this->mu_env,
                       this->mu_mnp, this->cons.get());
 
-    //   if (dynamic_feasibility) {
-    //     break;
-    //   }
-    // }
   }
   else if (this->task_dynamics_type == CMG_QUASIDYNAMIC)
   {
     double h_time = 0.01;
     Vector6d v = compute_rbvel_body(
         x_object, this->saved_object_trajectory[state.timestep].m_pose);
-    // for (auto ss_mode : ss_modes) {
+
     dynamic_feasibility = isQuasidynamic(
         v, mnps, this->saved_object_trajectory[pre_timestep].envs, ss_mode,
         this->f_gravity, this->object_inertia, x_object, this->mu_env,
         this->mu_mnp, this->wa, this->wt, h_time, this->cons.get());
 
-    //   if (dynamic_feasibility) {
-    //     break;
-    //   }
-    // }
   }
 
   // TODO: also check if the relocation is feasible

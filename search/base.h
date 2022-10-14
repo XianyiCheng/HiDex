@@ -149,6 +149,19 @@ namespace HMP
       return path;
     }
 
+
+    int count_subtree_nodes(Node<State>* root_node){
+      int n_total = 1;
+      for (auto n: root_node->m_children){
+        n_total += count_subtree_nodes(n);
+      }
+      return n_total;
+    }
+
+    int count_total_nodes(){
+      return count_subtree_nodes(this->m_root_node.get());
+    }
+
     virtual Node<State> *best_child(Node<State> *node)
     {
       // return *std::max_element(
