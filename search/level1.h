@@ -252,6 +252,11 @@ namespace HMP
                   // need to create a "pose" and "mode" node
                   auto state_ = state_path[k];
 
+                  if (state_.envs.size() != state_path[k+1].path_ss_mode.size()/3){
+                    std::cout << "Error: state_.envs.size() != state_path[k+1].path_ss_mode.size()/3" << std::endl;
+                    exit(0);
+                  }
+
                   {
                     // add a pose mode under a mode node
                     auto new_node = this->add_child(

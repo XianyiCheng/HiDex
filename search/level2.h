@@ -109,7 +109,9 @@ namespace HMP
       // TODO: need to improve this!
 
       if ((randd() > 0.5) && node->m_parent!=nullptr){
-        return node->m_parent->m_action;
+        if (node->m_parent->m_action != -1){
+          return node->m_parent->m_action;
+        }
       }
 
       double U_unexplored = 0.0 + this->ita * (1.0 / double(node->number_of_next_actions)) *
@@ -150,6 +152,10 @@ namespace HMP
         action_idx = unexplored_actions[randi(unexplored_actions.size())];
       }
 
+      if (action_idx == -1){
+        std::cout << "Error: action_idx == -1" << std::endl;
+        exit(0);
+      }
       return action_idx;
     }
 

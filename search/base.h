@@ -111,6 +111,10 @@ namespace HMP
 
     Node<State> *add_child(Node<State> *node, int action_, const State &state_)
     {
+      if (action_ == -1){
+        std::cout << "action_ is -1" << std::endl;
+        exit(0);
+      }
       auto child_node = new Node<State>(state_, action_, node);
       node->m_children.push_back(child_node);
       return child_node;
@@ -132,6 +136,11 @@ namespace HMP
       // else generate the next state
       State next_state = this->generate_next_state(node, action);
 
+      // add the child
+      if (action == -1){
+        std::cout << "action is -1" << std::endl;
+        exit(0);
+      }
       Node<State> *next_node = new Node<State>(next_state, action, node);
       node->m_children.push_back(next_node);
       return next_node;
