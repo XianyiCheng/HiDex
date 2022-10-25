@@ -5,6 +5,19 @@
 // ---------------------------
 // Utility functions
 
+int number_of_different_elements(const std::vector<int> &v1, const std::vector<int> &v2)
+{
+  int count = 0;
+  for (int i = 0; i < v1.size(); i++)
+  {
+    if (v1[i] != v2[i])
+    {
+      count++;
+    }
+  }
+  return count;
+}
+
 double dist_vel(const Vector6d &v, const Vector6d &v0, double wt, double wa)
 {
   double d = wt * (v - v0).block(0, 0, 3, 1).norm() +
@@ -1261,7 +1274,8 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state)
 
   std::cout << "Search a new path with shared rrt" << std::endl;
 
-  int root_node_idx = shared_rrt->find_node(start_state.m_pose, start_state.path_ss_mode.size() / 3);
+  int root_node_idx = shared_rrt->find_node(
+      start_state.m_pose, start_state.path_ss_mode.size() / 3);
 
   // In this case we are allowed to expand the root_node_under our specified
   // mode (after it has been expanded towards the goal for all modes in the
@@ -1457,9 +1471,11 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state)
         if (path.size() > 1)
         {
 
-          if (shared_rrt->find_node(path.back(), mode, root_node_idx) != -1){
+          if (shared_rrt->find_node(path.back(), mode, root_node_idx) != -1)
+          {
             printf("This node is already in the tree!\n");
-          } else
+          }
+          else
           {
 
             ReusableRRT::Node new_node(path.back());
@@ -1469,9 +1485,10 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state)
 
             if (near_idx == root_node_idx)
             {
-              // for the nodes expaned from the root node, we need to check if the mode is the desired one
-              if ((cs_mode - start_state.modes[start_state.m_mode_idx]).norm() ==
-                  0)
+              // for the nodes expaned from the root node, we need to check if
+              // the mode is the desired one
+              if ((cs_mode - start_state.modes[start_state.m_mode_idx])
+                      .norm() == 0)
               {
                 subtree.push_back(shared_rrt->nodes.size() - 1);
               }
@@ -1515,7 +1532,8 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state)
 
   if (ifsuccess)
   {
-    // backtrack the node path until the root_node_idx, root_node_idx is included
+    // backtrack the node path until the root_node_idx, root_node_idx is
+    // included
     std::vector<int> node_path;
     shared_rrt->backtrack(goal_idx, &node_path, root_node_idx);
     std::reverse(node_path.begin(), node_path.end());
@@ -1567,7 +1585,7 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state)
   return path_;
 }
 
-bool CMGTASK::is_valid(const CMGTASK::State2 &state)
+bool CMGTASK::is_valid(const CMGTASK::State2 &state, const State2 &prev_state)
 {
   // TODO: we need finer path to calculate both quasistatic feasibility and
   // quasidynamic feasibility finer that state1 path (maybe modify the
@@ -1578,9 +1596,9 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state)
   }
 
   // consider the transition from previous timestep to current state is valid
-  int pre_timestep = state.timestep - 1;
+  int pre_timestep = prev_state.timestep; // state.timestep - 1;
   Vector7d x_object = this->saved_object_trajectory[pre_timestep].m_pose;
-  this->m_world->updateObjectPose(x_object);
+  Vector7d x_object_now = this->saved_object_trajectory[state.timestep].m_pose;
 
   int finger_idx = state.finger_index;
 
@@ -1595,6 +1613,21 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state)
         this->get_robot_config_from_action_idx(state.finger_index);
 
     // update object pose
+    this->m_world->updateObjectPose(x_object_now);
+
+    // if there is no ik solution, not valid
+    if (!this->m_world->getRobot()->ifIKsolution(mnp_config, x_object_now))
+    {
+      return false;
+    }
+
+    // if the robot collides, not valid
+    if (this->m_world->isRobotCollide(mnp_config))
+    {
+      return false;
+    }
+
+    this->m_world->updateObjectPose(x_object);
 
     // if there is no ik solution, not valid
     if (!this->m_world->getRobot()->ifIKsolution(mnp_config, x_object))
@@ -1610,14 +1643,22 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state)
 
     // check if there is quasistatic, or quasidynamic
     {
+      std::vector<int> fingertip_idx = this->get_finger_locations(state.finger_index);
       std::vector<ContactPoint> fingertips;
-      this->m_world->getRobot()->getFingertipsOnObject(mnp_config, x_object,
-                                                       &fingertips);
+      for (int idx : fingertip_idx)
+      {
+        if (idx > 0)
+        {
+          fingertips.push_back(this->object_surface_pts[idx]);
+        }
+      }
+      // this->m_world->getRobot()->getFingertipsOnObject(mnp_config, x_object,
+      //                                                  &fingertips);
       this->m_world->getRobot()->Fingertips2PointContacts(fingertips, &mnps);
     }
   }
 
-  bool dynamic_feasibility = true;
+  bool dynamic_feasibility;
 
   // std::vector<VectorXi> ss_modes;
   // enumerate_ss_modes(
@@ -1635,7 +1676,6 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state)
         isQuasistatic(mnps, this->saved_object_trajectory[pre_timestep].envs,
                       ss_mode, this->f_gravity, x_object, this->mu_env,
                       this->mu_mnp, this->cons.get());
-
   }
   else if (this->task_dynamics_type == CMG_QUASIDYNAMIC)
   {
@@ -1647,10 +1687,77 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state)
         v, mnps, this->saved_object_trajectory[pre_timestep].envs, ss_mode,
         this->f_gravity, this->object_inertia, x_object, this->mu_env,
         this->mu_mnp, this->wa, this->wt, h_time, this->cons.get());
-
   }
 
-  // TODO: also check if the relocation is feasible
+  
+    if (dynamic_feasibility) {
+
+      // also check if the relocation is feasible
+
+      std::vector<int> cur_fingertips =
+          this->get_finger_locations(state.finger_index);
+      std::vector<int> pre_fingertips =
+          this->get_finger_locations(prev_state.finger_index);
+      std::vector<int> remain_idxes;
+      bool if_relocate = false;
+      for (int k = 0; k < cur_fingertips.size(); ++k) {
+        if (cur_fingertips[k] == pre_fingertips[k]) {
+          remain_idxes.push_back(pre_fingertips[k]);
+        } else if (pre_fingertips[k] <= 0) {
+          remain_idxes.push_back(cur_fingertips[k]);
+        } else {
+          if_relocate = true;
+        }
+      }
+
+      if (if_relocate) {
+
+        std::vector<ContactPoint> remain_fingertips;
+        for (auto ir:remain_idxes){
+          remain_fingertips.push_back(this->object_surface_pts[ir]);
+        }
+        std::vector<ContactPoint> remain_mnps;
+        this->m_world->getRobot()->Fingertips2PointContacts(remain_fingertips, &remain_mnps);
+
+        Eigen::VectorXi ss_mode_relocate = Eigen::VectorXi::Zero(
+            this->saved_object_trajectory[pre_timestep].envs.size() * 3);
+        dynamic_feasibility =
+            isQuasistatic(remain_mnps, this->saved_object_trajectory[pre_timestep].envs,
+                          ss_mode_relocate, this->f_gravity, x_object,
+                          this->mu_env, this->mu_mnp, this->cons.get());
+      }
+    }
+    
 
   return dynamic_feasibility;
+}
+
+double CMGTASK::evaluate_path(const std::vector<State2> &path)
+{
+
+  if (!path.back().is_valid)
+  {
+    return 0.0;
+  }
+
+  double reward_finger_stay = 0.0;
+  for (int k = 0; k < path.size() - 1; ++k)
+  {
+    reward_finger_stay +=
+        double(this->number_of_robot_contacts -
+               number_of_different_elements(this->get_finger_locations(path[k].finger_index),
+                                            this->get_finger_locations(path[k + 1].finger_index))) /
+        double(this->number_of_robot_contacts);
+    // if (path[k].finger_index == path[k + 1].finger_index) {
+    //   reward_finger_stay = reward_finger_stay + 1.0;
+    // }
+  }
+
+  reward_finger_stay = reward_finger_stay / double(path.size());
+
+  double reward_path_size = 1.0 / double(path.size());
+
+  // double reward_finger_1 = 1.0 - finger_number / double(path.size());
+
+  return reward_finger_stay + reward_path_size;
 }

@@ -53,7 +53,7 @@ namespace HMP
     {
       State new_state = node->m_state;
       new_state.do_action(action);
-      new_state.is_valid = this->m_task->is_valid(new_state);
+      new_state.is_valid = this->m_task->is_valid(new_state, node->m_state);
       return new_state;
     }
 
@@ -186,15 +186,10 @@ namespace HMP
       }
 
       // double final_best_reward = current_node->m_value;
+      std::cout << "terminal node state valid? " << current_node->m_state.is_valid << std::endl;
+      this->m_task->is_valid(current_node->m_state, current_node->m_parent->m_state);
       return current_node;
     }
-    // task
-    // need to store the object trajectory from the last level
-    // estimate_next_state2_value(State2, int ) { // return 0.0 for now}
-    // get_number_of_robot_actions(State2){ // return combination of actions for
-    // now} evaluate_path(std::vector<State2>) is_state2_terminal(State2) {//
-    // check if terminal, also check if valid, if not valid it is also terminal}
-    // is_valid(State2)
   };
 
 } // namespace HMP

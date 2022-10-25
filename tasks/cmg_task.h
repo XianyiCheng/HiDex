@@ -244,7 +244,8 @@ public:
     return (min_d < thr) ? near_idx : -1;
   }
 
-  int find_node(const Vector7d &q, VectorXi ss_mode, int parent_idx, double thr = 1e-3)
+  int find_node(const Vector7d &q, VectorXi ss_mode, int parent_idx,
+                double thr = 1e-3)
   {
     // ss_mode: the mode that leads to this node
     int near_idx = 0;
@@ -256,7 +257,8 @@ public:
       {
         continue;
       }
-      if (edges[nodes[i].edge].mode.size() != ss_mode.size()){
+      if (edges[nodes[i].edge].mode.size() != ss_mode.size())
+      {
         continue;
       }
 
@@ -537,31 +539,8 @@ public:
     State2 state(0, -1);
     return state;
   }
-  double evaluate_path(const std::vector<State2> &path) const
-  {
-
-    if (!path.back().is_valid)
-    {
-      return 0.0;
-    }
-
-    double reward_finger_stay = 0.0;
-    for (int k = 0; k < path.size() - 1; ++k)
-    {
-      if (path[k].finger_index == path[k + 1].finger_index)
-      {
-        reward_finger_stay = reward_finger_stay + 1.0;
-      }
-    }
-
-    reward_finger_stay = reward_finger_stay / double(path.size());
-
-    double reward_path_size = 1.0 / double(path.size());
-
-    // double reward_finger_1 = 1.0 - finger_number / double(path.size());
-
-    return reward_finger_stay + reward_path_size;
-  }
+  
+  double evaluate_path(const std::vector<State2> &path);
 
   double estimate_next_state_value(const State2 &state, int action)
   {
@@ -623,11 +602,9 @@ public:
     return false;
   }
 
-  int total_rrt_nodes(){
-    return shared_rrt->nodes.size();
-  }
+  int total_rrt_nodes() { return shared_rrt->nodes.size(); }
 
-  bool is_valid(const State2 &state);
+  bool is_valid(const State2 &state, const State2 &prev_state);
 
   std::vector<State> saved_object_trajectory;
   std::vector<ContactPoint> object_surface_pts;
@@ -635,6 +612,8 @@ public:
 
   int task_dynamics_type = CMG_QUASISTATIC;
 
+  std::shared_ptr<WorldTemplate>
+      m_world; // save the object, environment, do collision detections, ...
 private:
   bool m_initialized = false;
   Vector7d start_object_pose;
@@ -651,8 +630,8 @@ private:
   Matrix6d object_inertia;
   Vector6d f_gravity;
 
-  std::shared_ptr<WorldTemplate>
-      m_world; // save the object, environment, do collision detections, ...
+  // std::shared_ptr<WorldTemplate>
+  //     m_world; // save the object, environment, do collision detections, ...
 
   SearchOptions search_options;
 

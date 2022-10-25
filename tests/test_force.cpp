@@ -14,7 +14,7 @@ int main()
 
   {
     Vector6d cp;
-    cp << 0, 1, 0, 0, -1, 0;
+    cp << -1,0,0.2,1,0,0;
     mnps.push_back(cp);
   }
   // envs
@@ -47,10 +47,10 @@ int main()
   pose << 0, 0, 0, 0, 0, 0, 1;
 
   Eigen::VectorXi env_mode(12);
-  env_mode << 0, 0, 0, 0, 1, -1, 1, -1, 1, -1, 1, -1;
+  env_mode << 0,1,1,0,0,0,0,0,0,0,0,0;
 
   bool is_balance =
-      force_balance(mnps, envs, env_mode, f_ext_w, pose, 0.3, 0.8);
+      force_balance(mnps, envs, env_mode, f_ext_w, pose, 0.3, 0.6);
 
   std::cout << is_balance << std::endl;
 }

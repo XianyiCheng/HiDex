@@ -25,11 +25,19 @@ target_link_libraries(test_force PRIVATE mcts-mechanics)
 # target_include_directories(test_level1 PRIVATE ${external_dirs})
 # target_link_libraries(test_level1 PRIVATE mcts-mechanics)
 
-add_executable(test_cmg test_level1_cmg.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
+# add_executable(test_cmg test_level1_cmg.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
 
-# target_include_directories(test_cmg PUBLIC ${example_include_dirs})
-# target_include_directories(test_cmg PRIVATE ${example_include_dirs})
-# target_link_libraries(test_cmg PRIVATE mcts-mechanics ${GLPKLIB} ${dart_libs} ${modus_libs})
-# target_link_libraries(test_cmg PRIVATE mcts-mechanics ${dart_libs} ${modus_libs})
-target_link_libraries(test_cmg PRIVATE mcts-mechanics ${dart_libs})
+# # target_include_directories(test_cmg PUBLIC ${example_include_dirs})
+# # target_include_directories(test_cmg PRIVATE ${example_include_dirs})
+# # target_link_libraries(test_cmg PRIVATE mcts-mechanics ${GLPKLIB} ${dart_libs} ${modus_libs})
+# # target_link_libraries(test_cmg PRIVATE mcts-mechanics ${dart_libs} ${modus_libs})
+# target_link_libraries(test_cmg PRIVATE mcts-mechanics ${dart_libs})
 
+add_executable(cmg_pushing cmg_pushing.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
+target_link_libraries(cmg_pushing PRIVATE mcts-mechanics ${dart_libs})
+
+add_executable(cmg_cube_reorient90 cmg_cube_reorient90.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
+target_link_libraries(cmg_cube_reorient90 PRIVATE mcts-mechanics ${dart_libs})
+
+add_executable(test_hand_collision test_hand_collision.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
+target_link_libraries(test_hand_collision PRIVATE mcts-mechanics ${dart_libs})
