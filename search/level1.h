@@ -142,6 +142,7 @@ namespace HMP
 
       // create a level 2 tree to search for the robot contact path
       // do this->m_task->evaluate_path within level2
+      // this->m_task->saved_object_trajectory = this->m_task->generate_a_finer_object_trajectory(state_path, 1.0);
       this->m_task->saved_object_trajectory = state_path;
 
       Level2Tree<State2, Task> tree2(this->m_task,
@@ -149,11 +150,11 @@ namespace HMP
 
       MCTSOptions compute_options_2_1st;
       compute_options_2_1st.max_iterations =
-          1000; // maximum iteration for search from the root node
+          5000; // maximum iteration for search from the root node
 
       MCTSOptions compute_options_2;
       compute_options_2.max_iterations =
-          300; // maximum iteration for search from the root node
+          3000; // maximum iteration for search from the root node
 
       Node<State2> *final_node_2 =
           tree2.search_tree(compute_options_2_1st, compute_options_2);
@@ -396,6 +397,8 @@ namespace HMP
       std::reverse(object_trajectory->begin(), object_trajectory->end());
 
       this->m_task->saved_object_trajectory = *object_trajectory;
+      // this->m_task->saved_object_trajectory = this->m_task->generate_a_finer_object_trajectory(*object_trajectory,1.0);
+      // *object_trajectory = this->m_task->saved_object_trajectory;
 
       Level2Tree<State2, Task> tree2(this->m_task,
                                      this->m_task->get_start_state2());
@@ -403,11 +406,11 @@ namespace HMP
 
       MCTSOptions compute_options_2_1st;
       compute_options_2_1st.max_iterations =
-          3000; // maximum iteration for search from the root node
+          10000; // maximum iteration for search from the root node
 
       MCTSOptions compute_options_2;
       compute_options_2.max_iterations =
-          10000; // maximum iteration for search from the root node
+          3000; // maximum iteration for search from the root node
 
       Node<State2> *final_node_2 =
           tree2.search_tree(compute_options_2_1st, compute_options_2);

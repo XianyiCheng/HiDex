@@ -592,6 +592,9 @@ IncidenceGraph* partial_initial_arrangement(const Eigen::MatrixXd& A,
 
     // Calculate the number of faces.
     int num_faces = 1;
+    if (sides.size() < d){
+        return nullptr;
+    }
     for (int i = 0; i < d; i++) {
         num_faces *= sides[i];
         if (DEBUG) {

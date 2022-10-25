@@ -39,5 +39,8 @@ target_link_libraries(cmg_pushing PRIVATE mcts-mechanics ${dart_libs})
 add_executable(cmg_cube_reorient90 cmg_cube_reorient90.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
 target_link_libraries(cmg_cube_reorient90 PRIVATE mcts-mechanics ${dart_libs})
 
+add_executable(cmg_pick_card cmg_pick_card.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
+target_link_libraries(cmg_pick_card PRIVATE mcts-mechanics ${dart_libs})
+
 add_executable(test_hand_collision test_hand_collision.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
 target_link_libraries(test_hand_collision PRIVATE mcts-mechanics ${dart_libs})

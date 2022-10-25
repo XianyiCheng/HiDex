@@ -441,6 +441,9 @@ IncidenceGraph* enumerate_ss_modes(const Eigen::MatrixXd& N,
 
         // Create initial arrangement.
         graph = partial_initial_arrangement(NsTc, b, sides, eps);
+        if (graph == nullptr){
+            return nullptr;
+        }
         // graph = initial_arrangement(NsTc.topRows(d_eff), b.topRows(d_eff), eps);
         start_incr = d_eff;
     }

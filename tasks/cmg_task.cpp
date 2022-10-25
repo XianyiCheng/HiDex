@@ -287,10 +287,10 @@ Vector6d VelocityCorrection(const std::vector<ContactPoint> &pts)
   return x;
 }
 
-bool contactTrack(ContactPoint pt0, ContactPoint pt1)
+bool contactTrack(ContactPoint pt0, ContactPoint pt1, double normal_product = 0.85)
 {
   if (((pt0.p - pt1.p).norm() < 0.1) &&
-      ((pt0.n.transpose() * pt1.n)[0] > 0.85))
+      ((pt0.n.transpose() * pt1.n)[0] > normal_product))
   {
     return true;
   }
@@ -302,14 +302,14 @@ bool contactTrack(ContactPoint pt0, ContactPoint pt1)
 }
 
 VectorXi track_contacts_remain(const std::vector<ContactPoint> &pts,
-                               const std::vector<ContactPoint> &pts_new)
+                               const std::vector<ContactPoint> &pts_new, double normal_product = 0.85)
 {
   VectorXi remain_idx(pts_new.size());
   int i = 0;
   int j = 0;
   while ((i < pts.size()) && (j < pts_new.size()))
   {
-    if (contactTrack(pts[i], pts_new[j]))
+    if (contactTrack(pts[i], pts_new[j]), normal_product)
     {
       remain_idx[j] = i;
       j++;
@@ -1689,45 +1689,52 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state, const State2 &prev_state)
         this->mu_mnp, this->wa, this->wt, h_time, this->cons.get());
   }
 
-  
-    if (dynamic_feasibility) {
+  if (dynamic_feasibility)
+  {
 
-      // also check if the relocation is feasible
+    // also check if the relocation is feasible
 
-      std::vector<int> cur_fingertips =
-          this->get_finger_locations(state.finger_index);
-      std::vector<int> pre_fingertips =
-          this->get_finger_locations(prev_state.finger_index);
-      std::vector<int> remain_idxes;
-      bool if_relocate = false;
-      for (int k = 0; k < cur_fingertips.size(); ++k) {
-        if (cur_fingertips[k] == pre_fingertips[k]) {
-          remain_idxes.push_back(pre_fingertips[k]);
-        } else if (pre_fingertips[k] <= 0) {
-          remain_idxes.push_back(cur_fingertips[k]);
-        } else {
-          if_relocate = true;
-        }
+    std::vector<int> cur_fingertips =
+        this->get_finger_locations(state.finger_index);
+    std::vector<int> pre_fingertips =
+        this->get_finger_locations(prev_state.finger_index);
+    std::vector<int> remain_idxes;
+    bool if_relocate = false;
+    for (int k = 0; k < cur_fingertips.size(); ++k)
+    {
+      if (cur_fingertips[k] == pre_fingertips[k])
+      {
+        remain_idxes.push_back(pre_fingertips[k]);
       }
-
-      if (if_relocate) {
-
-        std::vector<ContactPoint> remain_fingertips;
-        for (auto ir:remain_idxes){
-          remain_fingertips.push_back(this->object_surface_pts[ir]);
-        }
-        std::vector<ContactPoint> remain_mnps;
-        this->m_world->getRobot()->Fingertips2PointContacts(remain_fingertips, &remain_mnps);
-
-        Eigen::VectorXi ss_mode_relocate = Eigen::VectorXi::Zero(
-            this->saved_object_trajectory[pre_timestep].envs.size() * 3);
-        dynamic_feasibility =
-            isQuasistatic(remain_mnps, this->saved_object_trajectory[pre_timestep].envs,
-                          ss_mode_relocate, this->f_gravity, x_object,
-                          this->mu_env, this->mu_mnp, this->cons.get());
+      else if (pre_fingertips[k] <= 0)
+      {
+        remain_idxes.push_back(cur_fingertips[k]);
+      }
+      else
+      {
+        if_relocate = true;
       }
     }
-    
+
+    if (if_relocate)
+    {
+
+      std::vector<ContactPoint> remain_fingertips;
+      for (auto ir : remain_idxes)
+      {
+        remain_fingertips.push_back(this->object_surface_pts[ir]);
+      }
+      std::vector<ContactPoint> remain_mnps;
+      this->m_world->getRobot()->Fingertips2PointContacts(remain_fingertips, &remain_mnps);
+
+      Eigen::VectorXi ss_mode_relocate = Eigen::VectorXi::Zero(
+          this->saved_object_trajectory[pre_timestep].envs.size() * 3);
+      dynamic_feasibility =
+          isQuasistatic(remain_mnps, this->saved_object_trajectory[pre_timestep].envs,
+                        ss_mode_relocate, this->f_gravity, x_object,
+                        this->mu_env, this->mu_mnp, this->cons.get());
+    }
+  }
 
   return dynamic_feasibility;
 }
@@ -1760,4 +1767,63 @@ double CMGTASK::evaluate_path(const std::vector<State2> &path)
   // double reward_finger_1 = 1.0 - finger_number / double(path.size());
 
   return reward_finger_stay + reward_path_size;
+}
+
+std::vector<CMGTASK::State> CMGTASK::generate_a_finer_object_trajectory(std::vector<CMGTASK::State> &object_traj, double dist)
+{
+  std::vector<CMGTASK::State> object_traj_finer;
+  // each state on this trajectory needs: m_pose, envs, path_ss_mode
+  object_traj_finer.push_back(object_traj[0]);
+  for (int i = 1; i < object_traj.size(); ++i)
+  {
+    State state = object_traj[i];
+    VectorXi ss_mode = state.path_ss_mode;
+
+    for (int k = 0; k < state.m_path.size() - 1; k++)
+    {
+      double cur_dist = this->shared_rrt->dist(object_traj_finer.back().m_pose, state.m_path[k]);
+      if (cur_dist >= dist)
+      {
+        // add a new state
+        State new_state;
+        new_state.m_pose = state.m_path[k];
+        this->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
+        new_state.path_ss_mode = ss_mode;
+
+        // check ss_mode
+        if (new_state.envs.size() != ss_mode.size() / 3)
+        {
+          if (new_state.envs.size() > ss_mode.size() / 3)
+          {
+            new_state.envs = object_traj_finer.back().envs;
+          }
+          else
+          {
+            // update ss_mode
+            VectorXi remain_idx = track_contacts_remain(object_traj_finer.back().envs, new_state.envs, -1.0);
+            if (new_state.envs.size() != 0 && remain_idx.size() == 0)
+            {
+              printf("contact track fails in generate_a_finer_object_trajectory\n");
+              continue;
+            }
+            if (ifContactingModeDeleted(ss_mode, remain_idx))
+            {
+              printf("contacting mode deleted fails in generate_a_finer_object_trajectory\n");
+              continue;
+            }
+            else
+            {
+              ss_mode = deleteModebyRemainIndex(ss_mode, remain_idx);
+            }
+          }
+        }
+
+        object_traj_finer.push_back(new_state);
+      }
+    }
+
+    state.path_ss_mode = ss_mode;
+    object_traj_finer.push_back(state);
+  }
+  return object_traj_finer;
 }

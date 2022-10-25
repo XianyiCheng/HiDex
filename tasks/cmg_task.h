@@ -625,6 +625,8 @@ public:
 
   bool is_valid(const State2 &state, const State2 &prev_state);
 
+  std::vector<State> generate_a_finer_object_trajectory(std::vector<State>& object_traj, double dist);
+
   std::vector<State> saved_object_trajectory;
   std::vector<ContactPoint> object_surface_pts;
   int number_of_robot_contacts;

@@ -165,7 +165,7 @@ namespace HMP
     virtual int select_action(Node<State> *node)
     {
       // sample based action selection
-      int K = 1000;
+      int K = 50;
 
       std::vector<int> sampled_actions;
 
