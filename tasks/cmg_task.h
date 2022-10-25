@@ -7,6 +7,7 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <cmath>
 
 #ifndef UTILS_H
 #define UTILS_H
@@ -539,13 +540,31 @@ public:
     State2 state(0, -1);
     return state;
   }
-  
+
   double evaluate_path(const std::vector<State2> &path);
 
   double estimate_next_state_value(const State2 &state, int action)
   {
     return 0.0;
     // return 0.0 for now, can use neural networks to estimate values
+  }
+
+  double action_heuristics_level2(int action_idx, const State2 &state, const State2 &pre_state)
+  {
+    // todo: mprove this heuristics
+    std::vector<int> finger_locations_1 = this->get_finger_locations(pre_state.finger_index);
+    std::vector<int> finger_locations_2 = this->get_finger_locations(action_idx);
+
+    double heu = 1.0;
+    for (int i = 0; i < finger_locations_1.size(); ++i)
+    {
+      if (finger_locations_1[i] == finger_locations_2[i])
+      {
+        heu *= 2.0;
+      }
+    }
+
+    return heu;
   }
 
   int action_selection_policy_level2(const State2 &state,

@@ -3,6 +3,8 @@
 #define UTILS_H
 #include "../mechanics/utilities/utilities.h"
 #endif
+
+#include <chrono> 
 namespace HMP
 {
   // 'State' is a different state than the 'State' in level1tree
@@ -101,6 +103,7 @@ namespace HMP
       return this->m_task->is_terminal(node->m_state);
     }
 
+    /*
     virtual int select_action(Node<State> *node)
     {
       // must replace this because of too much robot actions
@@ -156,6 +159,94 @@ namespace HMP
         std::cout << "Error: action_idx == -1" << std::endl;
         exit(0);
       }
+      return action_idx;
+    }
+    */
+    virtual int select_action(Node<State> *node)
+    {
+      // sample based action selection
+      int K = 1000;
+
+      std::vector<int> sampled_actions;
+
+      if (node->number_of_next_actions < K)
+      {
+        // order the actions randomly
+        for (int i = 0; i < node->number_of_next_actions; ++i)
+        {
+          sampled_actions.push_back(i);
+        }
+        // a random seed from the system clock
+        auto rng = std::default_random_engine{};
+        rng.seed(std::chrono::system_clock::now().time_since_epoch().count());
+        std::shuffle(std::begin(sampled_actions), std::end(sampled_actions), rng);
+      }
+      else
+      {
+        // uniformly sample K actions
+        for (int i = 0; i < K; ++i)
+        {
+          sampled_actions.push_back(randi(node->number_of_next_actions));
+        }
+      }
+
+      // for each action, evaluate its heuristics
+      std::vector<double> action_values;
+      double total_value = 0.0;
+      for (auto k : sampled_actions)
+      {
+        double heu_k;
+        if (node->m_parent == nullptr)
+        {
+          heu_k = 1.0 / double(sampled_actions.size()); // todo: change this for heuristics on initial actions
+        }
+        else
+        {
+          heu_k = this->m_task->action_heuristics_level2(k, node->m_state, node->m_parent->m_state);
+        }
+        action_values.push_back(heu_k);
+        total_value += heu_k;
+      }
+
+      // normalize the heuristics
+      for (int i = 0; i < action_values.size(); ++i)
+      {
+        action_values[i] /= total_value;
+      }
+
+      // compute U for each action
+      std::vector<double> U_values;
+      for (int i = 0; i < sampled_actions.size(); ++i)
+      {
+        double child_value = 0.0;
+        int child_visits = 0;
+        for (auto child : node->m_children) // TODO: improve this
+        {
+          if (child->m_action == sampled_actions[i])
+          {
+            child_value = child->m_value;
+            child_visits = child->m_visits;
+            break;
+          }
+        }
+        double U = child_value + this->ita * action_values[i] *
+                                     std::sqrt(double(node->m_visits)) /
+                                        double(1 + child_visits);
+        U_values.push_back(U);
+      }
+
+      // select the largest U value
+      double U_max = -1.0;
+      int action_idx = -1;
+      for (int i = 0; i < U_values.size(); ++i)
+      {
+        if (U_values[i] > U_max)
+        {
+          U_max = U_values[i];
+          action_idx = sampled_actions[i];
+        }
+      }
+
       return action_idx;
     }
 
