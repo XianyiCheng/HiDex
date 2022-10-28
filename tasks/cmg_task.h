@@ -279,6 +279,23 @@ public:
     return (min_d < thr) ? near_idx : -1;
   }
 
+  int find_node(const Vector7d &q, double thr = 1e-3)
+  {
+    int near_idx = 0;
+    double min_d = this->dist(nodes[0].config, q);
+
+    for (int i = 1; i < nodes.size(); i++)
+    {
+      double d = this->dist(nodes[i].config, q);
+      if (d < min_d)
+      {
+        near_idx = i;
+        min_d = d;
+      }
+    }
+    return (min_d < thr) ? near_idx : -1;
+  }
+
   int nearest_neighbor(const Vector7d &q)
   {
     int near_idx;
@@ -466,7 +483,7 @@ public:
 
   std::vector<State> search_a_new_path(const State &start_state);
 
-  std::vector<State> search_a_new_path_old(const State &start_state);
+  // std::vector<State> search_a_new_path_old(const State &start_state);
 
   bool forward_integration(const Vector7d &x_start, const Vector7d &x_goal,
                            const std::vector<ContactPoint> &envs_,

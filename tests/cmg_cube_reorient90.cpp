@@ -50,8 +50,8 @@ void pivoting(std::shared_ptr<CMGTASK> task)
   double wa = 0.3;
   double wt = 10;
 
-  double mu_env = 0.5;
-  double mu_mnp = 0.9;
+  double mu_env = 0.3;
+  double mu_mnp = 0.8;
 
   double charac_len = 1;
 
