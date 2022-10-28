@@ -35,6 +35,7 @@ void card(std::shared_ptr<CMGTASK> task)
 
   int n_robot_contacts = 2;
   DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, box_length * 0.25);
+  rpt->is_patch_contact = true;
   world->addRobot(rpt);
 
   // set the task parameters, start, goal, object inertial, etc....
@@ -44,11 +45,11 @@ void card(std::shared_ptr<CMGTASK> task)
   x_start << 0, 0, box_height / 2 * 0.9999, 0, 0, 0, 1;
 
   // goal: rotate around y axis for 90 degrees
-  x_goal << 1.5, 0, box_length/2 * 1.5, 0, -0.7071, 0, 0.7071;
+  x_goal << 2.5, 0, box_length/2 * 1.5, 0, -0.7071, 0, 0.7071;
 
   double goal_thr = box_length * 3.14 * 30 / 180;
 
-  double wa = 1.0;
+  double wa = 0.4;
   double wt = 1.0;
 
   double mu_env = 0.4;
@@ -70,7 +71,7 @@ void card(std::shared_ptr<CMGTASK> task)
   rrt_options.x_ub << 3.0, 1.0, box_height;
   rrt_options.x_lb << -1.0, -1.0, 0.0;
 
-  rrt_options.eps_trans = 0.5;
+  rrt_options.eps_trans = 1.3;
   // rrt_options.eps_angle = 3.14 * 95 / 180;
   // rrt_options.eps_trans = 0.10;
   rrt_options.eps_angle = 3.14 * 50 / 180;
@@ -122,7 +123,7 @@ int main(int argc, char *argv[])
       20; // maximum iteration for search from the root node
   HMP::MCTSOptions compute_options_1st;
   compute_options_1st.max_iterations =
-      20; // maximum iteration for search from the root node
+      100; // maximum iteration for search from the root node
 
   HMP::Node<CMGTASK::State> *current_node = tree.search_tree(compute_options_1st, compute_options);
 

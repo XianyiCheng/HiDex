@@ -1579,7 +1579,8 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state)
 
   for (auto s : path_)
   {
-    std::cout << s.m_pose.transpose() << std::endl;
+    std::cout << "Pose " << s.m_pose.transpose() << std::endl;
+    std::cout << "Mode " << s.path_ss_mode.transpose() << std::endl;
   }
 
   return path_;
