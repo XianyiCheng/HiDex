@@ -76,7 +76,7 @@ void pivoting(std::shared_ptr<CMGTASK> task) {
 
   // pass the world and task parameters to the task through task->initialize
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
-                   mu_mnp, oi, f_g, world, rrt_options);
+                   mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASIDYNAMIC, rrt_options);
 
   // read surface point, add robot contacts
 
@@ -95,8 +95,6 @@ void pivoting(std::shared_ptr<CMGTASK> task) {
     ContactPoint p(box_length / 2 * v.head(3), v.tail(3));
     task->object_surface_pts.push_back(p);
   }
-  // task->task_dynamics_type = CMGTASK::CMG_QUASIDYNAMIC;
-  task->number_of_robot_contacts = n_robot_contacts;
 }
 
 int main(int argc, char *argv[]) {

@@ -81,7 +81,7 @@ void card(std::shared_ptr<CMGTASK> task)
 
   // pass the world and task parameters to the task through task->initialize
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
-                   mu_mnp, oi, f_g, world, rrt_options);
+                   mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASISTATIC, rrt_options);
 
   // read surface point, add robot contacts
 
@@ -102,8 +102,6 @@ void card(std::shared_ptr<CMGTASK> task)
     ContactPoint p(v.head(3), v.tail(3));
     task->object_surface_pts.push_back(p);
   }
-  task->task_dynamics_type = CMG_QUASISTATIC;
-  task->number_of_robot_contacts = n_robot_contacts;
 }
 
 
@@ -115,17 +113,20 @@ int main(int argc, char *argv[])
 
   CMGTASK::State start_state = task->get_start_state();
 
-  HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(task,
-                                                                 start_state);
+  HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
+                  CMGTASK>::HierarchicalComputeOptions compute_options;
 
-  HMP::MCTSOptions compute_options;
-  compute_options.max_iterations =
-      20; // maximum iteration for search from the root node
-  HMP::MCTSOptions compute_options_1st;
-  compute_options_1st.max_iterations =
-      100; // maximum iteration for search from the root node
+  compute_options.l1_1st.max_iterations = 100;
+  compute_options.l1.max_iterations = 20;
+  compute_options.l2_1st.max_iterations = 1000;
+  compute_options.l2.max_iterations = 300;
+  compute_options.final_l2_1st.max_iterations = 10000;
+  compute_options.final_l2.max_iterations = 3000;
 
-  HMP::Node<CMGTASK::State> *current_node = tree.search_tree(compute_options_1st, compute_options);
+  HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(
+      task, start_state, compute_options);
+
+  HMP::Node<CMGTASK::State> *current_node = tree.search_tree();
 
   std::vector<CMGTASK::State> object_trajectory;
   std::vector<CMGTASK::State2> action_trajectory;
@@ -140,7 +141,6 @@ int main(int argc, char *argv[])
     std::cout << "Timestep " << kk << std::endl;
     std::cout << "Pose " << object_trajectory[kk].m_pose.transpose()
               << std::endl;
-    std::cout << "Mode " << object_trajectory[kk].path_ss_mode.transpose() << std::endl;
     std::cout << "Fingers ";
     for (int jj: task->get_finger_locations(action_trajectory[kk].finger_index)){
       std::cout << jj << " ";

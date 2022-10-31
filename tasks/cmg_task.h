@@ -25,133 +25,6 @@
 #define CMG_QUASIDYNAMIC 1
 #define CMG_NODYNAMICS -1
 
-class RRTTree
-{
-public:
-  struct Node
-  {
-    Vector7d config; // x, y, z, qx, qy, qz, qw
-    int parent = -1;
-    int edge = -1; // index of edge from parent to this
-    bool is_extended_to_goal = false;
-    std::vector<ContactPoint> envs;
-    std::vector<VectorXi> modes;
-    Node(Vector7d data) { config = data; }
-  };
-
-  struct Edge
-  {
-    VectorXi mode;
-    std::vector<Vector7d> path;
-    Edge(VectorXi m, std::vector<Vector7d> &p) : mode(m), path(p) {}
-  };
-
-  std::vector<Node> nodes;
-  std::vector<Edge> edges;
-  double angle_weight;
-  double translation_weight;
-  RRTTree(const double &a_weight, const double &p_weight)
-      : angle_weight(a_weight), translation_weight(p_weight) {}
-  double dist(const Vector7d &q1, const Vector7d &q2)
-  {
-    Vector3d p1(q1[0], q1[1], q1[2]);
-    Vector3d p2(q2[0], q2[1], q2[2]);
-    Quaterniond quat1(q1[6], q1[3], q1[4], q1[5]); // Quaterniond: w, x, y, z
-    Quaterniond quat2(q2[6], q2[3], q2[4], q2[5]);
-    Vector3d dp = p1 - p2;
-    double dtrans = dp.norm();
-    double angle = angBTquat(quat1, quat2);
-
-    double d = this->translation_weight * dtrans + this->angle_weight * angle;
-    return d;
-  }
-
-  int nearest_neighbor(const Vector7d &q)
-  {
-    int near_idx;
-    double min_d = DBL_MAX;
-    for (int i = 0; i < nodes.size(); i++)
-    {
-      double d = this->dist(nodes[i].config, q);
-      if (d < min_d)
-      {
-        near_idx = i;
-        min_d = d;
-      }
-    }
-    return near_idx;
-  }
-
-  std::vector<int> nearest_neighbors(const Vector7d &q)
-  {
-    int near_idx = this->nearest_neighbor(q);
-    double min_d = this->dist(nodes[near_idx].config, q);
-
-    std::vector<int> near_idxes;
-    for (int i = 0; i < nodes.size(); i++)
-    {
-      double d = this->dist(nodes[i].config, q);
-      if ((d - min_d) * (d - min_d) < 1e-3)
-      {
-        near_idxes.push_back(i);
-      }
-    }
-    return near_idxes;
-  }
-
-  int nearest_unextended_to_goal(const Vector7d &q)
-  {
-    int near_idx;
-    double min_d = DBL_MAX;
-    for (int i = 0; i < nodes.size(); i++)
-    {
-      double d = this->dist(nodes[i].config, q);
-      if ((d < min_d) && (!nodes[i].is_extended_to_goal))
-      {
-        near_idx = i;
-        min_d = d;
-      }
-    }
-    if (min_d == DBL_MAX)
-    {
-      return -1;
-    }
-
-    return near_idx;
-  }
-  void backtrack(int last_node_idx, std::vector<int> *node_path)
-  {
-    int cur_node = last_node_idx;
-    node_path->push_back(cur_node);
-    bool is_start_node = nodes[cur_node].parent != -1;
-    while (is_start_node)
-    {
-      cur_node = nodes[cur_node].parent;
-      node_path->push_back(cur_node);
-      is_start_node = nodes[cur_node].parent != -1;
-    }
-    return;
-  }
-  void add_node(Node *n, int parent_idx, Edge *e)
-  {
-    // int node_idx = nodes.size();
-    int edge_idx = edges.size();
-    n->parent = parent_idx;
-    n->edge = edge_idx;
-
-    nodes.push_back(*n);
-    edges.push_back(*e);
-    return;
-  }
-
-  void initial_node(Node *n)
-  {
-    n->parent = -1;
-    nodes.push_back(*n);
-    return;
-  }
-};
-
 // Resuable RRT
 class ReusableRRT
 {
@@ -224,28 +97,7 @@ public:
     return all_idxes;
   }
 
-  int find_node(const Vector7d &q, int parent_env_n, double thr = 1e-3)
-  {
-    int near_idx = 0;
-    double min_d = this->dist(nodes[0].config, q);
-
-    for (int i = 1; i < nodes.size(); i++)
-    {
-      if (nodes[nodes[i].parent].envs.size() != parent_env_n)
-      {
-        continue;
-      }
-      double d = this->dist(nodes[i].config, q);
-      if (d < min_d)
-      {
-        near_idx = i;
-        min_d = d;
-      }
-    }
-    return (min_d < thr) ? near_idx : -1;
-  }
-
-  int find_node(const Vector7d &q, VectorXi ss_mode, int parent_idx,
+  int find_node(const Vector7d &q, VectorXi mode, int parent_idx,
                 double thr = 1e-3)
   {
     // ss_mode: the mode that leads to this node
@@ -258,12 +110,12 @@ public:
       {
         continue;
       }
-      if (edges[nodes[i].edge].mode.size() != ss_mode.size())
+      if (edges[nodes[i].edge].mode.size() != mode.size())
       {
         continue;
       }
 
-      if ((edges[nodes[i].edge].mode - ss_mode).norm() != 0)
+      if ((edges[nodes[i].edge].mode - mode).norm() != 0)
       {
         continue;
       }
@@ -405,7 +257,6 @@ public:
     std::vector<Vector7d>
         m_path;            // the path to this state (TODO: only save this path when
                            // m_mode_idx = -1 (node type: "pose"))
-    VectorXi path_ss_mode; // store the ss_mode of the path to this state
 
     State() {}
 
@@ -421,7 +272,6 @@ public:
       modes = state_.modes;
       envs = state_.envs;
       m_path = state_.m_path;
-      path_ss_mode = state_.path_ss_mode;
     }
 
     void do_action(int action) { m_mode_idx = action; }
@@ -433,7 +283,6 @@ public:
       this->modes = state_.modes;
       this->envs = state_.envs;
       this->m_path = state_.m_path;
-      this->path_ss_mode = state_.path_ss_mode;
       return *this;
     }
   };
@@ -474,6 +323,8 @@ public:
                   double wt, double charac_len, double mu_env, double mu_mnp,
                   Matrix6d object_inertia, Vector6d f_gravity,
                   std::shared_ptr<WorldTemplate> world,
+                  int n_robot_contacts,
+                  int dynamic_type,
                   const SearchOptions &options);
 
   // --- Level 1 Tree functions ---
@@ -492,22 +343,6 @@ public:
 
   double evaluate_path(const std::vector<State> &path) const
   {
-    // return the REWARD of the path: larger reward -> better path
-
-    // TODO: define reward
-    // double reward = 1 / (double(path.size()-7)*double(path.size()-7)+1);
-
-    // double avg_maintain_contact = 0;
-    // for (auto s:path){
-    //   if (s.m_mode_idx!=-1){
-    //     VectorXi mode = s.modes[s.m_mode_idx];
-    //     avg_maintain_contact += 1 -
-    //     (double(mode.sum())+1)/(double(mode.size())+1);
-    //   }
-    // }
-    // avg_maintain_contact = avg_maintain_contact/double(path.size());
-
-    // double reward = 1 / double(path.size()) + avg_maintain_contact;
     double reward = 1 / double(path.size());
 
     return reward;
@@ -517,6 +352,8 @@ public:
 
   std::vector<int> get_finger_locations(int finger_location_index)
   {
+
+    // obtain finger location idxes from the single location idx
 
     int N = this->object_surface_pts.size();
     int n = this->number_of_robot_contacts;
@@ -562,13 +399,14 @@ public:
 
   double estimate_next_state_value(const State2 &state, int action)
   {
-    return 0.0;
     // return 0.0 for now, can use neural networks to estimate values
+    return 0.0;
   }
 
   double action_heuristics_level2(int action_idx, const State2 &state, const State2 &pre_state)
   {
-    // todo: mprove this heuristics
+    // return the heuristics of an action in level2, this can be hand designed or learned
+    // todo: improve this heuristics
     std::vector<int> finger_locations_1 = this->get_finger_locations(pre_state.finger_index);
     std::vector<int> finger_locations_2 = this->get_finger_locations(action_idx);
 
@@ -582,36 +420,6 @@ public:
     }
 
     return heu;
-  }
-
-  int action_selection_policy_level2(const State2 &state,
-                                     const State2 &pre_state)
-  {
-    // Manually assigned policy: Specific to the planning robot contact problem:
-    // with 0.5 probability, we will select the current action
-    if (randd() > 0.5)
-    {
-      return pre_state.finger_index;
-    }
-    else
-    {
-      return -1;
-    }
-  }
-
-  int action_selection_policy_level1(const State &state,
-                                     const State &pre_state)
-  {
-    // Manually assigned policy: only for select modes, select the same mode as
-    // previous mode
-    if (randd() > 0.5)
-    {
-      return pre_state.m_mode_idx;
-    }
-    else
-    {
-      return -1;
-    }
   }
 
   int get_number_of_robot_actions(const State2 &state)

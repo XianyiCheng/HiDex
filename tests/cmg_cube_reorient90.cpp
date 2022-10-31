@@ -6,26 +6,24 @@
 
 #include "../mechanics/utilities/utilities.h"
 
+#include "../mechanics/manipulators/DartPointManipulator.h"
 #include "../mechanics/utilities/parser.hpp"
 #include "../mechanics/worlds/DartWorld.h"
-#include "../mechanics/manipulators/DartPointManipulator.h"
 
 #ifndef DART_UTILS
 #define DART_UTILS
 #include "../mechanics/dart_utils/dart_utils.h"
 #endif
 
-
-
-void pivoting(std::shared_ptr<CMGTASK> task)
-{
+void pivoting(std::shared_ptr<CMGTASK> task) {
   // Test with two fingers and one finger quasidynamics
 
   double box_length = 0.05;
 
   std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
 
-  SkeletonPtr object = createFreeBox("box_object", box_length * Vector3d(1, 1, 1));
+  SkeletonPtr object =
+      createFreeBox("box_object", box_length * Vector3d(1, 1, 1));
   SkeletonPtr env1 =
       createFixedBox("ground", Vector3d(2, 2, 0.2), Vector3d(0, 0, -0.1));
 
@@ -33,7 +31,8 @@ void pivoting(std::shared_ptr<CMGTASK> task)
   world->addEnvironmentComponent(env1);
 
   int n_robot_contacts = 2;
-  DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, box_length * 0.25);
+  DartPointManipulator *rpt =
+      new DartPointManipulator(n_robot_contacts, box_length * 0.25);
   world->addRobot(rpt);
 
   // set the task parameters, start, goal, object inertial, etc....
@@ -43,7 +42,7 @@ void pivoting(std::shared_ptr<CMGTASK> task)
   x_start << 0, 0, box_length / 2 * 0.9999, 0, 0, 0, 1;
 
   // goal: rotate around y axis for 90 degrees
-  x_goal << 0.2, 0, box_length/2 * 0.9999, 0, 0.7071, 0, 0.7071;
+  x_goal << 0.2, 0, box_length / 2 * 0.9999, 0, 0.7071, 0, 0.7071;
 
   double goal_thr = box_length * 3.14 * 30 / 180;
 
@@ -79,7 +78,8 @@ void pivoting(std::shared_ptr<CMGTASK> task)
 
   // pass the world and task parameters to the task through task->initialize
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
-                   mu_mnp, oi, f_g, world, rrt_options);
+                   mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASISTATIC,
+                   rrt_options);
 
   // read surface point, add robot contacts
 
@@ -87,43 +87,40 @@ void pivoting(std::shared_ptr<CMGTASK> task)
                   "/data/test_cmg_cube_reorient90/surface_contacts.csv");
   aria::csv::CsvParser parser(f);
 
-  for (auto &row : parser)
-  {
+  for (auto &row : parser) {
     int n_cols = row.size();
     assert(n_cols == 6);
 
     Vector6d v;
-    for (int j = 0; j < 6; ++j)
-    {
+    for (int j = 0; j < 6; ++j) {
       v(j) = std::stod(row[j]);
     }
     ContactPoint p(box_length / 2 * v.head(3), v.tail(3));
     task->object_surface_pts.push_back(p);
   }
-  task->task_dynamics_type = CMG_QUASISTATIC;
-  task->number_of_robot_contacts = n_robot_contacts;
 }
 
-
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   std::shared_ptr<CMGTASK> task = std::make_shared<CMGTASK>();
 
   pivoting(task);
 
   CMGTASK::State start_state = task->get_start_state();
 
-  HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(task,
-                                                                 start_state);
+  HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
+                  CMGTASK>::HierarchicalComputeOptions compute_options;
 
-  HMP::MCTSOptions compute_options;
-  compute_options.max_iterations =
-      20; // maximum iteration for search from the root node
-  HMP::MCTSOptions compute_options_1st;
-  compute_options_1st.max_iterations =
-      50; // maximum iteration for search from the root node
+  compute_options.l1_1st.max_iterations = 100;
+  compute_options.l1.max_iterations = 20;
+  compute_options.l2_1st.max_iterations = 1000;
+  compute_options.l2.max_iterations = 300;
+  compute_options.final_l2_1st.max_iterations = 10000;
+  compute_options.final_l2.max_iterations = 3000;
 
-  HMP::Node<CMGTASK::State> *current_node = tree.search_tree(compute_options_1st, compute_options);
+  HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(
+      task, start_state, compute_options);
+
+  HMP::Node<CMGTASK::State> *current_node = tree.search_tree();
 
   std::vector<CMGTASK::State> object_trajectory;
   std::vector<CMGTASK::State2> action_trajectory;
@@ -133,14 +130,13 @@ int main(int argc, char *argv[])
 
   std::cout << "Best value " << current_node->m_value << std::endl;
 
-  for (int kk = 0; kk < object_trajectory.size(); ++kk)
-  {
+  for (int kk = 0; kk < object_trajectory.size(); ++kk) {
     std::cout << "Timestep " << kk << std::endl;
     std::cout << "Pose " << object_trajectory[kk].m_pose.transpose()
               << std::endl;
-    std::cout << "Mode " << object_trajectory[kk].path_ss_mode.transpose() << std::endl;
     std::cout << "Fingers ";
-    for (int jj: task->get_finger_locations(action_trajectory[kk].finger_index)){
+    for (int jj :
+         task->get_finger_locations(action_trajectory[kk].finger_index)) {
       std::cout << jj << " ";
     }
     std::cout << std::endl;
@@ -149,11 +145,12 @@ int main(int argc, char *argv[])
                        object_trajectory[kk].m_path.end());
   }
 
-  std::cout << "Total level 1 tree nodes " << tree.count_total_nodes() << std::endl;
+  std::cout << "Total level 1 tree nodes " << tree.count_total_nodes()
+            << std::endl;
 
-  std::cout << "Total shared rrt nodes " << tree.m_task->total_rrt_nodes() << std::endl;
+  std::cout << "Total shared rrt nodes " << tree.m_task->total_rrt_nodes()
+            << std::endl;
 
   // world->setObjectTrajectory(object_traj);
   // world->startWindow(&argc, argv);
 }
-
