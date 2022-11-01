@@ -1495,8 +1495,6 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state, const State2 &prev_state)
     return true;
   }
 
-
-
   // consider the transition from previous timestep to current state is valid
   int pre_timestep = prev_state.timestep; // state.timestep - 1;
   Vector7d x_object = this->saved_object_trajectory[pre_timestep].m_pose;
@@ -1669,7 +1667,8 @@ void CMGTASK::save_trajectory(const std::vector<CMGTASK::State> &path)
     this->saved_object_trajectory.clear();
   }
 
-  if (!this->if_refine){
+  if (!this->if_refine)
+  {
     this->saved_object_trajectory = path;
     return;
   }
@@ -1696,4 +1695,67 @@ void CMGTASK::save_trajectory(const std::vector<CMGTASK::State> &path)
 
     this->saved_object_trajectory.push_back(state);
   }
+}
+
+int factorial(int n, int m)
+{
+  int result = 1;
+  for (int i = n; i > m; i--)
+  {
+    result *= i;
+  }
+  return result;
+}
+
+std::vector<int> CMGTASK::get_finger_locations(int finger_location_index)
+{
+
+  // obtain finger location idxes from the single location idx
+
+  int N = this->object_surface_pts.size();
+  int n = this->number_of_robot_contacts;
+  int x = finger_location_index;
+
+  std::vector<int> finger_locations;
+  if (x == -1){
+    for (int i = 0; i < n; ++i)
+    {
+      finger_locations.push_back(0);
+    }
+    return finger_locations;
+  }
+  for (int k = 0; k < n; ++k)
+  {
+    int a = int(x / factorial(N - k - 1, n));
+    x -= a * factorial(N - k - 1, n);
+    for (auto p : finger_locations)
+    {
+      if (p == a)
+      {
+        a += 1;
+      }
+    }
+    finger_locations.push_back(a);
+  }
+
+  // for (int k = 0; k < n; ++k)
+  // {
+  //   int a = int(x / pow(N, (n - k - 1)));
+  //   x -= a * (int)pow(N, (n - k - 1));
+
+  //   finger_locations.push_back(a);
+  // }
+  return finger_locations;
+}
+
+int CMGTASK::get_number_of_robot_actions(const CMGTASK::State2 &state)
+{
+  // // return combination of fingers for now
+  if (this->n_finger_combinations == -1)
+  {
+    this->n_finger_combinations = factorial(this->object_surface_pts.size(), this->number_of_robot_contacts);
+  }
+
+  return this->n_finger_combinations;
+  // return pow(this->object_surface_pts.size(), this->number_of_robot_contacts);
 }

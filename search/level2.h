@@ -33,6 +33,12 @@ public:
       while (!this->is_terminal(node)) {
         int action;
         action = this->select_action(node);
+        if (action > node->number_of_next_actions) {
+          std::cerr << "Error in Tree::grow_tree (level2.h). Action index out "
+                       "of range. "
+                    << std::endl;
+          exit(-1);
+        }
         node = this->next_node(node, action);
         node->number_of_next_actions =
             this->m_task->get_number_of_robot_actions(node->m_state);

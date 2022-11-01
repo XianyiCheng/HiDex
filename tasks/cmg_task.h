@@ -255,8 +255,8 @@ public:
     int m_mode_idx = -1; // the mode chosen for this state, to the next state
     std::vector<Eigen::VectorXi> modes;
     std::vector<Vector7d>
-        m_path;            // the path to this state (TODO: only save this path when
-                           // m_mode_idx = -1 (node type: "pose"))
+        m_path; // the path to this state (TODO: only save this path when
+                // m_mode_idx = -1 (node type: "pose"))
 
     State() {}
 
@@ -351,25 +351,7 @@ public:
 
   // --- Level 2 Tree functions for robot contact planning ----
 
-  std::vector<int> get_finger_locations(int finger_location_index)
-  {
-
-    // obtain finger location idxes from the single location idx
-
-    int N = this->object_surface_pts.size();
-    int n = this->number_of_robot_contacts;
-    int x = finger_location_index;
-
-    std::vector<int> finger_locations;
-    for (int k = 0; k < n; ++k)
-    {
-      int a = int(x / pow(N, (n - k - 1)));
-      x -= a * (int)pow(N, (n - k - 1));
-
-      finger_locations.push_back(a);
-    }
-    return finger_locations;
-  }
+  std::vector<int> get_finger_locations(int finger_location_index);
 
   VectorXd get_robot_config_from_action_idx(int action_index)
   {
@@ -423,11 +405,7 @@ public:
     return heu;
   }
 
-  int get_number_of_robot_actions(const State2 &state)
-  {
-    // return combination of fingers for now
-    return pow(this->object_surface_pts.size(), this->number_of_robot_contacts);
-  }
+  int get_number_of_robot_actions(const State2 &state);
 
   bool is_terminal(const State2 &state)
   {
@@ -453,7 +431,7 @@ public:
 
   void save_trajectory(const std::vector<CMGTASK::State> &path);
 
-  std::vector<State> generate_a_finer_object_trajectory(std::vector<State>& object_traj, double dist);
+  std::vector<State> generate_a_finer_object_trajectory(std::vector<State> &object_traj, double dist);
 
   std::vector<State> saved_object_trajectory;
   std::vector<ContactPoint> object_surface_pts;
@@ -490,4 +468,6 @@ private:
 
   bool if_refine = false;
   bool refine_dist = 0.0;
+
+  int n_finger_combinations = -1;
 };
