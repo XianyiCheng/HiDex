@@ -325,7 +325,8 @@ public:
                   std::shared_ptr<WorldTemplate> world,
                   int n_robot_contacts,
                   int dynamic_type,
-                  const SearchOptions &options);
+                  const SearchOptions &options,
+                  bool if_refine = false, double refine_dist = 0.0);
 
   // --- Level 1 Tree functions ---
   State get_start_state() const { return generate_state(start_object_pose); }
@@ -450,6 +451,8 @@ public:
 
   bool is_valid(const State2 &state, const State2 &prev_state);
 
+  void save_trajectory(const std::vector<CMGTASK::State> &path);
+
   std::vector<State> generate_a_finer_object_trajectory(std::vector<State>& object_traj, double dist);
 
   std::vector<State> saved_object_trajectory;
@@ -484,4 +487,7 @@ private:
   std::unique_ptr<ContactConstraints> cons;
 
   std::shared_ptr<ReusableRRT> shared_rrt;
+
+  bool if_refine = false;
+  bool refine_dist = 0.0;
 };

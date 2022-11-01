@@ -92,7 +92,7 @@ public:
       if (randd() > 0.5) {
         action_idx = node->m_parent->m_state.m_mode_idx;
       } else {
-        action_idx - 1;
+        action_idx = - 1;
       }
     }
 
@@ -132,10 +132,12 @@ public:
 
     if (node->m_visits > 0) {
       // if the terminal node has been evaluated before, we will just return its
-      // previous result This is valid unless there is randomness in the result
+      // previous result. This is valid unless there is randomness in the result
       // evaluation process
       return node->m_value;
     }
+
+    // generate the state back
     std::vector<State> state_path;
 
     state_path.push_back(node->m_state);
@@ -151,11 +153,14 @@ public:
 
     std::reverse(state_path.begin(), state_path.end());
 
-    // create a level 2 tree to search for the robot contact path
-    // do this->m_task->evaluate_path within level2
-    // this->m_task->saved_object_trajectory =
-    // this->m_task->generate_a_finer_object_trajectory(state_path, 1.0);
-    this->m_task->saved_object_trajectory = state_path;
+    // pass this state path to m_task->saved_object_trajectory
+    this->m_task->save_trajectory(state_path);
+
+    std::cout << "Start level 2 search" << std::endl;
+
+    for (auto s: this->m_task->saved_object_trajectory) {
+      std::cout << s.m_pose.transpose() << std::endl;
+    }
 
     Level2Tree<State2, Task> tree2(this->m_task,
                                    this->m_task->get_start_state2());
@@ -365,10 +370,7 @@ public:
 
     std::reverse(object_trajectory->begin(), object_trajectory->end());
 
-    this->m_task->saved_object_trajectory = *object_trajectory;
-    // this->m_task->saved_object_trajectory =
-    // this->m_task->generate_a_finer_object_trajectory(*object_trajectory,1.0);
-    // *object_trajectory = this->m_task->saved_object_trajectory;
+    this->m_task->save_trajectory(*object_trajectory);
 
     Level2Tree<State2, Task> tree2(this->m_task,
                                    this->m_task->get_start_state2());
@@ -378,6 +380,7 @@ public:
         tree2.search_tree(compute_options.final_l2_1st, compute_options.final_l2);
 
     *action_trajectory = tree2.backtrack_state_path(final_node_2);
+    *object_trajectory = this->m_task->saved_object_trajectory;
 
     return;
   }

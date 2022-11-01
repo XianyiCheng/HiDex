@@ -73,10 +73,12 @@ void pushing(std::shared_ptr<CMGTASK> task) {
 
   rrt_options.goal_biased_prob = 0.7;
 
+  bool is_refine = true;
+  double refine_dist = 0.1;
   // pass the world and task parameters to the task through task->initialize
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
                    mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASISTATIC,
-                   rrt_options);
+                   rrt_options, is_refine, refine_dist);
 
   // read surface point, add robot contacts
 

@@ -35,7 +35,7 @@ void card(std::shared_ptr<CMGTASK> task)
 
   int n_robot_contacts = 2;
   DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, box_length * 0.25);
-  rpt->is_patch_contact = true;
+  rpt->is_patch_contact = false;
   world->addRobot(rpt);
 
   // set the task parameters, start, goal, object inertial, etc....
@@ -47,13 +47,13 @@ void card(std::shared_ptr<CMGTASK> task)
   // goal: rotate around y axis for 90 degrees
   x_goal << 2.5, 0, box_length/2 * 1.5, 0, -0.7071, 0, 0.7071;
 
-  double goal_thr = box_length * 3.14 * 30 / 180;
+  double goal_thr = box_length * 3.14 * 10 / 180;
 
   double wa = 0.4;
   double wt = 1.0;
 
-  double mu_env = 0.4;
-  double mu_mnp = 0.8;
+  double mu_env = 0.2;
+  double mu_mnp = 0.7;
 
   double charac_len = 1;
 
@@ -71,17 +71,21 @@ void card(std::shared_ptr<CMGTASK> task)
   rrt_options.x_ub << 3.0, 1.0, box_height;
   rrt_options.x_lb << -1.0, -1.0, 0.0;
 
-  rrt_options.eps_trans = 1.3;
+  rrt_options.eps_trans = 0.75;
   // rrt_options.eps_angle = 3.14 * 95 / 180;
   // rrt_options.eps_trans = 0.10;
-  rrt_options.eps_angle = 3.14 * 50 / 180;
+  rrt_options.eps_angle = 3.14 * 35 / 180;
   rrt_options.max_samples = 20;
 
   rrt_options.goal_biased_prob = 0.7;
 
+  bool if_refine = true;
+  bool refine_dist = 0.5;
+
   // pass the world and task parameters to the task through task->initialize
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
-                   mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASISTATIC, rrt_options);
+                   mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASISTATIC, rrt_options,
+                   if_refine, refine_dist);
 
   // read surface point, add robot contacts
 
@@ -118,10 +122,10 @@ int main(int argc, char *argv[])
 
   compute_options.l1_1st.max_iterations = 100;
   compute_options.l1.max_iterations = 20;
-  compute_options.l2_1st.max_iterations = 1000;
-  compute_options.l2.max_iterations = 300;
-  compute_options.final_l2_1st.max_iterations = 10000;
-  compute_options.final_l2.max_iterations = 3000;
+  compute_options.l2_1st.max_iterations = 10000;
+  compute_options.l2.max_iterations = 2000;
+  compute_options.final_l2_1st.max_iterations = 5000;
+  compute_options.final_l2.max_iterations = 2000;
 
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(
       task, start_state, compute_options);
@@ -136,11 +140,16 @@ int main(int argc, char *argv[])
 
   std::cout << "Best value " << current_node->m_value << std::endl;
 
+  std::cout << object_trajectory.size() << std::endl;
+  std::cout << action_trajectory.size() << std::endl;
+
   for (int kk = 0; kk < object_trajectory.size(); ++kk)
   {
     std::cout << "Timestep " << kk << std::endl;
     std::cout << "Pose " << object_trajectory[kk].m_pose.transpose()
               << std::endl;
+    std::cout << "# envs " << object_trajectory[kk].envs.size() << std::endl;
+    std::cout << "action " << action_trajectory[kk].finger_index << std::endl;
     std::cout << "Fingers ";
     for (int jj: task->get_finger_locations(action_trajectory[kk].finger_index)){
       std::cout << jj << " ";
