@@ -15,7 +15,7 @@
 #include "../mechanics/dart_utils/dart_utils.h"
 #endif
 
-
+#include "visualization.h"
 
 void card(std::shared_ptr<CMGTASK> task)
 {
@@ -34,7 +34,7 @@ void card(std::shared_ptr<CMGTASK> task)
   world->addEnvironmentComponent(env1);
 
   int n_robot_contacts = 2;
-  DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, box_length * 0.25);
+  DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, box_height * 0.1);
   rpt->is_patch_contact = false;
   world->addRobot(rpt);
 
@@ -79,7 +79,7 @@ void card(std::shared_ptr<CMGTASK> task)
 
   rrt_options.goal_biased_prob = 0.7;
 
-  bool if_refine = true;
+  bool if_refine = false;
   bool refine_dist = 0.5;
 
   // pass the world and task parameters to the task through task->initialize
@@ -137,6 +137,7 @@ int main(int argc, char *argv[])
   tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
 
   std::vector<Vector7d> object_traj;
+  std::vector<VectorXd> mnp_traj;
 
   std::cout << "Best value " << current_node->m_value << std::endl;
 
@@ -158,13 +159,16 @@ int main(int argc, char *argv[])
     // object_traj.push_back(object_trajectory[kk].m_pose);
     object_traj.insert(object_traj.end(), object_trajectory[kk].m_path.begin(),
                        object_trajectory[kk].m_path.end());
+    for(int i = 0; i < object_trajectory[kk].m_path.size(); i++){
+      mnp_traj.push_back(task->get_robot_config_from_action_idx(action_trajectory[kk].finger_index));
+    }
   }
 
   std::cout << "Total level 1 tree nodes " << tree.count_total_nodes() << std::endl;
 
   std::cout << "Total shared rrt nodes " << tree.m_task->total_rrt_nodes() << std::endl;
 
-  // world->setObjectTrajectory(object_traj);
-  // world->startWindow(&argc, argv);
+  VisualizeTraj(task->m_world, object_traj, mnp_traj);
+  task->m_world->startWindow(&argc, argv);
 }
 

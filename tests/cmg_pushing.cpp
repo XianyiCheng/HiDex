@@ -15,6 +15,8 @@
 #include "../mechanics/dart_utils/dart_utils.h"
 #endif
 
+#include "visualization.h"
+
 void pushing(std::shared_ptr<CMGTASK> task) {
   // create world, create environment, an object sliding on the table
 
@@ -109,12 +111,12 @@ int main(int argc, char *argv[]) {
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
                   CMGTASK>::HierarchicalComputeOptions compute_options;
 
-  compute_options.l1_1st.max_iterations = 100;
-  compute_options.l1.max_iterations = 20;
+  compute_options.l1_1st.max_iterations = 20;
+  compute_options.l1.max_iterations = 10;
   compute_options.l2_1st.max_iterations = 1000;
   compute_options.l2.max_iterations = 300;
-  compute_options.final_l2_1st.max_iterations = 10000;
-  compute_options.final_l2.max_iterations = 3000;
+  compute_options.final_l2_1st.max_iterations = 1000;
+  compute_options.final_l2.max_iterations = 300;
 
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(
       task, start_state, compute_options);
@@ -126,6 +128,7 @@ int main(int argc, char *argv[]) {
   tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
 
   std::vector<Vector7d> object_traj;
+  std::vector<VectorXd> mnp_traj;
 
   std::cout << "Best value " << current_node->m_value << std::endl;
 
@@ -142,6 +145,9 @@ int main(int argc, char *argv[]) {
     // object_traj.push_back(object_trajectory[kk].m_pose);
     object_traj.insert(object_traj.end(), object_trajectory[kk].m_path.begin(),
                        object_trajectory[kk].m_path.end());
+    for(int i = 0; i < object_trajectory[kk].m_path.size(); i++){
+      mnp_traj.push_back(task->get_robot_config_from_action_idx(action_trajectory[kk].finger_index));
+    }
   }
 
   std::cout << "Total level 1 tree nodes " << tree.count_total_nodes()
@@ -151,5 +157,6 @@ int main(int argc, char *argv[]) {
             << std::endl;
 
   // world->setObjectTrajectory(object_traj);
-  // world->startWindow(&argc, argv);
+  VisualizeTraj(task->m_world, object_traj, mnp_traj);
+  task->m_world->startWindow(&argc, argv);
 }

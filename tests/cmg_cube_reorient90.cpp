@@ -15,6 +15,8 @@
 #include "../mechanics/dart_utils/dart_utils.h"
 #endif
 
+#include "visualization.h"
+
 void pivoting(std::shared_ptr<CMGTASK> task) {
   // Test with two fingers and one finger quasidynamics
 
@@ -127,6 +129,7 @@ int main(int argc, char *argv[]) {
   tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
 
   std::vector<Vector7d> object_traj;
+  std::vector<VectorXd> mnp_traj;
 
   std::cout << "Best value " << current_node->m_value << std::endl;
 
@@ -143,6 +146,9 @@ int main(int argc, char *argv[]) {
     // object_traj.push_back(object_trajectory[kk].m_pose);
     object_traj.insert(object_traj.end(), object_trajectory[kk].m_path.begin(),
                        object_trajectory[kk].m_path.end());
+    for(int i = 0; i < object_trajectory[kk].m_path.size(); i++){
+      mnp_traj.push_back(task->get_robot_config_from_action_idx(action_trajectory[kk].finger_index));
+    }
   }
 
   std::cout << "Total level 1 tree nodes " << tree.count_total_nodes()
@@ -151,6 +157,6 @@ int main(int argc, char *argv[]) {
   std::cout << "Total shared rrt nodes " << tree.m_task->total_rrt_nodes()
             << std::endl;
 
-  // world->setObjectTrajectory(object_traj);
-  // world->startWindow(&argc, argv);
+  VisualizeTraj(task->m_world, object_traj, mnp_traj);
+  task->m_world->startWindow(&argc, argv);
 }
