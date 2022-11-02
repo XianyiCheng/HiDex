@@ -1697,10 +1697,10 @@ void CMGTASK::save_trajectory(const std::vector<CMGTASK::State> &path)
   }
 }
 
-int factorial(int n, int m)
+long int factorial(int n, int m)
 {
-  int result = 1;
-  for (int i = n; i > m; i--)
+  long int result = 1;
+  for (int i = n; i > n - m; i--)
   {
     result *= i;
   }
@@ -1726,8 +1726,9 @@ std::vector<int> CMGTASK::get_finger_locations(int finger_location_index)
   }
   for (int k = 0; k < n; ++k)
   {
-    int a = int(x / factorial(N - k - 1, n));
-    x -= a * factorial(N - k - 1, n);
+    int divisor = factorial(N - k - 1, n - k -1);
+    int a = int(x / divisor);
+    x -= a * divisor;
     for (auto p : finger_locations)
     {
       if (p == a)

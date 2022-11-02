@@ -469,5 +469,5 @@ private:
   bool if_refine = false;
   bool refine_dist = 0.0;
 
-  int n_finger_combinations = -1;
+  long int n_finger_combinations = -1;
 };
