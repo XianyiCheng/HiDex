@@ -97,13 +97,8 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
   bool if_refine = false;
   bool refine_dist = 0.5;
 
-  // pass the world and task parameters to the task through task->initialize
-  task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
-                   mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASISTATIC,
-                   rrt_options, if_refine, refine_dist);
-
   // read surface point, add robot contacts
-
+  std::vector<ContactPoint> surface_pts;
   std::ifstream f(std::string(SRC_DIR) +
                   "/data/test_cmg_bookshelf/surface_contacts.csv");
   aria::csv::CsvParser parser(f);
@@ -117,9 +112,13 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
       v(j) = std::stod(row[j]);
     }
     ContactPoint p(v.head(3), v.tail(3));
-    task->object_surface_pts.push_back(p);
+    surface_pts.push_back(p);
   }
-
+  // pass the world and task parameters to the task through task->initialize
+  task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
+                   mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASISTATIC,
+                   surface_pts,
+                   rrt_options, if_refine, refine_dist);
   // VisualizeSG(task->m_world, x_start, x_goal);
 }
 

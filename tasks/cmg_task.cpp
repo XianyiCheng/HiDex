@@ -1159,6 +1159,7 @@ void CMGTASK::initialize(const Vector7d &start_object_pose,
                          std::shared_ptr<WorldTemplate> world,
                          int n_robot_contacts,
                          int dynamic_type,
+                         std::vector<ContactPoint> surface_pts,
                          const SearchOptions &options,
                          bool if_refine, double refine_dist)
 {
@@ -1178,6 +1179,7 @@ void CMGTASK::initialize(const Vector7d &start_object_pose,
   this->m_world = world;
   this->number_of_robot_contacts = n_robot_contacts;
   this->task_dynamics_type = dynamic_type;
+  this->object_surface_pts = surface_pts;
   this->if_refine = if_refine;
   this->refine_dist = refine_dist;
 
@@ -1189,6 +1191,10 @@ void CMGTASK::initialize(const Vector7d &start_object_pose,
   this->m_world->getObjectContacts(&(start_node.envs), start_node.config);
   enumerate_cs_modes(*this->cons.get(), start_node.envs, &start_node.modes);
   shared_rrt->initial_node(&start_node);
+
+  // calculate total number of finger combinations
+  // each finger can be zeros, but other than that do not allow overlap
+  this->n_finger_combinations = factorial(this->object_surface_pts.size(), this->number_of_robot_contacts);
 }
 
 CMGTASK::State CMGTASK::generate_state(const Vector7d &object_pose) const
@@ -1718,16 +1724,6 @@ void CMGTASK::save_trajectory(const std::vector<CMGTASK::State> &path)
   }
 }
 
-long int factorial(int n, int m)
-{
-  long int result = 1;
-  for (int i = n; i > n - m; i--)
-  {
-    result *= i;
-  }
-  return result;
-}
-
 std::vector<int> CMGTASK::get_finger_locations(int finger_location_index)
 {
 
@@ -1773,11 +1769,6 @@ std::vector<int> CMGTASK::get_finger_locations(int finger_location_index)
 
 int CMGTASK::get_number_of_robot_actions(const CMGTASK::State2 &state)
 {
-  // // return combination of fingers for now
-  if (this->n_finger_combinations == -1)
-  {
-    this->n_finger_combinations = factorial(this->object_surface_pts.size(), this->number_of_robot_contacts);
-  }
 
   return this->n_finger_combinations;
   // return pow(this->object_surface_pts.size(), this->number_of_robot_contacts);
@@ -1789,10 +1780,7 @@ bool CMGTASK::pruning_check(const Vector7d &x, const Vector6d &v, const std::vec
   bool dynamic_feasibility = false;
   int max_sample = 100;
   // TODO: calculate n_finger_combination during initialization
-  if (this->n_finger_combinations == -1)
-  {
-    this->n_finger_combinations = factorial(this->object_surface_pts.size(), this->number_of_robot_contacts);
-  }
+
   max_sample = (max_sample > this->n_finger_combinations) ? this->n_finger_combinations : max_sample;
 
   for (int k_sample = 0; k_sample < max_sample; k_sample++)

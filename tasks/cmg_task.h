@@ -325,6 +325,7 @@ public:
                   std::shared_ptr<WorldTemplate> world,
                   int n_robot_contacts,
                   int dynamic_type,
+                  std::vector<ContactPoint> surface_pts,
                   const SearchOptions &options,
                   bool if_refine = false, double refine_dist = 0.0);
 

@@ -44,5 +44,5 @@ target_link_libraries(cmg_pick_card PRIVATE mcts-mechanics ${dart_libs})
 add_executable(cmg_bookshelf cmg_bookshelf.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
 target_link_libraries(cmg_bookshelf PRIVATE mcts-mechanics ${dart_libs})
 
-add_executable(test_hand_collision test_hand_collision.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
-target_link_libraries(test_hand_collision PRIVATE mcts-mechanics ${dart_libs})
+
+add_executable(test_action_idx test_action_idx.cpp)
