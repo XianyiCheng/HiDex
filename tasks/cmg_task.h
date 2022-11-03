@@ -433,6 +433,8 @@ public:
 
   std::vector<State> generate_a_finer_object_trajectory(std::vector<State> &object_traj, double dist);
 
+  bool pruning_check(const Vector7d &x, const Vector6d & v, const std::vector<ContactPoint>& envs);
+
   std::vector<State> saved_object_trajectory;
   std::vector<ContactPoint> object_surface_pts;
   int number_of_robot_contacts;

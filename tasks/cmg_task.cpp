@@ -1012,6 +1012,13 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
 
     steer_velocity(v_b, h, this->charac_len);
 
+    // TODO: pruning here
+    if (counter == 0)
+    {
+      // randomly sample collision free mnp contacts and check feasibility
+      // only consider to extend this when there exist collision free mnp contacts that satisfy the dynamic condition
+    }
+
     // integrate v
     Vector7d x_new = SE32pose(T * se32SE3(v_b));
 
@@ -1336,6 +1343,7 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state)
       // std::cout << "cs mode " << cs_mode.transpose() << std::endl;
 
       // extend cs_mode with all sticking mode and free sliding mode
+
       std::vector<VectorXi> mode_to_extend;
       {
         VectorXi all_sticking_mode(3 * cs_mode.size());
@@ -1349,12 +1357,25 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state)
         if (dist_vel(v, v_star, shared_rrt->translation_weight,
                      shared_rrt->angle_weight) < d_zero)
         {
-          mode_to_extend.push_back(all_sticking_mode);
+          bool is_pass_pruning = this->pruning_check(shared_rrt->nodes[near_idx].config, v, shared_rrt->nodes[near_idx].envs);
+          if (is_pass_pruning)
+          {
+            mode_to_extend.push_back(all_sticking_mode);
+          }
         }
       }
-      mode_to_extend.push_back(
-          cs_mode); // extend this cs_mode in free sliding way
 
+      {
+        // extend this cs_mode in free sliding way
+        Vector6d v = EnvironmentConstrainedVelocity_CSModeOnly(
+            v_star, shared_rrt->nodes[near_idx].envs, cs_mode,
+            *this->cons);
+        bool is_pass_pruning = this->pruning_check(shared_rrt->nodes[near_idx].config, v, shared_rrt->nodes[near_idx].envs);
+        if (is_pass_pruning)
+        {
+          mode_to_extend.push_back(cs_mode);
+        }
+      }
       /// choose sliding mode end
 
       for (const auto &mode : mode_to_extend)
@@ -1717,7 +1738,8 @@ std::vector<int> CMGTASK::get_finger_locations(int finger_location_index)
   int x = finger_location_index;
 
   std::vector<int> finger_locations;
-  if (x == -1){
+  if (x == -1)
+  {
     for (int i = 0; i < n; ++i)
     {
       finger_locations.push_back(0);
@@ -1726,7 +1748,7 @@ std::vector<int> CMGTASK::get_finger_locations(int finger_location_index)
   }
   for (int k = 0; k < n; ++k)
   {
-    int divisor = factorial(N - k - 1, n - k -1);
+    int divisor = factorial(N - k - 1, n - k - 1);
     int a = int(x / divisor);
     x -= a * divisor;
     for (auto p : finger_locations)
@@ -1759,4 +1781,80 @@ int CMGTASK::get_number_of_robot_actions(const CMGTASK::State2 &state)
 
   return this->n_finger_combinations;
   // return pow(this->object_surface_pts.size(), this->number_of_robot_contacts);
+}
+
+bool CMGTASK::pruning_check(const Vector7d &x, const Vector6d &v, const std::vector<ContactPoint> &envs)
+{
+
+  bool dynamic_feasibility = false;
+  int max_sample = 100;
+  // TODO: calculate n_finger_combination during initialization
+  if (this->n_finger_combinations == -1)
+  {
+    this->n_finger_combinations = factorial(this->object_surface_pts.size(), this->number_of_robot_contacts);
+  }
+  max_sample = (max_sample > this->n_finger_combinations) ? this->n_finger_combinations : max_sample;
+
+  for (int k_sample = 0; k_sample < max_sample; k_sample++)
+  {
+    int finger_idx = randi(this->n_finger_combinations);
+    std::vector<ContactPoint> mnps;
+    if (finger_idx != 0)
+    {
+      VectorXd mnp_config =
+          this->get_robot_config_from_action_idx(finger_idx);
+
+      // update object pose
+      this->m_world->updateObjectPose(x);
+
+      // if there is no ik solution, not valid
+      if (!this->m_world->getRobot()->ifIKsolution(mnp_config, x))
+      {
+        continue;
+      }
+
+      // if the robot collides, not valid
+      if (this->m_world->isRobotCollide(mnp_config))
+      {
+        continue;
+      }
+
+      // check if there is quasistatic, or quasidynamic
+      {
+        std::vector<int> fingertip_idx =
+            this->get_finger_locations(finger_idx);
+        std::vector<ContactPoint> fingertips;
+        for (int idx : fingertip_idx)
+        {
+          if (idx > 0)
+          {
+            fingertips.push_back(this->object_surface_pts[idx]);
+          }
+        }
+        // this->m_world->getRobot()->getFingertipsOnObject(mnp_config, x_object,
+        //                                                  &fingertips);
+        this->m_world->getRobot()->Fingertips2PointContacts(fingertips, &mnps);
+      }
+    }
+
+    if (this->task_dynamics_type == CMG_QUASISTATIC)
+    {
+
+      dynamic_feasibility =
+          isQuasistatic(mnps, envs, v,
+                        this->f_gravity, x, this->mu_env, this->mu_mnp,
+                        this->cons.get());
+    }
+    else if (this->task_dynamics_type == CMG_QUASIDYNAMIC)
+    {
+      dynamic_feasibility = true; // TODO: implement quasidynamic
+    }
+
+    if (dynamic_feasibility)
+    {
+      break;
+    }
+  }
+
+  return dynamic_feasibility;
 }

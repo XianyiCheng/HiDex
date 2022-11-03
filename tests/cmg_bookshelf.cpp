@@ -25,7 +25,7 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
 
   std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
 
-  double gap = 0.2;
+  double gap = 0.1;
 
   SkeletonPtr object =
       createFreeBox("box_object", Vector3d(box_width, box_length, box_length));
@@ -38,7 +38,7 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
   SkeletonPtr back = createFixedBox("back", Vector3d(4, 1, 4),
                                     Vector3d(0, box_length / 2 + 0.5 + gap, 2));
   SkeletonPtr ground = createFixedBox(
-      "ground", Vector3d(6, 6, 2), Vector3d(0, 0, 1e-4 - 1));
+      "ground", Vector3d(10, 10, 1), Vector3d(0, 0, 1e-4 - 0.5));
 
   world->addObject(object);
   world->addEnvironmentComponent(book1);
@@ -47,7 +47,7 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
   world->addEnvironmentComponent(ground);
 
   int n_robot_contacts = 3;
-  DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, 0.21);
+  DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, gap*1.5);
   rpt->is_patch_contact = true;
   world->addRobot(rpt);
 
@@ -65,8 +65,8 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
   double wa = 0.4;
   double wt = 1.0;
 
-  double mu_env = 0.5;
-  double mu_mnp = 0.8;
+  double mu_env = 0.6;
+  double mu_mnp = 0.9;
 
   double charac_len = 1;
 
@@ -120,7 +120,7 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
     task->object_surface_pts.push_back(p);
   }
 
-//   VisualizeSG(task->m_world, x_start, x_goal);
+  // VisualizeSG(task->m_world, x_start, x_goal);
 }
 
 int main(int argc, char *argv[]) {
@@ -129,18 +129,21 @@ int main(int argc, char *argv[]) {
   bookshelf(task);
 
 
-  
+  std::vector<int> ff = task->get_finger_locations(0);
+  ff = task->get_finger_locations(1);
+  ff = task->get_finger_locations(2);
+  ff = task->get_finger_locations(3);
 
   CMGTASK::State start_state = task->get_start_state();
 
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
                   CMGTASK>::HierarchicalComputeOptions compute_options;
 
-  compute_options.l1_1st.max_iterations = 50;
-  compute_options.l1.max_iterations = 20;
-  compute_options.l2_1st.max_iterations = 5000;
+  compute_options.l1_1st.max_iterations = 20;
+  compute_options.l1.max_iterations = 10;
+  compute_options.l2_1st.max_iterations = 50000;
   compute_options.l2.max_iterations = 2000;
-  compute_options.final_l2_1st.max_iterations = 5000;
+  compute_options.final_l2_1st.max_iterations = 50000;
   compute_options.final_l2.max_iterations = 2000;
 
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(

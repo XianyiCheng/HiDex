@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
                   CMGTASK>::HierarchicalComputeOptions compute_options;
 
-  compute_options.l1_1st.max_iterations = 100;
+  compute_options.l1_1st.max_iterations = 50;
   compute_options.l1.max_iterations = 20;
   compute_options.l2_1st.max_iterations = 1000;
   compute_options.l2.max_iterations = 300;
