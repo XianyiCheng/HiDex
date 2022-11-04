@@ -56,9 +56,10 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
   Vector7d x_start;
   Vector7d x_goal;
   x_start << 0, 0, box_length / 2, 0, 0, 0, 1;
+  x_goal << 0, 0, box_length, 0,0,0,1;
 
   // goal: rotate around y axis for 90 degrees
-  x_goal << 0, -box_length, box_length * 2, 0, 0, 0, 1;
+  // x_goal << 0, -box_length, box_length * 2, 0, 0, 0, 1;
 
   double goal_thr = box_length * 3.14 * 10 / 180;
 
@@ -88,7 +89,7 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
   // rrt_options.eps_angle = 3.14 * 95 / 180;
   // rrt_options.eps_trans = 0.10;
   rrt_options.eps_angle = 3.14 * 35 / 180;
-  rrt_options.max_samples = 20;
+  rrt_options.max_samples = 50;
   // rrt_options.sampleSO3 = false;
   // rrt_options.sample_rotation_axis << 1, 0, 0;
 
@@ -127,20 +128,24 @@ int main(int argc, char *argv[]) {
 
   bookshelf(task);
 
-
-  std::vector<int> ff = task->get_finger_locations(0);
-  ff = task->get_finger_locations(1);
-  ff = task->get_finger_locations(2);
-  ff = task->get_finger_locations(3);
+  // for (int idx = 0; idx < task->n_finger_combinations; idx++){
+  //   std::vector<int> ff = task->get_finger_locations(idx);
+  //   std::cout << "idx: " << idx << " , locations: " ;
+  //   for (auto k : ff){
+  //     std::cout << k << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+  
 
   CMGTASK::State start_state = task->get_start_state();
 
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
                   CMGTASK>::HierarchicalComputeOptions compute_options;
 
-  compute_options.l1_1st.max_iterations = 20;
+  compute_options.l1_1st.max_iterations = 50;
   compute_options.l1.max_iterations = 10;
-  compute_options.l2_1st.max_iterations = 50000;
+  compute_options.l2_1st.max_iterations = 10000;
   compute_options.l2.max_iterations = 2000;
   compute_options.final_l2_1st.max_iterations = 50000;
   compute_options.final_l2.max_iterations = 2000;
@@ -189,7 +194,7 @@ int main(int argc, char *argv[]) {
   std::cout << "Total shared rrt nodes " << tree.m_task->total_rrt_nodes()
             << std::endl;
 
-  VisualizeTraj(task->m_world, object_traj, mnp_traj);
+  // VisualizeTraj(task->m_world, object_traj, mnp_traj);
   
-  task->m_world->startWindow(&argc, argv);
+  // task->m_world->startWindow(&argc, argv);
 }

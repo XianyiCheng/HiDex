@@ -364,6 +364,15 @@ public:
     VectorXd mnp_config(6 * finger_locations.size());
     for (int k = 0; k < finger_locations.size(); ++k)
     {
+      if (finger_locations[k] == -1)
+      {
+        // temporary solution: 
+        // when not in contact, set the finger location to a very far away point, only works for point fingers
+        // TODO: for other robots, need to consider IK, collision, etc.
+        mnp_config.block(6 * k, 0, 3, 1) = Vector3d(100,100,100); 
+        mnp_config.block(6 * k + 3, 0, 3, 1) = Vector3d::Zero();
+        continue;
+      }
       mnp_config.block(6 * k, 0, 3, 1) =
           this->object_surface_pts[finger_locations[k]].p;
       mnp_config.block(6 * k + 3, 0, 3, 1) =
@@ -444,6 +453,7 @@ public:
 
   std::shared_ptr<WorldTemplate>
       m_world; // save the object, environment, do collision detections, ...
+  int n_finger_combinations = -1;
 private:
   bool m_initialized = false;
   Vector7d start_object_pose;
@@ -472,5 +482,4 @@ private:
   bool if_refine = false;
   bool refine_dist = 0.0;
 
-  long int n_finger_combinations = -1;
 };

@@ -7,6 +7,77 @@
 #define MODE_TYPE_CS 0
 #define MODE_TYPE_FULL 1
 
+int permutation(int N, int k)
+{
+  int result = 1;
+  for (int i = 0; i < k; i++)
+  {
+    result *= (N - i);
+  }
+  return result;
+}
+
+int combination(int N, int k)
+{
+  return permutation(N, k) / permutation(k, k);
+}
+
+std::vector<int> combination_set(int N, int k, int idx)
+{
+    // N: number of surface contact points
+    // k: number of fingers on a surface contact point
+    // idx: index of the combination set
+    std::vector<int> set;
+
+    int comb_idx = idx;
+    int counter = 0;
+    for (int i = 0; i < k; i++)
+    {
+        // i: the index of the combination set
+        int sum = 0;
+        int j;
+        for (j = counter; j <= N - k + i; j++)
+        {
+            // j: the index of the sub combination set
+            int comb_i = combination(N - 1 - j, k - 1 - i);
+            if (sum + comb_i > comb_idx)
+            {
+                comb_idx = comb_idx - sum;
+                break;
+            }
+            sum += comb_i;
+        }
+        set.push_back(j);
+        counter = j+1;
+    }
+
+    return set;
+}
+
+std::vector<int> permutation_set(int N, int k, int idx)
+{
+  // N: number of surface contact points
+  // k: number of fingers on a surface contact point
+  // idx: index of the combination set
+  std::vector<int> set;
+  std::vector<int> set_i;
+  for (int i = 0; i < N; i++)
+  {
+    set_i.push_back(i);
+  }
+
+  int permu_idx = idx;
+  for (int i = 0; i < k; i++)
+  {
+    int permu_i = permutation(N - i - 1, k - i - 1);
+    int set_idx = permu_idx / permu_i;
+    set.push_back(set_i[set_idx]);
+    set_i.erase(set_i.begin() + set_idx);
+    permu_idx = permu_idx % permu_i;
+  }
+  return set;
+}
+
 int number_of_different_elements(const std::vector<int> &v1,
                                  const std::vector<int> &v2)
 {
@@ -820,7 +891,9 @@ bool isQuasistatic(const std::vector<ContactPoint> &mnps,
 
   bool result = isQuasistatic(mnps, envs, env_mode, f_ext_w, object_pose,
                               mu_env, mu_mnp, cons);
-
+  if (result){
+    // check here
+  }
   return result;
 }
 
@@ -1194,7 +1267,14 @@ void CMGTASK::initialize(const Vector7d &start_object_pose,
 
   // calculate total number of finger combinations
   // each finger can be zeros, but other than that do not allow overlap
-  this->n_finger_combinations = factorial(this->object_surface_pts.size(), this->number_of_robot_contacts);
+  this->n_finger_combinations = 0;
+  for (int k = 0; k <= this->number_of_robot_contacts; k++)
+  {
+    // k: number of fingers on a surface contact point
+    int sum_i = combination(this->number_of_robot_contacts, k) * permutation(this->object_surface_pts.size(), k);
+    // std::cout << "sum_i: " << sum_i << std::endl;
+    this->n_finger_combinations += sum_i;
+  }
 }
 
 CMGTASK::State CMGTASK::generate_state(const Vector7d &object_pose) const
@@ -1575,7 +1655,7 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state, const State2 &prev_state)
       std::vector<ContactPoint> fingertips;
       for (int idx : fingertip_idx)
       {
-        if (idx > 0)
+        if (idx != -1)
         {
           fingertips.push_back(this->object_surface_pts[idx]);
         }
@@ -1627,7 +1707,7 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state, const State2 &prev_state)
       {
         remain_idxes.push_back(pre_fingertips[k]);
       }
-      else if (pre_fingertips[k] <= 0)
+      else if (pre_fingertips[k] == -1)
       {
         remain_idxes.push_back(cur_fingertips[k]);
       }
@@ -1729,42 +1809,47 @@ std::vector<int> CMGTASK::get_finger_locations(int finger_location_index)
 
   // obtain finger location idxes from the single location idx
 
-  int N = this->object_surface_pts.size();
-  int n = this->number_of_robot_contacts;
-  int x = finger_location_index;
+  int N = this->object_surface_pts.size(); // N: number of surface contact points
+  int n = this->number_of_robot_contacts;  // n: number of fingers
+  int action_idx = finger_location_index;  // action_idx: index of the action
 
-  std::vector<int> finger_locations;
-  if (x == -1)
+  std::vector<int> locations;
+
+  // find out the number of active fingers
+  int k = 0; // the number of active fingers
+  int sum = 0;
+  for (k = 0; k <= n; k++)
   {
-    for (int i = 0; i < n; ++i)
+    // k: number of fingers on a surface contact point
+    int sum_i = combination(n, k) * permutation(N, k);
+    if (sum + sum_i > action_idx)
     {
-      finger_locations.push_back(0);
+      break;
     }
-    return finger_locations;
-  }
-  for (int k = 0; k < n; ++k)
-  {
-    int divisor = factorial(N - k - 1, n - k - 1);
-    int a = int(x / divisor);
-    x -= a * divisor;
-    for (auto p : finger_locations)
-    {
-      if (p == a)
-      {
-        a += 1;
-      }
-    }
-    finger_locations.push_back(a);
+    sum += sum_i;
   }
 
-  // for (int k = 0; k < n; ++k)
-  // {
-  //   int a = int(x / pow(N, (n - k - 1)));
-  //   x -= a * (int)pow(N, (n - k - 1));
+  // find out active finger indices
+  std::vector<int> active_idxes;
+  int comb_idx = (action_idx - sum) / permutation(N, k);
+  active_idxes = combination_set(n, k, comb_idx);
+  // find out the locations of active finger indices
+  int loc_idx = (action_idx - sum) % permutation(N, k);
+  std::vector<int> loc_idxes;
+  loc_idxes = permutation_set(N, k, loc_idx);
 
-  //   finger_locations.push_back(a);
-  // }
-  return finger_locations;
+  // create a vector of -1 with size n
+  
+  for (int i = 0; i < n; i++){
+    locations.push_back(-1);
+  }
+
+  // assign locations to active fingers
+  for (int i = 0; i < active_idxes.size(); ++i){
+    locations[active_idxes[i]] = loc_idxes[i];
+  }
+
+  return locations;
 }
 
 int CMGTASK::get_number_of_robot_actions(const CMGTASK::State2 &state)
@@ -1814,7 +1899,7 @@ bool CMGTASK::pruning_check(const Vector7d &x, const Vector6d &v, const std::vec
         std::vector<ContactPoint> fingertips;
         for (int idx : fingertip_idx)
         {
-          if (idx > 0)
+          if (idx != -1)
           {
             fingertips.push_back(this->object_surface_pts[idx]);
           }
