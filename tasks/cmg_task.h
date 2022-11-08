@@ -483,3 +483,8 @@ private:
   bool refine_dist = 0.0;
 
 };
+
+bool isQuasistatic(const std::vector<ContactPoint> &mnps,
+                   const std::vector<ContactPoint> &envs, const Vector6d &v,
+                   const Vector6d &f_ext_w, const Vector7d object_pose,
+                   double mu_env, double mu_mnp, ContactConstraints *cons);

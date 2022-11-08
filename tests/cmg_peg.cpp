@@ -17,33 +17,43 @@
 
 #include "visualization.h"
 
-void bookshelf(std::shared_ptr<CMGTASK> task) {
+void peg(std::shared_ptr<CMGTASK> task) {
   // Test with two fingers and one finger quasidynamics
 
-  double box_length = 4.0;
-  double box_width = 1.0;
+  double box_length = 2.0;
+  double box_height = 4.0;
+
+  double wall_width = 1.0;
 
   std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
 
   double gap = 0.1;
 
   SkeletonPtr object =
-      createFreeBox("box_object", Vector3d(box_width, box_length, box_length));
-  SkeletonPtr book1 =
-      createFixedBox("book1", Vector3d(box_width, box_length, box_length),
-                     Vector3d(-box_width - gap, 0, box_length / 2));
-  SkeletonPtr book2 =
-      createFixedBox("book2", Vector3d(box_width, box_length, box_length),
-                     Vector3d(box_width + gap, 0, box_length / 2));
-  SkeletonPtr back = createFixedBox("back", Vector3d(4, 1, 4),
-                                    Vector3d(0, box_length / 2 + 0.5 + gap, 2));
+      createFreeBox("box_object", Vector3d(box_length, box_length, box_height));
+
+  SkeletonPtr wall1 =
+      createFixedBox("wall1", Vector3d(wall_width, box_length + wall_width*2, box_height),
+                     Vector3d(-(box_length/2 + gap + wall_width/2), 0, box_height / 2));
+
+  SkeletonPtr wall2 =
+      createFixedBox("wall2", Vector3d(wall_width, box_length + wall_width*2, box_height),
+                     Vector3d(box_length/2 + gap + wall_width/2, 0, box_height / 2));
+
+  SkeletonPtr wall3 = createFixedBox("wall3", Vector3d(box_length + wall_width*2, wall_width, box_height),
+                     Vector3d(0, box_length/2 + gap + wall_width/2, box_height / 2));
+
+  SkeletonPtr wall4 = createFixedBox("wall4", Vector3d(box_length + wall_width*2, wall_width, box_height),
+                     Vector3d(0, -(box_length/2 + gap + wall_width/2), box_height / 2));
+
   SkeletonPtr ground =
       createFixedBox("ground", Vector3d(10, 10, 1), Vector3d(0, 0, 1e-4 - 0.5));
 
   world->addObject(object);
-  world->addEnvironmentComponent(book1);
-  world->addEnvironmentComponent(book2);
-  world->addEnvironmentComponent(back);
+  world->addEnvironmentComponent(wall1);
+  world->addEnvironmentComponent(wall2);
+  world->addEnvironmentComponent(wall3);
+  world->addEnvironmentComponent(wall4);
   world->addEnvironmentComponent(ground);
 
   int n_robot_contacts = 3;
@@ -56,21 +66,10 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
 
   Vector7d x_start;
   Vector7d x_goal;
-  x_start << 0, 0, box_length / 2, 0, 0, 0, 1;
-  // x_goal << 0, box_length / 2 -1.41*box_length / 2, 1.41*box_length / 2,
-  // 0.7071, 0, 0, 0.7071; x_goal << 0, -0.5, box_length /2, 0,0,0,1;
-  x_goal << 0, -box_length, box_length, 0, 0, 0, 1;
+  x_start << 0, 0, box_height / 2, 0, 0, 0, 1;
 
-  // x_start << 0.066041999464956702, 0.7251853688000911, 1.6221961925882866,
-  //     -0.059067794753914639, 0.53425537510468035, 0.47175117675543765,
-  //     0.69895136957053505;
+  x_goal << 0, -box_length, box_height*2.5, 0, 0, 0, 1;
 
-  // x_start << -0.8094534186756146, -0.48942965988882714, 2.4985825750651918,
-  //     0.093372816283767202, -0.0021882510868705602, 0.013401238944715045,
-  //     0.99553861579105285;
-
-  // goal: rotate around y axis for 90 degrees
-  // x_goal << 0, -box_length, box_length * 2, 0, 0, 0, 1;
 
   double goal_thr = box_length * 3.14 * 10 / 180;
 
@@ -93,8 +92,8 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
 
   CMGTASK::SearchOptions rrt_options;
 
-  rrt_options.x_ub << box_width, box_width, box_length * 3;
-  rrt_options.x_lb << -box_width, -box_length * 1.5, 0.0;
+  rrt_options.x_ub << box_length, box_length, box_height * 2;
+  rrt_options.x_lb << -box_length, -box_length, 0.0;
 
   rrt_options.eps_trans = 1.0;
   // rrt_options.eps_angle = 3.14 * 95 / 180;
@@ -112,7 +111,7 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
   // read surface point, add robot contacts
   std::vector<ContactPoint> surface_pts;
   std::ifstream f(std::string(SRC_DIR) +
-                  "/data/test_cmg_bookshelf/surface_contacts.csv");
+                  "/data/test_cmg_peg/surface_contacts.csv");
   aria::csv::CsvParser parser(f);
 
   for (auto &row : parser) {
@@ -130,13 +129,13 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
                    mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASISTATIC,
                    surface_pts, rrt_options, if_refine, refine_dist);
-  // VisualizeSG(task->m_world, x_start, x_goal);
+  VisualizeSG(task->m_world, x_start, x_goal);
 }
 
 int main(int argc, char *argv[]) {
   std::shared_ptr<CMGTASK> task = std::make_shared<CMGTASK>();
 
-  bookshelf(task);
+  peg(task);
 
   // for (int k = 0; k < task->n_finger_combinations; ++k){
   //   std::cout << "action idx : " << k << ", ";
@@ -156,7 +155,7 @@ int main(int argc, char *argv[]) {
   //   }
   //   std::cout << std::endl;
   // }
-  // task->m_world->startWindow(&argc, argv);
+  task->m_world->startWindow(&argc, argv);
 
   CMGTASK::State start_state = task->get_start_state();
 

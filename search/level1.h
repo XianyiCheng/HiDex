@@ -9,25 +9,30 @@ class Level1Tree : public Tree<State, Task> {
 public:
   double m_alpha = 0.4; // the parameter for expanding new continuous node
 
-  struct HierarchicalComputeOptions{
+  struct HierarchicalComputeOptions {
     MCTSOptions l1_1st; // MCTS compute options for 1st MCTS search in level 1
     MCTSOptions l1; // MCTS compute options for all other MCTS search in level 1
     MCTSOptions l2_1st; // MCTS compute options for 1st MCTS search in level 2
     MCTSOptions l2; // MCTS compute options for all other MCTS search in level 2
-    MCTSOptions final_l2_1st; // MCTS compute options for 1st MCTS search in finding out the final result with level 2 
-    MCTSOptions final_l2; // MCTS compute options for all other MCTS search in finding out the final result with level 2 
+    MCTSOptions final_l2_1st; // MCTS compute options for 1st MCTS search in
+                              // finding out the final result with level 2
+    MCTSOptions final_l2; // MCTS compute options for all other MCTS search in
+                          // finding out the final result with level 2
 
+    HierarchicalComputeOptions() {}
 
-    HierarchicalComputeOptions(){}
-
-    HierarchicalComputeOptions(MCTSOptions l1_1st_, MCTSOptions l1_, MCTSOptions l2_1st_, MCTSOptions l2_, MCTSOptions fl2_1, MCTSOptions fl2):
-    l1_1st(l1_1st_), l1(l1_), l2_1st(l2_1st_), l2(l2_), final_l2_1st(fl2_1), final_l2(fl2){}
+    HierarchicalComputeOptions(MCTSOptions l1_1st_, MCTSOptions l1_,
+                               MCTSOptions l2_1st_, MCTSOptions l2_,
+                               MCTSOptions fl2_1, MCTSOptions fl2)
+        : l1_1st(l1_1st_), l1(l1_), l2_1st(l2_1st_), l2(l2_),
+          final_l2_1st(fl2_1), final_l2(fl2) {}
   };
 
   HierarchicalComputeOptions compute_options;
 
   Level1Tree() {}
-  Level1Tree(std::shared_ptr<Task> task, State start_state, HierarchicalComputeOptions compute_options_)
+  Level1Tree(std::shared_ptr<Task> task, State start_state,
+             HierarchicalComputeOptions compute_options_)
       : Tree<State, Task>(task, start_state) {
     // specify the type of the root node
     // this->m_root_node = std::make_unique<Node<State>>(start_state, -1,
@@ -92,7 +97,7 @@ public:
       if (randd() > 0.5) {
         action_idx = node->m_parent->m_state.m_mode_idx;
       } else {
-        action_idx = - 1;
+        action_idx = -1;
       }
     }
 
@@ -158,15 +163,15 @@ public:
 
     std::cout << "Start level 2 search" << std::endl;
 
-    for (auto s: this->m_task->saved_object_trajectory) {
+    for (auto s : this->m_task->saved_object_trajectory) {
       std::cout << s.m_pose.transpose() << std::endl;
     }
 
     Level2Tree<State2, Task> tree2(this->m_task,
                                    this->m_task->get_start_state2());
 
-    Node<State2> *final_node_2 =
-        tree2.search_tree(this->compute_options.l2_1st, this->compute_options.l2);
+    Node<State2> *final_node_2 = tree2.search_tree(this->compute_options.l2_1st,
+                                                   this->compute_options.l2);
 
     double final_best_reward = final_node_2->m_value;
 
@@ -175,6 +180,26 @@ public:
     // MCTS thing
     double path_score = final_best_reward;
 
+    // print the results
+    if (path_score > 0) {
+
+      std::vector<State2> action_trajectory =
+          tree2.backtrack_state_path(final_node_2);
+      for (int kk = 0; kk < this->m_task->saved_object_trajectory.size(); ++kk) {
+        std::cout << "Timestep " << kk << std::endl;
+        std::cout
+            << "Pose "
+            << this->m_task->saved_object_trajectory[kk].m_pose.transpose()
+            << std::endl;
+        std::cout << "Fingers ";
+        for (int jj :
+             this->m_task->get_finger_locations(action_trajectory[kk].finger_index)) {
+          std::cout << jj << " ";
+        }
+      }
+    }
+    
+    // clear object trajectory
     this->m_task->saved_object_trajectory.clear();
 
     return path_score;
@@ -376,8 +401,8 @@ public:
                                    this->m_task->get_start_state2());
     tree2.ita = 0.1;
 
-    Node<State2> *final_node_2 =
-        tree2.search_tree(compute_options.final_l2_1st, compute_options.final_l2);
+    Node<State2> *final_node_2 = tree2.search_tree(compute_options.final_l2_1st,
+                                                   compute_options.final_l2);
 
     *action_trajectory = tree2.backtrack_state_path(final_node_2);
     *object_trajectory = this->m_task->saved_object_trajectory;

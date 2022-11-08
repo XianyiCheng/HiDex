@@ -143,8 +143,8 @@ std::vector<int> get_locations(int N, int n, int action_idx)
 
 int main()
 {
-    int N = 3;
-    int k = 3;
+    int N = 1;
+    int k = 1;
 
     int n_comb = combination(N, k);
     for (int idx = 0; idx < n_comb; idx++)
