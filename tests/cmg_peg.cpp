@@ -50,10 +50,10 @@ void peg(std::shared_ptr<CMGTASK> task) {
       createFixedBox("ground", Vector3d(10, 10, 1), Vector3d(0, 0, 1e-4 - 0.5));
 
   world->addObject(object);
-  world->addEnvironmentComponent(wall1);
-  world->addEnvironmentComponent(wall2);
-  world->addEnvironmentComponent(wall3);
-  world->addEnvironmentComponent(wall4);
+  // world->addEnvironmentComponent(wall1);
+  // world->addEnvironmentComponent(wall2);
+  // world->addEnvironmentComponent(wall3);
+  // world->addEnvironmentComponent(wall4);
   world->addEnvironmentComponent(ground);
 
   int n_robot_contacts = 3;
@@ -68,7 +68,7 @@ void peg(std::shared_ptr<CMGTASK> task) {
   Vector7d x_goal;
   x_start << 0, 0, box_height / 2, 0, 0, 0, 1;
 
-  x_goal << 0, -box_length, box_height*2.5, 0, 0, 0, 1;
+  x_goal << 0, 0, box_height*2.1, 0, 0, 0, 1;
 
 
   double goal_thr = box_length * 3.14 * 10 / 180;
@@ -95,7 +95,7 @@ void peg(std::shared_ptr<CMGTASK> task) {
   rrt_options.x_ub << box_length, box_length, box_height * 2;
   rrt_options.x_lb << -box_length, -box_length, 0.0;
 
-  rrt_options.eps_trans = 1.0;
+  rrt_options.eps_trans = 2.0;
   // rrt_options.eps_angle = 3.14 * 95 / 180;
   // rrt_options.eps_trans = 0.10;
   rrt_options.eps_angle = 3.14 * 35 / 180;
@@ -122,14 +122,14 @@ void peg(std::shared_ptr<CMGTASK> task) {
     for (int j = 0; j < 6; ++j) {
       v(j) = std::stod(row[j]);
     }
-    ContactPoint p(v.head(3), v.tail(3));
+    ContactPoint p(Vector3d(v[0], v[1], v[2]), v.tail(3));
     surface_pts.push_back(p);
   }
   // pass the world and task parameters to the task through task->initialize
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
                    mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASISTATIC,
                    surface_pts, rrt_options, if_refine, refine_dist);
-  VisualizeSG(task->m_world, x_start, x_goal);
+//   VisualizeSG(task->m_world, x_start, x_goal);
 }
 
 int main(int argc, char *argv[]) {
@@ -155,16 +155,16 @@ int main(int argc, char *argv[]) {
   //   }
   //   std::cout << std::endl;
   // }
-  task->m_world->startWindow(&argc, argv);
+//   task->m_world->startWindow(&argc, argv);
 
   CMGTASK::State start_state = task->get_start_state();
 
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
                   CMGTASK>::HierarchicalComputeOptions compute_options;
 
-  compute_options.l1_1st.max_iterations = 10;
+  compute_options.l1_1st.max_iterations = 20;
   compute_options.l1.max_iterations = 5;
-  compute_options.l2_1st.max_iterations = 5000;
+  compute_options.l2_1st.max_iterations = 20000;
   compute_options.l2.max_iterations = 500;
   compute_options.final_l2_1st.max_iterations = 50000;
   compute_options.final_l2.max_iterations = 2000;
