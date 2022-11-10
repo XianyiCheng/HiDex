@@ -1243,6 +1243,10 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
                                                         subtree, true, true);
         shared_rrt->nodes[near_idx].is_extended_to_goal = true;
       }
+      if (near_idx < 0){
+        // all the nodes has extended to goal, try random sample again
+        continue;
+      }
     }
 
     if (near_idx < 0) {
@@ -1745,16 +1749,16 @@ bool CMGTASK::pruning_check(const Vector7d &x, const Vector6d &v,
       dynamic_feasibility =
           isQuasistatic(mnps, envs, v, this->f_gravity, x, this->mu_env,
                         this->mu_mnp, this->cons.get());
-      if (dynamic_feasibility) {
-        std::cout << "Passed pruning check" << std::endl;
-        std::cout << "x " << x.transpose() << std::endl;
-        std::cout << "v " << v.transpose() << std::endl;
-        std::cout << "fingertips ";
-        for (auto i : fingertip_idx) {
-          std::cout << i << " ";
-        }
-        std::cout << std::endl;
-      }
+      // if (dynamic_feasibility) {
+      //   std::cout << "Passed pruning check" << std::endl;
+      //   std::cout << "x " << x.transpose() << std::endl;
+      //   std::cout << "v " << v.transpose() << std::endl;
+      //   std::cout << "fingertips ";
+      //   for (auto i : fingertip_idx) {
+      //     std::cout << i << " ";
+      //   }
+      //   std::cout << std::endl;
+      // }
     } else if (this->task_dynamics_type == CMG_QUASIDYNAMIC) {
       dynamic_feasibility = true; // TODO: implement quasidynamic
     }

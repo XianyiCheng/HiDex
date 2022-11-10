@@ -49,10 +49,7 @@ public:
 
       this->backprop_reward(node, reward);
 
-      if (node->m_state.is_valid){
-        node->m_value_estimate += 0.05; 
-      }
-      this->update_estimated_values_for_all(node);
+      // this->update_estimated_values_for_all(node);
     }
   }
 
@@ -60,7 +57,13 @@ public:
     Node<State> *node_ = node;
     while(node_->m_parent != nullptr) {
       node_ = node_->m_parent;
-      node_->m_value_estimate += node->m_value_estimate;
+      double v = 0;
+      for (auto n: node->m_children){
+        if (n->m_state.is_valid) {
+          v += 0.05;
+        }
+      }
+      node_->m_value_estimate = v;
     }
   }
 

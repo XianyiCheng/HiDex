@@ -32,33 +32,35 @@ void peg(std::shared_ptr<CMGTASK> task) {
   SkeletonPtr object =
       createFreeBox("box_object", Vector3d(box_length, box_length, box_height));
 
-  SkeletonPtr wall1 =
-      createFixedBox("wall1", Vector3d(wall_width, box_length + wall_width*2, box_height),
-                     Vector3d(-(box_length/2 + gap + wall_width/2), 0, box_height / 2));
+  SkeletonPtr wall1 = createFixedBox(
+      "wall1", Vector3d(wall_width, box_length + wall_width * 2, box_height),
+      Vector3d(-(box_length / 2 + gap + wall_width / 2), 0, box_height / 2));
 
-  SkeletonPtr wall2 =
-      createFixedBox("wall2", Vector3d(wall_width, box_length + wall_width*2, box_height),
-                     Vector3d(box_length/2 + gap + wall_width/2, 0, box_height / 2));
+  SkeletonPtr wall2 = createFixedBox(
+      "wall2", Vector3d(wall_width, box_length + wall_width * 2, box_height),
+      Vector3d(box_length / 2 + gap + wall_width / 2, 0, box_height / 2));
 
-  SkeletonPtr wall3 = createFixedBox("wall3", Vector3d(box_length + wall_width*2, wall_width, box_height),
-                     Vector3d(0, box_length/2 + gap + wall_width/2, box_height / 2));
+  SkeletonPtr wall3 = createFixedBox(
+      "wall3", Vector3d(box_length + wall_width * 2, wall_width, box_height),
+      Vector3d(0, box_length / 2 + gap + wall_width / 2, box_height / 2));
 
-  SkeletonPtr wall4 = createFixedBox("wall4", Vector3d(box_length + wall_width*2, wall_width, box_height),
-                     Vector3d(0, -(box_length/2 + gap + wall_width/2), box_height / 2));
+  SkeletonPtr wall4 = createFixedBox(
+      "wall4", Vector3d(box_length + wall_width * 2, wall_width, box_height),
+      Vector3d(0, -(box_length / 2 + gap + wall_width / 2), box_height / 2));
 
   SkeletonPtr ground =
       createFixedBox("ground", Vector3d(10, 10, 1), Vector3d(0, 0, 1e-4 - 0.5));
 
   world->addObject(object);
-  // world->addEnvironmentComponent(wall1);
-  // world->addEnvironmentComponent(wall2);
-  // world->addEnvironmentComponent(wall3);
-  // world->addEnvironmentComponent(wall4);
+  world->addEnvironmentComponent(wall1);
+  world->addEnvironmentComponent(wall2);
+  world->addEnvironmentComponent(wall3);
+  world->addEnvironmentComponent(wall4);
   world->addEnvironmentComponent(ground);
 
   int n_robot_contacts = 3;
   DartPointManipulator *rpt =
-      new DartPointManipulator(n_robot_contacts, gap * 1.5);
+      new DartPointManipulator(n_robot_contacts, gap * 1.2);
   rpt->is_patch_contact = true;
   world->addRobot(rpt);
 
@@ -68,10 +70,9 @@ void peg(std::shared_ptr<CMGTASK> task) {
   Vector7d x_goal;
   x_start << 0, 0, box_height / 2, 0, 0, 0, 1;
 
-  x_goal << 0, 0, box_height*2.1, 0, 0, 0, 1;
+  x_goal << 0, 0, box_height * 1.5, 0, 0, 0, 1;
 
-
-  double goal_thr = box_length * 3.14 * 10 / 180;
+  double goal_thr = box_length * 3.14 * 30 / 180;
 
   double wa = 1.0;
   double wt = 1.0;
@@ -105,7 +106,7 @@ void peg(std::shared_ptr<CMGTASK> task) {
 
   rrt_options.goal_biased_prob = 0.7;
 
-  bool if_refine = false;
+  bool if_refine = true;
   bool refine_dist = 0.5;
 
   // read surface point, add robot contacts
@@ -129,10 +130,118 @@ void peg(std::shared_ptr<CMGTASK> task) {
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
                    mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASISTATIC,
                    surface_pts, rrt_options, if_refine, refine_dist);
-//   VisualizeSG(task->m_world, x_start, x_goal);
+  //   VisualizeSG(task->m_world, x_start, x_goal);
+}
+
+void test_nominal_traj() {
+  std::shared_ptr<CMGTASK> task = std::make_shared<CMGTASK>();
+
+  peg(task);
+
+  std::cout << "Total number of actions " << task->n_finger_combinations  << std::endl;
+
+  // test level2 tree
+  std::vector<Vector7d> test_object_traj;
+  {
+    CMGTASK::State new_state;
+    new_state.m_pose << 0, 0, 2.0, 0, 0, 0, 1;
+    test_object_traj.push_back(new_state.m_pose);
+    task->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
+    task->saved_object_trajectory.push_back(new_state);
+  }
+
+  {
+    CMGTASK::State new_state;
+    new_state.m_pose << 0, -0.1, 2.0, 0, 0, 0, 1;
+    test_object_traj.push_back(new_state.m_pose);
+    task->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
+    task->saved_object_trajectory.push_back(new_state);
+  }
+
+  {
+    CMGTASK::State new_state;
+    new_state.m_pose << 0, -0.1, 2.5, 0, 0, 0, 1;
+    test_object_traj.push_back(new_state.m_pose);
+    task->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
+    task->saved_object_trajectory.push_back(new_state);
+  }
+
+  // {
+  //   CMGTASK::State new_state;
+  //   new_state.m_pose << 0, -0.1, 3.0, 0, 0, 0, 1;
+  //   test_object_traj.push_back(new_state.m_pose);
+  //   task->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
+  //   task->saved_object_trajectory.push_back(new_state);
+  // }
+
+  {
+    CMGTASK::State new_state;
+    new_state.m_pose << 0, -0.1, 4.0, 0, 0, 0, 1;
+    test_object_traj.push_back(new_state.m_pose);
+    task->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
+    task->saved_object_trajectory.push_back(new_state);
+  }
+
+  // {
+  //   CMGTASK::State new_state;
+  //   new_state.m_pose << 0, -0.1, 5.0, 0, 0, 0, 1;
+  //   test_object_traj.push_back(new_state.m_pose);
+  //   task->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
+  //   task->saved_object_trajectory.push_back(new_state);
+  // }
+
+  // {
+  //   CMGTASK::State new_state;
+  //   new_state.m_pose << 0, -0.1, 6.0, 0, 0, 0, 1;
+  //   test_object_traj.push_back(new_state.m_pose);
+  //   task->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
+  //   task->saved_object_trajectory.push_back(new_state);
+  // }
+  // task->m_world->setObjectTrajectory(test_object_traj);
+  // task->m_world->startWindow(&argc, argv);
+
+  HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
+                  CMGTASK>::HierarchicalComputeOptions compute_options;
+
+  compute_options.l2_1st.max_iterations = 20000;
+  compute_options.l2.max_iterations = 5000;
+
+  HMP::Level2Tree<CMGTASK::State2, CMGTASK> tree2(task,
+                                                  task->get_start_state2());
+
+  HMP::Node<CMGTASK::State2> *final_node_2 =
+      tree2.search_tree(compute_options.l2_1st, compute_options.l2);
+
+  std::vector<VectorXd> mnp_traj;
+  std::vector<CMGTASK::State2> action_trajectory =
+      tree2.backtrack_state_path(final_node_2);
+  for (int kk = 0; kk < task->saved_object_trajectory.size(); ++kk) {
+    std::cout << "Timestep " << kk << std::endl;
+    std::cout << "Pose " << task->saved_object_trajectory[kk].m_pose.transpose()
+              << std::endl;
+    std::cout << "Fingers ";
+    for (int jj :
+         task->get_finger_locations(action_trajectory[kk].finger_index)) {
+      std::cout << jj << " ";
+    }
+    std::cout << std::endl;
+    mnp_traj.push_back(task->get_robot_config_from_action_idx(
+        action_trajectory[kk].finger_index));
+  }
+
+  VisualizeTraj(task->m_world, test_object_traj, mnp_traj);
+
+  int a = 1;
+  char** aa;
+  task->m_world->startWindow(&a, aa);
 }
 
 int main(int argc, char *argv[]) {
+  test_nominal_traj();
+  return 0;
+
+
+/*
   std::shared_ptr<CMGTASK> task = std::make_shared<CMGTASK>();
 
   peg(task);
@@ -155,15 +264,15 @@ int main(int argc, char *argv[]) {
   //   }
   //   std::cout << std::endl;
   // }
-//   task->m_world->startWindow(&argc, argv);
+  //   task->m_world->startWindow(&argc, argv);
 
   CMGTASK::State start_state = task->get_start_state();
 
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
                   CMGTASK>::HierarchicalComputeOptions compute_options;
 
-  compute_options.l1_1st.max_iterations = 20;
-  compute_options.l1.max_iterations = 5;
+  compute_options.l1_1st.max_iterations = 100;
+  compute_options.l1.max_iterations = 10;
   compute_options.l2_1st.max_iterations = 20000;
   compute_options.l2.max_iterations = 500;
   compute_options.final_l2_1st.max_iterations = 50000;
@@ -176,7 +285,8 @@ int main(int argc, char *argv[]) {
 
   std::vector<CMGTASK::State> object_trajectory;
   std::vector<CMGTASK::State2> action_trajectory;
-  tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
+  tree.get_final_results(current_node, &object_trajectory,
+  &action_trajectory);
 
   std::vector<Vector7d> object_traj;
   std::vector<VectorXd> mnp_traj;
@@ -191,15 +301,15 @@ int main(int argc, char *argv[]) {
     std::cout << "Pose " << object_trajectory[kk].m_pose.transpose()
               << std::endl;
     std::cout << "# envs " << object_trajectory[kk].envs.size() << std::endl;
-    std::cout << "action " << action_trajectory[kk].finger_index << std::endl;
-    std::cout << "Fingers ";
-    for (int jj :
+    std::cout << "action " << action_trajectory[kk].finger_index <<
+    std::endl; std::cout << "Fingers "; for (int jj :
          task->get_finger_locations(action_trajectory[kk].finger_index)) {
       std::cout << jj << " ";
     }
     std::cout << std::endl;
     // object_traj.push_back(object_trajectory[kk].m_pose);
-    object_traj.insert(object_traj.end(), object_trajectory[kk].m_path.begin(),
+    object_traj.insert(object_traj.end(),
+    object_trajectory[kk].m_path.begin(),
                        object_trajectory[kk].m_path.end());
     for (int i = 0; i < object_trajectory[kk].m_path.size(); i++) {
       mnp_traj.push_back(task->get_robot_config_from_action_idx(
@@ -216,4 +326,5 @@ int main(int argc, char *argv[]) {
   VisualizeTraj(task->m_world, object_traj, mnp_traj);
 
   task->m_world->startWindow(&argc, argv);
+  */
 }

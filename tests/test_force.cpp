@@ -184,6 +184,7 @@ void peg()
   ContactConstraints cons(2);
   bool result = isQuasistatic(mnps, envs, v, f_ext_w, pose, 0.1, 0.6, &cons);
   std::cout << "result: " << result << std::endl;
+  
 }
 
 void bookshelf()
