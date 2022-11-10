@@ -48,6 +48,19 @@ public:
       // std::cout << "Evaluation: " << reward << std::endl;
 
       this->backprop_reward(node, reward);
+
+      if (node->m_state.is_valid){
+        node->m_value_estimate += 0.05; 
+      }
+      this->update_estimated_values_for_all(node);
+    }
+  }
+
+  void update_estimated_values_for_all(Node<State> *node) {
+    Node<State> *node_ = node;
+    while(node_->m_parent != nullptr) {
+      node_ = node_->m_parent;
+      node_->m_value_estimate += node->m_value_estimate;
     }
   }
 
@@ -148,7 +161,7 @@ public:
       for (auto child : node->m_children) // TODO: improve this
       {
         if (child->m_action == sampled_actions[i]) {
-          child_value = child->m_value;
+          child_value = child->m_value + child->m_value_estimate;
           child_visits = child->m_visits;
           break;
         }

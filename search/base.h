@@ -29,6 +29,7 @@ namespace HMP
 
   public:
     double m_value = 0.0;
+    double m_value_estimate = 0.0;
     int m_visits = 0;
     double m_heuristics = 0.0;
 
