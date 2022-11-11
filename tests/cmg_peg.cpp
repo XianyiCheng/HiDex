@@ -1,5 +1,4 @@
 
-
 #include "../search/level1.h"
 
 #include "../tasks/cmg_task.h"
@@ -16,6 +15,8 @@
 #endif
 
 #include "visualization.h"
+
+#include "../search/level2fp.h"
 
 void peg(std::shared_ptr<CMGTASK> task) {
   // Test with two fingers and one finger quasidynamics
@@ -166,13 +167,13 @@ void test_nominal_traj() {
     task->saved_object_trajectory.push_back(new_state);
   }
 
-  // {
-  //   CMGTASK::State new_state;
-  //   new_state.m_pose << 0, -0.1, 3.0, 0, 0, 0, 1;
-  //   test_object_traj.push_back(new_state.m_pose);
-  //   task->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
-  //   task->saved_object_trajectory.push_back(new_state);
-  // }
+  {
+    CMGTASK::State new_state;
+    new_state.m_pose << 0, -0.1, 3.0, 0, 0, 0, 1;
+    test_object_traj.push_back(new_state.m_pose);
+    task->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
+    task->saved_object_trajectory.push_back(new_state);
+  }
 
   {
     CMGTASK::State new_state;
@@ -182,32 +183,34 @@ void test_nominal_traj() {
     task->saved_object_trajectory.push_back(new_state);
   }
 
-  // {
-  //   CMGTASK::State new_state;
-  //   new_state.m_pose << 0, -0.1, 5.0, 0, 0, 0, 1;
-  //   test_object_traj.push_back(new_state.m_pose);
-  //   task->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
-  //   task->saved_object_trajectory.push_back(new_state);
-  // }
+  {
+    CMGTASK::State new_state;
+    new_state.m_pose << 0, -0.1, 5.0, 0, 0, 0, 1;
+    test_object_traj.push_back(new_state.m_pose);
+    task->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
+    task->saved_object_trajectory.push_back(new_state);
+  }
 
-  // {
-  //   CMGTASK::State new_state;
-  //   new_state.m_pose << 0, -0.1, 6.0, 0, 0, 0, 1;
-  //   test_object_traj.push_back(new_state.m_pose);
-  //   task->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
-  //   task->saved_object_trajectory.push_back(new_state);
-  // }
+  {
+    CMGTASK::State new_state;
+    new_state.m_pose << 0, -0.1, 6.0, 0, 0, 0, 1;
+    test_object_traj.push_back(new_state.m_pose);
+    task->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
+    task->saved_object_trajectory.push_back(new_state);
+  }
   // task->m_world->setObjectTrajectory(test_object_traj);
   // task->m_world->startWindow(&argc, argv);
 
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
                   CMGTASK>::HierarchicalComputeOptions compute_options;
 
-  compute_options.l2_1st.max_iterations = 20000;
-  compute_options.l2.max_iterations = 5000;
+  compute_options.l2_1st.max_iterations = 100;
+  compute_options.l2.max_iterations = 10;
 
-  HMP::Level2Tree<CMGTASK::State2, CMGTASK> tree2(task,
+  HMP::Level2TreeFP<CMGTASK::State2, CMGTASK> tree2(task,
                                                   task->get_start_state2());
+  
+  tree2.ita = 1.0;
 
   HMP::Node<CMGTASK::State2> *final_node_2 =
       tree2.search_tree(compute_options.l2_1st, compute_options.l2);
@@ -215,25 +218,22 @@ void test_nominal_traj() {
   std::vector<VectorXd> mnp_traj;
   std::vector<CMGTASK::State2> action_trajectory =
       tree2.backtrack_state_path(final_node_2);
-  for (int kk = 0; kk < task->saved_object_trajectory.size(); ++kk) {
-    std::cout << "Timestep " << kk << std::endl;
-    std::cout << "Pose " << task->saved_object_trajectory[kk].m_pose.transpose()
+  for (auto &action : action_trajectory) {
+    std::cout << "Timestep " << action.timestep << std::endl;
+    std::cout << "Pose " << task->saved_object_trajectory[action.timestep].m_pose.transpose()
               << std::endl;
     std::cout << "Fingers ";
     for (int jj :
-         task->get_finger_locations(action_trajectory[kk].finger_index)) {
+         task->get_finger_locations(action.finger_index)) {
       std::cout << jj << " ";
-    }
-    std::cout << std::endl;
-    mnp_traj.push_back(task->get_robot_config_from_action_idx(
-        action_trajectory[kk].finger_index));
+    }          
   }
 
-  VisualizeTraj(task->m_world, test_object_traj, mnp_traj);
+  // VisualizeTraj(task->m_world, test_object_traj, mnp_traj);
 
-  int a = 1;
-  char** aa;
-  task->m_world->startWindow(&a, aa);
+  // int a = 1;
+  // char** aa;
+  // task->m_world->startWindow(&a, aa);
 }
 
 int main(int argc, char *argv[]) {

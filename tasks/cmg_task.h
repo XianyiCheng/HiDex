@@ -292,6 +292,7 @@ public:
     int timestep = 0;
     int finger_index; // current finger index
     bool is_valid;
+    int t_max = -1; // maximum time step this can reach
     State2() {}
     State2(int t, int idx) : timestep(t), finger_index(idx) {}
     void do_action(int action)
@@ -366,10 +367,10 @@ public:
     {
       if (finger_locations[k] == -1)
       {
-        // temporary solution: 
+        // temporary solution:
         // when not in contact, set the finger location to a very far away point, only works for point fingers
         // TODO: for other robots, need to consider IK, collision, etc.
-        mnp_config.block(6 * k, 0, 3, 1) = Vector3d(100,100,100); 
+        mnp_config.block(6 * k, 0, 3, 1) = Vector3d(100, 100, 100);
         mnp_config.block(6 * k + 3, 0, 3, 1) = Vector3d::Zero();
         continue;
       }
@@ -415,12 +416,21 @@ public:
     return heu;
   }
 
-  int get_number_of_robot_actions(const State2 &state);
+  int get_number_of_robot_actions(const State2 &state)
+  {
+    return this->n_finger_combinations;
+  }
+
+  int get_number_of_actions(const State2 &state)
+  {
+    return this->n_finger_combinations * this->saved_object_trajectory.size();
+  }
 
   bool is_terminal(const State2 &state)
   {
     // check if terminal, also check if valid,
     // if not valid it is also terminal
+
     if (!state.is_valid)
     {
       return true;
@@ -432,6 +442,9 @@ public:
         return true;
       }
     }
+    if (state.t_max == (this->saved_object_trajectory.size() - 1)){
+      return true;
+    }
     return false;
   }
 
@@ -439,11 +452,29 @@ public:
 
   bool is_valid(const State2 &state, const State2 &prev_state);
 
+  bool is_finger_valid(int finger_idx, int timestep);
+
+  bool is_valid_transition(const State2 &state, const State2 &prev_state);
+
   void save_trajectory(const std::vector<CMGTASK::State> &path);
 
   std::vector<State> generate_a_finer_object_trajectory(std::vector<State> &object_traj, double dist);
 
-  bool pruning_check(const Vector7d &x, const Vector6d & v, const std::vector<ContactPoint>& envs);
+  bool pruning_check(const Vector7d &x, const Vector6d &v, const std::vector<ContactPoint> &envs);
+
+  int max_forward_timestep(const CMGTASK::State2 &state);
+  int select_finger_change_timestep(const State2 &state);
+
+  int encode_action_idx(int finger_idx, int timestep)
+  {
+    return timestep * this->n_finger_combinations + finger_idx;
+  }
+
+  void do_action(State2 &state, int action)
+  {
+    state.timestep = action / this->n_finger_combinations;
+    state.finger_index = action % this->n_finger_combinations;
+  }
 
   std::vector<State> saved_object_trajectory;
   std::vector<ContactPoint> object_surface_pts;
@@ -454,6 +485,7 @@ public:
   std::shared_ptr<WorldTemplate>
       m_world; // save the object, environment, do collision detections, ...
   int n_finger_combinations = -1;
+
 private:
   bool m_initialized = false;
   Vector7d start_object_pose;
@@ -481,7 +513,6 @@ private:
 
   bool if_refine = false;
   bool refine_dist = 0.0;
-
 };
 
 bool isQuasistatic(const std::vector<ContactPoint> &mnps,

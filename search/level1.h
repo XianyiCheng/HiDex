@@ -1,3 +1,4 @@
+#pragma once
 #include "level2.h"
 #include <algorithm>
 
