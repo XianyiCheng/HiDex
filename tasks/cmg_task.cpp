@@ -1803,6 +1803,21 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state, const State2 &prev_state)
   return dynamic_feasibility;
 }
 
+double CMGTASK::total_finger_change_ratio(const std::vector<State2> &path)
+{
+
+  double finger_change = 0.0;
+  for (int k = 0; k < path.size() - 1; ++k)
+  {
+    finger_change +=
+        double(number_of_different_elements(
+            this->get_finger_locations(path[k].finger_index),
+            this->get_finger_locations(path[k + 1].finger_index))) /
+        double(this->number_of_robot_contacts);
+  }
+
+  return finger_change;
+}
 double CMGTASK::evaluate_path(const std::vector<State2> &path)
 {
 
@@ -1811,33 +1826,19 @@ double CMGTASK::evaluate_path(const std::vector<State2> &path)
     return 0.0;
   }
 
-  double reward_finger_stay = 0.0;
   double finger_change = 0.0;
   for (int k = 0; k < path.size() - 1; ++k)
   {
-    reward_finger_stay +=
-        double(this->number_of_robot_contacts -
-               number_of_different_elements(
-                   this->get_finger_locations(path[k].finger_index),
-                   this->get_finger_locations(path[k + 1].finger_index))) /
-        double(this->number_of_robot_contacts);
 
-    finger_change +=
-        double(number_of_different_elements(
-            this->get_finger_locations(path[k].finger_index),
-            this->get_finger_locations(path[k + 1].finger_index))) /
-        double(this->number_of_robot_contacts);
+    finger_change += this->total_finger_change_ratio(path);
   }
-
-  reward_finger_stay =
-      reward_finger_stay /
-      double(path.size()); // this is not good, prefer longer path
 
   double reward_finger_change = 1.0 / finger_change;
 
-  double reward_path_size = 1.0 / double(path.size());
+  // double reward_path_size = 1.0 / double(path.size());
 
-  double reward = reward_finger_change + 2 * reward_path_size;
+  // double reward = reward_finger_change + 2 * reward_path_size;
+  double reward = reward_finger_change;
 
   return reward;
 }

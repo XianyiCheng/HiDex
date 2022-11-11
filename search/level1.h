@@ -203,7 +203,25 @@ namespace HMP
       // try to capture all the task specific evaluation in the
       // task->evaluate_path only consider add reward terms here if they are a
       // MCTS thing
-      double path_score = final_best_reward;
+
+      // path score should be evaluate of trajectory from 1 and 2
+
+      double path_score;
+
+      if (final_best_reward > 0)
+      {
+        path_score = 0.0;
+      }
+      else
+      {
+        double score_level1 = this->m_task->evaluate_path(state_path);
+        double score_level2 = this->m_task->evalueate_path(tree2.backtrack_state_path(final_node_2)); // this is different than final_node_2->m_value
+        path_score = score_level1 * 2.0 + score_level2;
+      }
+
+
+      
+
       std::vector<Vector7d> obj_traj;
       for (auto s : this->m_task->saved_object_trajectory)
       {

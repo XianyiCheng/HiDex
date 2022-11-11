@@ -36,7 +36,7 @@ namespace HMP
       for (int iter = 1;
            iter <= options.max_iterations || options.max_iterations < 0; ++iter)
       {
-        // std::cout << "Iter " << iter << std::endl;
+        std::cout << "Iter " << iter << std::endl;
         Node<State> *node = grow_node;
 
         while (!this->is_terminal(node))
@@ -60,7 +60,10 @@ namespace HMP
           node = this->next_node(node, action);
           // node->number_of_next_actions =
           //     this->m_task->get_number_of_actions(node->m_state);
-          node->m_state.t_max = this->m_task->max_forward_timestep(node->m_state);
+          if (node->m_state.t_max == -1)
+          {
+            node->m_state.t_max = this->m_task->max_forward_timestep(node->m_state);
+          }
         }
 
         double reward = this->get_result(node);
@@ -101,6 +104,7 @@ namespace HMP
       State new_state = node->m_state;
       this->m_task->do_action(new_state, action);
       new_state.is_valid = true; // make sure it is valid for every state in select_action
+      new_state.t_max = -1;
       return new_state;
     }
 
@@ -125,16 +129,11 @@ namespace HMP
         return node->m_value;
       }
 
-      Node<State> *node_ = node;
-      double total_finger_changes = 0;
-      while (node_->m_parent != nullptr)
-      {
-        total_finger_changes += 1.0;
-        node_ = node_->m_parent;
-      }
-      double heu = double(node->m_state.t_max) + 1.0 - total_finger_changes;
+      double total_finger_changes = this->m_task->total_finger_change_ratio(this->backtrack_state_path(node));
 
-      return heu;
+      double reward = double(node->m_state.t_max) + 1.0 - total_finger_changes;
+
+      return reward;
 
       // std::vector<State> state_path;
 
@@ -235,6 +234,7 @@ namespace HMP
 
       if (if_valid)
       {
+        std::cout << "select action " << finger_idx << " at timestep " << t << std::endl;
         action_idx = this->m_task->encode_action_idx(finger_idx, t);
       }
       else
@@ -253,12 +253,16 @@ namespace HMP
 
       if (!this->is_terminal(current_node))
       {
+        std::cout << "first iter in search tree" << std::endl;
         this->grow_tree(current_node, compute_option_1st_iter);
         current_node = this->best_child(current_node);
       }
 
+      int iter = 0;
+
       while (!this->is_terminal(current_node))
       {
+        std::cout << "search tree iter: " << iter << std::endl;
         this->grow_tree(current_node, compute_options);
         current_node = this->best_child(current_node);
       }

@@ -389,6 +389,7 @@ public:
     return state;
   }
 
+  double total_finger_change_ratio(const std::vector<State2> &path);
   double evaluate_path(const std::vector<State2> &path);
 
   double estimate_next_state_value(const State2 &state, int action)
@@ -442,7 +443,8 @@ public:
         return true;
       }
     }
-    if (state.t_max == (this->saved_object_trajectory.size() - 1)){
+    if (state.t_max == (this->saved_object_trajectory.size() - 1))
+    {
       return true;
     }
     return false;

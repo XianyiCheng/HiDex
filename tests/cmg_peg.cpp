@@ -210,7 +210,7 @@ void test_nominal_traj() {
   HMP::Level2TreeFP<CMGTASK::State2, CMGTASK> tree2(task,
                                                   task->get_start_state2());
   
-  tree2.ita = 1.0;
+  tree2.ita = 2.0;
 
   HMP::Node<CMGTASK::State2> *final_node_2 =
       tree2.search_tree(compute_options.l2_1st, compute_options.l2);
@@ -226,7 +226,8 @@ void test_nominal_traj() {
     for (int jj :
          task->get_finger_locations(action.finger_index)) {
       std::cout << jj << " ";
-    }          
+    } 
+    std::cout << std::endl;         
   }
 
   // VisualizeTraj(task->m_world, test_object_traj, mnp_traj);
