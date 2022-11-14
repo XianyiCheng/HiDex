@@ -16,7 +16,7 @@
 
 #include "visualization.h"
 
-#include "../search/level2fp.h"
+// #include "../search/level2fp.h"
 
 void peg(std::shared_ptr<CMGTASK> task) {
   // Test with two fingers and one finger quasidynamics
@@ -204,7 +204,7 @@ void test_nominal_traj() {
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
                   CMGTASK>::HierarchicalComputeOptions compute_options;
 
-  compute_options.l2_1st.max_iterations = 100;
+  compute_options.l2_1st.max_iterations = 50;
   compute_options.l2.max_iterations = 10;
 
   HMP::Level2TreeFP<CMGTASK::State2, CMGTASK> tree2(task,
@@ -230,11 +230,13 @@ void test_nominal_traj() {
     std::cout << std::endl;         
   }
 
+  VializeStateTraj(task->m_world, task, task->saved_object_trajectory, action_trajectory);
+
   // VisualizeTraj(task->m_world, test_object_traj, mnp_traj);
 
-  // int a = 1;
-  // char** aa;
-  // task->m_world->startWindow(&a, aa);
+  int a = 1;
+  char** aa;
+  task->m_world->startWindow(&a, aa);
 }
 
 int main(int argc, char *argv[]) {

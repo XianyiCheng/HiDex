@@ -17,7 +17,8 @@
 
 #include "visualization.h"
 
-void pushing(std::shared_ptr<CMGTASK> task) {
+void pushing(std::shared_ptr<CMGTASK> task)
+{
   // create world, create environment, an object sliding on the table
 
   double box_length = 0.05;
@@ -78,33 +79,34 @@ void pushing(std::shared_ptr<CMGTASK> task) {
   bool is_refine = true;
   double refine_dist = 0.15;
 
-
   // read surface point, add robot contacts
   std::vector<ContactPoint> surface_pts;
   std::ifstream f(std::string(SRC_DIR) +
                   "/data/test_cmg_pushing/surface_contacts.csv");
   aria::csv::CsvParser parser(f);
 
-  for (auto &row : parser) {
+  for (auto &row : parser)
+  {
     int n_cols = row.size();
     assert(n_cols == 6);
 
     Vector6d v;
-    for (int j = 0; j < 6; ++j) {
+    for (int j = 0; j < 6; ++j)
+    {
       v(j) = std::stod(row[j]);
     }
     ContactPoint p(box_length / 2 * v.head(3), v.tail(3));
     surface_pts.push_back(p);
   }
-    // pass the world and task parameters to the task through task->initialize
+  // pass the world and task parameters to the task through task->initialize
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
                    mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASISTATIC,
                    surface_pts,
                    rrt_options, is_refine, refine_dist);
 }
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   std::shared_ptr<CMGTASK> task = std::make_shared<CMGTASK>();
 
   pushing(task);
@@ -116,10 +118,10 @@ int main(int argc, char *argv[]) {
 
   compute_options.l1_1st.max_iterations = 20;
   compute_options.l1.max_iterations = 10;
-  compute_options.l2_1st.max_iterations = 1000;
-  compute_options.l2.max_iterations = 300;
-  compute_options.final_l2_1st.max_iterations = 1000;
-  compute_options.final_l2.max_iterations = 300;
+  compute_options.l2_1st.max_iterations = 10;
+  compute_options.l2.max_iterations = 3;
+  compute_options.final_l2_1st.max_iterations = 10;
+  compute_options.final_l2.max_iterations = 3;
 
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(
       task, start_state, compute_options);
@@ -135,23 +137,39 @@ int main(int argc, char *argv[]) {
 
   std::cout << "Best value " << current_node->m_value << std::endl;
 
-  for (int kk = 0; kk < object_trajectory.size(); ++kk) {
-    std::cout << "Timestep " << kk << std::endl;
-    std::cout << "Pose " << object_trajectory[kk].m_pose.transpose()
+  for (auto &action : action_trajectory)
+  {
+    std::cout << "Timestep " << action.timestep << std::endl;
+    std::cout << "Pose " << task->saved_object_trajectory[action.timestep].m_pose.transpose()
               << std::endl;
     std::cout << "Fingers ";
     for (int jj :
-         task->get_finger_locations(action_trajectory[kk].finger_index)) {
+         task->get_finger_locations(action.finger_index))
+    {
       std::cout << jj << " ";
     }
     std::cout << std::endl;
-    // object_traj.push_back(object_trajectory[kk].m_pose);
-    object_traj.insert(object_traj.end(), object_trajectory[kk].m_path.begin(),
-                       object_trajectory[kk].m_path.end());
-    for(int i = 0; i < object_trajectory[kk].m_path.size(); i++){
-      mnp_traj.push_back(task->get_robot_config_from_action_idx(action_trajectory[kk].finger_index));
-    }
   }
+
+  VializeStateTraj(task->m_world, task, object_trajectory, action_trajectory);
+
+  // for (int kk = 0; kk < object_trajectory.size(); ++kk) {
+  //   std::cout << "Timestep " << kk << std::endl;
+  //   std::cout << "Pose " << object_trajectory[kk].m_pose.transpose()
+  //             << std::endl;
+  //   std::cout << "Fingers ";
+  //   for (int jj :
+  //        task->get_finger_locations(action_trajectory[kk].finger_index)) {
+  //     std::cout << jj << " ";
+  //   }
+  //   std::cout << std::endl;
+  //   // object_traj.push_back(object_trajectory[kk].m_pose);
+  //   object_traj.insert(object_traj.end(), object_trajectory[kk].m_path.begin(),
+  //                      object_trajectory[kk].m_path.end());
+  //   for(int i = 0; i < object_trajectory[kk].m_path.size(); i++){
+  //     mnp_traj.push_back(task->get_robot_config_from_action_idx(action_trajectory[kk].finger_index));
+  //   }
+  // }
 
   std::cout << "Total level 1 tree nodes " << tree.count_total_nodes()
             << std::endl;
@@ -160,6 +178,6 @@ int main(int argc, char *argv[]) {
             << std::endl;
 
   // world->setObjectTrajectory(object_traj);
-  VisualizeTraj(task->m_world, object_traj, mnp_traj);
+  // VisualizeTraj(task->m_world, object_traj, mnp_traj);
   task->m_world->startWindow(&argc, argv);
 }

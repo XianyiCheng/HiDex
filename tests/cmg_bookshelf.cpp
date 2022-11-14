@@ -165,10 +165,10 @@ int main(int argc, char *argv[]) {
 
   compute_options.l1_1st.max_iterations = 10;
   compute_options.l1.max_iterations = 5;
-  compute_options.l2_1st.max_iterations = 5000;
-  compute_options.l2.max_iterations = 200;
-  compute_options.final_l2_1st.max_iterations = 5000;
-  compute_options.final_l2.max_iterations = 200;
+  compute_options.l2_1st.max_iterations = 20;
+  compute_options.l2.max_iterations = 5;
+  compute_options.final_l2_1st.max_iterations = 20;
+  compute_options.final_l2.max_iterations = 5;
 
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(
       task, start_state, compute_options);
@@ -184,37 +184,52 @@ int main(int argc, char *argv[]) {
 
   std::cout << "Best value " << current_node->m_value << std::endl;
 
-  std::cout << object_trajectory.size() << std::endl;
-  std::cout << action_trajectory.size() << std::endl;
+  // std::cout << object_trajectory.size() << std::endl;
+  // std::cout << action_trajectory.size() << std::endl;
 
-  for (int kk = 0; kk < object_trajectory.size(); ++kk) {
-    std::cout << "Timestep " << kk << std::endl;
-    std::cout << "Pose " << object_trajectory[kk].m_pose.transpose()
+  // for (int kk = 0; kk < object_trajectory.size(); ++kk) {
+  //   std::cout << "Timestep " << kk << std::endl;
+  //   std::cout << "Pose " << object_trajectory[kk].m_pose.transpose()
+  //             << std::endl;
+  //   std::cout << "# envs " << object_trajectory[kk].envs.size() << std::endl;
+  //   std::cout << "action " << action_trajectory[kk].finger_index << std::endl;
+  //   std::cout << "Fingers ";
+  //   for (int jj :
+  //        task->get_finger_locations(action_trajectory[kk].finger_index)) {
+  //     std::cout << jj << " ";
+  //   }
+  //   std::cout << std::endl;
+  //   // object_traj.push_back(object_trajectory[kk].m_pose);
+  //   object_traj.insert(object_traj.end(), object_trajectory[kk].m_path.begin(),
+  //                      object_trajectory[kk].m_path.end());
+  //   for (int i = 0; i < object_trajectory[kk].m_path.size(); i++) {
+  //     mnp_traj.push_back(task->get_robot_config_from_action_idx(
+  //         action_trajectory[kk].finger_index));
+  //   }
+  // }
+
+
+  // VisualizeTraj(task->m_world, object_traj, mnp_traj);
+
+    for (auto &action : action_trajectory)
+  {
+    std::cout << "Timestep " << action.timestep << std::endl;
+    std::cout << "Pose " << task->saved_object_trajectory[action.timestep].m_pose.transpose()
               << std::endl;
-    std::cout << "# envs " << object_trajectory[kk].envs.size() << std::endl;
-    std::cout << "action " << action_trajectory[kk].finger_index << std::endl;
     std::cout << "Fingers ";
     for (int jj :
-         task->get_finger_locations(action_trajectory[kk].finger_index)) {
+         task->get_finger_locations(action.finger_index))
+    {
       std::cout << jj << " ";
     }
     std::cout << std::endl;
-    // object_traj.push_back(object_trajectory[kk].m_pose);
-    object_traj.insert(object_traj.end(), object_trajectory[kk].m_path.begin(),
-                       object_trajectory[kk].m_path.end());
-    for (int i = 0; i < object_trajectory[kk].m_path.size(); i++) {
-      mnp_traj.push_back(task->get_robot_config_from_action_idx(
-          action_trajectory[kk].finger_index));
-    }
   }
 
-  std::cout << "Total level 1 tree nodes " << tree.count_total_nodes()
-            << std::endl;
+  std::cout << "Total level 1 tree nodes " << tree.count_total_nodes() << std::endl;
 
-  std::cout << "Total shared rrt nodes " << tree.m_task->total_rrt_nodes()
-            << std::endl;
+  std::cout << "Total shared rrt nodes " << tree.m_task->total_rrt_nodes() << std::endl;
 
-  VisualizeTraj(task->m_world, object_traj, mnp_traj);
+  VializeStateTraj(task->m_world, task, object_trajectory, action_trajectory);
 
   task->m_world->startWindow(&argc, argv);
 }

@@ -1,5 +1,9 @@
 #pragma once
 #include "level2.h"
+#ifndef SEARCH_LEVEL2FP_H
+#define SEARCH_LEVEL2FP_H
+#include "level2fp.h"
+#endif
 #include <algorithm>
 
 namespace HMP
@@ -192,8 +196,11 @@ namespace HMP
         std::cout << s.m_pose.transpose() << std::endl;
       }
 
-      Level2Tree<State2, Task> tree2(this->m_task,
+      // Level2Tree<State2, Task> tree2(this->m_task,
+      //                                this->m_task->get_start_state2());
+      Level2TreeFP<State2, Task> tree2(this->m_task,
                                      this->m_task->get_start_state2());
+      tree2.ita = 2.0;
 
       Node<State2> *final_node_2 = tree2.search_tree(this->compute_options.l2_1st,
                                                      this->compute_options.l2);
@@ -208,14 +215,14 @@ namespace HMP
 
       double path_score;
 
-      if (final_best_reward > 0)
+      if (final_best_reward <= 0)
       {
         path_score = 0.0;
       }
       else
       {
         double score_level1 = this->m_task->evaluate_path(state_path);
-        double score_level2 = this->m_task->evalueate_path(tree2.backtrack_state_path(final_node_2)); // this is different than final_node_2->m_value
+        double score_level2 = this->m_task->evaluate_path(tree2.backtrack_state_path(final_node_2)); // this is different than final_node_2->m_value
         path_score = score_level1 * 2.0 + score_level2;
       }
 
@@ -227,27 +234,27 @@ namespace HMP
       {
         obj_traj.push_back(s.m_pose);
       }
-      // print the results
-      if (path_score > 0)
-      {
+      // // print the results
+      // if (path_score > 0)
+      // {
 
-        std::vector<State2> action_trajectory =
-            tree2.backtrack_state_path(final_node_2);
-        for (int kk = 0; kk < this->m_task->saved_object_trajectory.size(); ++kk)
-        {
-          std::cout << "Timestep " << kk << std::endl;
-          std::cout
-              << "Pose "
-              << this->m_task->saved_object_trajectory[kk].m_pose.transpose()
-              << std::endl;
-          std::cout << "Fingers ";
-          for (int jj :
-               this->m_task->get_finger_locations(action_trajectory[kk].finger_index))
-          {
-            std::cout << jj << " ";
-          }
-        }
-      }
+      //   std::vector<State2> action_trajectory =
+      //       tree2.backtrack_state_path(final_node_2);
+      //   for (int kk = 0; kk < this->m_task->saved_object_trajectory.size(); ++kk)
+      //   {
+      //     std::cout << "Timestep " << kk << std::endl;
+      //     std::cout
+      //         << "Pose "
+      //         << this->m_task->saved_object_trajectory[kk].m_pose.transpose()
+      //         << std::endl;
+      //     std::cout << "Fingers ";
+      //     for (int jj :
+      //          this->m_task->get_finger_locations(action_trajectory[kk].finger_index))
+      //     {
+      //       std::cout << jj << " ";
+      //     }
+      //   }
+      // }
 
       // // visualize the object trajectory
       // this->m_task->m_world->setObjectTrajectory(obj_traj);
@@ -491,9 +498,12 @@ namespace HMP
 
       this->m_task->save_trajectory(*object_trajectory);
 
-      Level2Tree<State2, Task> tree2(this->m_task,
+      // Level2Tree<State2, Task> tree2(this->m_task,
+      //                                this->m_task->get_start_state2());
+      // tree2.ita = 0.1;
+      Level2TreeFP<State2, Task> tree2(this->m_task,
                                      this->m_task->get_start_state2());
-      tree2.ita = 0.1;
+      tree2.ita = 2.0;
 
       Node<State2> *final_node_2 = tree2.search_tree(compute_options.final_l2_1st,
                                                      compute_options.final_l2);

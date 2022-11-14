@@ -1876,6 +1876,7 @@ void CMGTASK::save_trajectory(const std::vector<CMGTASK::State> &path)
       }
     }
 
+    this->m_world->getObjectContacts(&state.envs, state.m_pose);
     this->saved_object_trajectory.push_back(state);
   }
 }
@@ -2030,6 +2031,10 @@ int CMGTASK::max_forward_timestep(const CMGTASK::State2 &state)
     if (!is_feasible)
     {
       break;
+    }
+    if (is_feasible && (t_max == (this->saved_object_trajectory.size() - 1)))
+    {
+      return t_max;
     }
   }
 

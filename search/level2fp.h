@@ -255,15 +255,22 @@ namespace HMP
       {
         std::cout << "first iter in search tree" << std::endl;
         this->grow_tree(current_node, compute_option_1st_iter);
-        current_node = this->best_child(current_node);
+        if (current_node->m_children.size() > 0)
+        {
+          current_node = this->best_child(current_node);
+        }
       }
 
-      int iter = 0;
+      // int iter = 0;
 
       while (!this->is_terminal(current_node))
       {
-        std::cout << "search tree iter: " << iter << std::endl;
+        // std::cout << "search tree iter: " << iter << std::endl;
         this->grow_tree(current_node, compute_options);
+        if (current_node->m_children.size() == 0)
+        {
+          break;
+        }
         current_node = this->best_child(current_node);
       }
 
