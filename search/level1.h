@@ -462,6 +462,9 @@ namespace HMP
         if (current_node->m_value == 0.0)
         {
           std::cout << "Cannot find positive reward path" << std::endl;
+          while(current_node->m_children.size() > 0){
+            current_node = this->best_child(current_node);
+          }
           break;
         }
         iter++;

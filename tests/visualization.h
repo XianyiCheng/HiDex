@@ -15,6 +15,7 @@ void VializeStateTraj(std::shared_ptr<WorldTemplate> world, std::shared_ptr<CMGT
 
   for(int i = 0; i < object_traj.size(); i++){
     object_traj_vec.push_back(object_traj[i].m_pose);
+    std::cout << object_traj[i].m_pose.transpose() << std::endl;
   }
   for (int k = 1; k < mnp_traj.size(); k++){
     int start_j = mnp_traj[k].timestep;

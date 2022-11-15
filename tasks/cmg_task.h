@@ -2,12 +2,12 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <cfloat>
+#include <cmath>
 #include <iostream>
 #include <memory>
 #include <random>
 #include <string>
 #include <vector>
-#include <cmath>
 
 #ifndef UTILS_H
 #define UTILS_H
@@ -26,11 +26,9 @@
 #define CMG_NODYNAMICS -1
 
 // Resuable RRT
-class ReusableRRT
-{
+class ReusableRRT {
 public:
-  struct Node
-  {
+  struct Node {
     Vector7d config; // x, y, z, qx, qy, qz, qw
     int parent = -1;
     int edge = -1; // index of edge from parent to this
@@ -42,8 +40,7 @@ public:
     Node(Vector7d data) { config = data; }
   };
 
-  struct Edge
-  {
+  struct Edge {
     VectorXi mode;
     std::vector<Vector7d> path;
     Edge(VectorXi m, std::vector<Vector7d> &p) : mode(m), path(p) {}
@@ -55,8 +52,7 @@ public:
   double translation_weight;
   ReusableRRT(const double &a_weight, const double &p_weight)
       : angle_weight(a_weight), translation_weight(p_weight) {}
-  double dist(const Vector7d &q1, const Vector7d &q2)
-  {
+  double dist(const Vector7d &q1, const Vector7d &q2) {
     Vector3d p1(q1[0], q1[1], q1[2]);
     Vector3d p2(q2[0], q2[1], q2[2]);
     Quaterniond quat1(q1[6], q1[3], q1[4], q1[5]); // Quaterniond: w, x, y, z
@@ -69,27 +65,22 @@ public:
     return d;
   }
 
-  std::vector<int> subtree_node_idxes(int root_idx, VectorXi mode)
-  {
+  std::vector<int> subtree_node_idxes(int root_idx, VectorXi mode) {
     // given the root node index of a subtree, find out all the node indices in
     // the subtree
     std::vector<int> all_idxes;
     all_idxes.push_back(root_idx);
-    for (int k = root_idx + 1; k < this->nodes.size(); k++)
-    {
+    for (int k = root_idx + 1; k < this->nodes.size(); k++) {
       int kk = k;
-      while (this->nodes[kk].parent > root_idx)
-      {
+      while (this->nodes[kk].parent > root_idx) {
         kk = this->nodes[kk].parent;
       }
-      if (this->nodes[kk].parent == root_idx)
-      {
+      if (this->nodes[kk].parent == root_idx) {
         bool if_same_mode = ((this->edges[this->nodes[kk].edge].mode.head(
                                   this->nodes[root_idx].envs.size()) -
                               mode)
                                  .norm() < 1e-3);
-        if (if_same_mode)
-        {
+        if (if_same_mode) {
           all_idxes.push_back(k);
         }
       }
@@ -98,31 +89,25 @@ public:
   }
 
   int find_node(const Vector7d &q, VectorXi mode, int parent_idx,
-                double thr = 1e-3)
-  {
+                double thr = 1e-3) {
     // ss_mode: the mode that leads to this node
     int near_idx = 0;
     double min_d = this->dist(nodes[0].config, q);
 
-    for (int i = 1; i < nodes.size(); i++)
-    {
-      if (nodes[i].parent != parent_idx)
-      {
+    for (int i = 1; i < nodes.size(); i++) {
+      if (nodes[i].parent != parent_idx) {
         continue;
       }
-      if (edges[nodes[i].edge].mode.size() != mode.size())
-      {
+      if (edges[nodes[i].edge].mode.size() != mode.size()) {
         continue;
       }
 
-      if ((edges[nodes[i].edge].mode - mode).norm() != 0)
-      {
+      if ((edges[nodes[i].edge].mode - mode).norm() != 0) {
         continue;
       }
 
       double d = this->dist(nodes[i].config, q);
-      if (d < min_d)
-      {
+      if (d < min_d) {
         near_idx = i;
         min_d = d;
       }
@@ -131,16 +116,13 @@ public:
     return (min_d < thr) ? near_idx : -1;
   }
 
-  int find_node(const Vector7d &q, double thr = 1e-3)
-  {
+  int find_node(const Vector7d &q, double thr = 1e-3) {
     int near_idx = 0;
     double min_d = this->dist(nodes[0].config, q);
 
-    for (int i = 1; i < nodes.size(); i++)
-    {
+    for (int i = 1; i < nodes.size(); i++) {
       double d = this->dist(nodes[i].config, q);
-      if (d < min_d)
-      {
+      if (d < min_d) {
         near_idx = i;
         min_d = d;
       }
@@ -148,15 +130,12 @@ public:
     return (min_d < thr) ? near_idx : -1;
   }
 
-  int nearest_neighbor(const Vector7d &q)
-  {
+  int nearest_neighbor(const Vector7d &q) {
     int near_idx;
     double min_d = DBL_MAX;
-    for (int i = 0; i < nodes.size(); i++)
-    {
+    for (int i = 0; i < nodes.size(); i++) {
       double d = this->dist(nodes[i].config, q);
-      if (d < min_d)
-      {
+      if (d < min_d) {
         near_idx = i;
         min_d = d;
       }
@@ -167,40 +146,32 @@ public:
   int nearest_neighbor_subtree(const Vector7d &q, int subtree_root_idx,
                                const std::vector<int> &subtree_idxes,
                                bool if_unextened_to_goal = false,
-                               bool if_unexplored = false)
-  {
+                               bool if_unexplored = false) {
 
     int near_idx = -1;
     double min_d = DBL_MAX;
 
-    for (int i : subtree_idxes)
-    {
+    for (int i : subtree_idxes) {
 
       if (if_unextened_to_goal &&
-          (this->nodes[i].is_extended_to_goal == true))
-      {
+          (this->nodes[i].is_extended_to_goal == true)) {
         continue;
       }
 
       double d = this->dist(nodes[i].config, q);
-      if (d < min_d)
-      {
+      if (d < min_d) {
 
-        if (if_unexplored)
-        {
+        if (if_unexplored) {
           bool is_explored = false;
           int kk = i;
-          while (kk > subtree_root_idx)
-          {
-            if (this->nodes[kk].is_explored)
-            {
+          while (kk > subtree_root_idx) {
+            if (this->nodes[kk].is_explored) {
               is_explored = true;
               break;
             }
             kk = this->nodes[kk].parent;
           }
-          if (is_explored)
-          {
+          if (is_explored) {
             continue;
           }
         }
@@ -213,19 +184,16 @@ public:
   }
 
   void backtrack(int last_node_idx, std::vector<int> *node_path,
-                 int root_idx = 0)
-  {
+                 int root_idx = 0) {
     int idx = last_node_idx;
-    while (idx > root_idx)
-    {
+    while (idx > root_idx) {
       node_path->push_back(idx);
       idx = nodes[idx].parent;
     }
     node_path->push_back(root_idx);
     return;
   }
-  void add_node(Node *n, int parent_idx, Edge *e)
-  {
+  void add_node(Node *n, int parent_idx, Edge *e) {
     // int node_idx = nodes.size();
     int edge_idx = edges.size();
     n->parent = parent_idx;
@@ -236,20 +204,17 @@ public:
     return;
   }
 
-  void initial_node(Node *n)
-  {
+  void initial_node(Node *n) {
     n->parent = -1;
     nodes.push_back(*n);
     return;
   }
 };
 
-class CMGTASK
-{
+class CMGTASK {
 
 public:
-  struct State
-  {
+  struct State {
     Vector7d m_pose;
     std::vector<ContactPoint> envs;
     int m_mode_idx = -1; // the mode chosen for this state, to the next state
@@ -264,8 +229,7 @@ public:
           const std::vector<Eigen::VectorXi> &modes_)
         : m_pose(pose), envs(envs_), m_mode_idx(mode_idx), modes(modes_) {}
 
-    State(const State &state_)
-    {
+    State(const State &state_) {
       // copy constructor
       m_pose = state_.m_pose;
       m_mode_idx = state_.m_mode_idx;
@@ -276,8 +240,7 @@ public:
 
     void do_action(int action) { m_mode_idx = action; }
 
-    State &operator=(const State &state_)
-    {
+    State &operator=(const State &state_) {
       this->m_pose = state_.m_pose;
       this->m_mode_idx = state_.m_mode_idx;
       this->modes = state_.modes;
@@ -287,23 +250,20 @@ public:
     }
   };
 
-  struct State2
-  {
+  struct State2 {
     int timestep = 0;
     int finger_index; // current finger index
     bool is_valid;
     int t_max = -1; // maximum time step this can reach
     State2() {}
     State2(int t, int idx) : timestep(t), finger_index(idx) {}
-    void do_action(int action)
-    {
+    void do_action(int action) {
       this->finger_index = action;
       this->timestep++;
     }
   };
 
-  struct SearchOptions
-  {
+  struct SearchOptions {
     // the search options for search_a_new_path using RRT
     Eigen::Vector3d x_lb;
     Eigen::Vector3d x_ub;
@@ -323,12 +283,10 @@ public:
                   const Vector7d &goal_object_pose, double goal_thr, double wa,
                   double wt, double charac_len, double mu_env, double mu_mnp,
                   Matrix6d object_inertia, Vector6d f_gravity,
-                  std::shared_ptr<WorldTemplate> world,
-                  int n_robot_contacts,
-                  int dynamic_type,
-                  std::vector<ContactPoint> surface_pts,
-                  const SearchOptions &options,
-                  bool if_refine = false, double refine_dist = 0.0);
+                  std::shared_ptr<WorldTemplate> world, int n_robot_contacts,
+                  int dynamic_type, std::vector<ContactPoint> surface_pts,
+                  const SearchOptions &options, bool if_refine = false,
+                  double refine_dist = 0.0);
 
   // --- Level 1 Tree functions ---
   State get_start_state() const { return generate_state(start_object_pose); }
@@ -344,8 +302,7 @@ public:
                            const VectorXi &env_mode_,
                            std::vector<Vector7d> *path);
 
-  double evaluate_path(const std::vector<State> &path) const
-  {
+  double evaluate_path(const std::vector<State> &path) const {
     double reward = 1 / double(path.size());
 
     return reward;
@@ -355,20 +312,18 @@ public:
 
   std::vector<int> get_finger_locations(int finger_location_index);
 
-  VectorXd get_robot_config_from_action_idx(int action_index)
-  {
+  VectorXd get_robot_config_from_action_idx(int action_index) {
 
     std::vector<int> finger_locations =
         this->get_finger_locations(action_index);
 
     // for point fingers
     VectorXd mnp_config(6 * finger_locations.size());
-    for (int k = 0; k < finger_locations.size(); ++k)
-    {
-      if (finger_locations[k] == -1)
-      {
+    for (int k = 0; k < finger_locations.size(); ++k) {
+      if (finger_locations[k] == -1) {
         // temporary solution:
-        // when not in contact, set the finger location to a very far away point, only works for point fingers
+        // when not in contact, set the finger location to a very far away
+        // point, only works for point fingers
         // TODO: for other robots, need to consider IK, collision, etc.
         mnp_config.block(6 * k, 0, 3, 1) = Vector3d(100, 100, 100);
         mnp_config.block(6 * k + 3, 0, 3, 1) = Vector3d::Zero();
@@ -383,8 +338,7 @@ public:
     return mnp_config;
   }
 
-  State2 get_start_state2() const
-  {
+  State2 get_start_state2() const {
     State2 state(0, -1);
     return state;
   }
@@ -392,24 +346,23 @@ public:
   double total_finger_change_ratio(const std::vector<State2> &path);
   double evaluate_path(const std::vector<State2> &path);
 
-  double estimate_next_state_value(const State2 &state, int action)
-  {
+  double estimate_next_state_value(const State2 &state, int action) {
     // return 0.0 for now, can use neural networks to estimate values
     return 0.0;
   }
 
-  double action_heuristics_level2(int action_idx, const State2 &state, const State2 &pre_state)
-  {
-    // return the heuristics of an action in level2, this can be hand designed or learned
-    // todo: improve this heuristics
-    std::vector<int> finger_locations_1 = this->get_finger_locations(pre_state.finger_index);
-    std::vector<int> finger_locations_2 = this->get_finger_locations(action_idx);
+  double action_heuristics_level2(int action_idx, const State2 &state,
+                                  const State2 &pre_state) {
+    // return the heuristics of an action in level2, this can be hand designed
+    // or learned todo: improve this heuristics
+    std::vector<int> finger_locations_1 =
+        this->get_finger_locations(pre_state.finger_index);
+    std::vector<int> finger_locations_2 =
+        this->get_finger_locations(action_idx);
 
     double heu = 1.0;
-    for (int i = 0; i < finger_locations_1.size(); ++i)
-    {
-      if (finger_locations_1[i] == finger_locations_2[i])
-      {
+    for (int i = 0; i < finger_locations_1.size(); ++i) {
+      if (finger_locations_1[i] == finger_locations_2[i]) {
         heu *= 2.0;
       }
     }
@@ -417,34 +370,26 @@ public:
     return heu;
   }
 
-  int get_number_of_robot_actions(const State2 &state)
-  {
+  int get_number_of_robot_actions(const State2 &state) {
     return this->n_finger_combinations;
   }
 
-  int get_number_of_actions(const State2 &state)
-  {
+  int get_number_of_actions(const State2 &state) {
     return this->n_finger_combinations * this->saved_object_trajectory.size();
   }
 
-  bool is_terminal(const State2 &state)
-  {
+  bool is_terminal(const State2 &state) {
     // check if terminal, also check if valid,
     // if not valid it is also terminal
 
-    if (!state.is_valid)
-    {
+    if (!state.is_valid) {
       return true;
-    }
-    else
-    {
-      if (state.timestep >= this->saved_object_trajectory.size() - 1)
-      {
+    } else {
+      if (state.timestep >= this->saved_object_trajectory.size() - 1) {
         return true;
       }
     }
-    if (state.t_max == (this->saved_object_trajectory.size() - 1))
-    {
+    if (state.t_max == (this->saved_object_trajectory.size() - 1)) {
       return true;
     }
     return false;
@@ -460,20 +405,23 @@ public:
 
   void save_trajectory(const std::vector<CMGTASK::State> &path);
 
-  std::vector<State> generate_a_finer_object_trajectory(std::vector<State> &object_traj, double dist);
+  std::vector<State>
+  generate_a_finer_object_trajectory(std::vector<State> &object_traj,
+                                     double dist);
 
-  bool pruning_check(const Vector7d &x, const Vector6d &v, const std::vector<ContactPoint> &envs);
+  bool pruning_check(const Vector7d &x, const Vector6d &v,
+                     const std::vector<ContactPoint> &envs);
+  bool pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d& v,
+                     const std::vector<ContactPoint> &envs);
 
   int max_forward_timestep(const CMGTASK::State2 &state);
   int select_finger_change_timestep(const State2 &state);
 
-  int encode_action_idx(int finger_idx, int timestep)
-  {
+  int encode_action_idx(int finger_idx, int timestep) {
     return timestep * this->n_finger_combinations + finger_idx;
   }
 
-  void do_action(State2 &state, int action)
-  {
+  void do_action(State2 &state, int action) {
     state.timestep = action / this->n_finger_combinations;
     state.finger_index = action % this->n_finger_combinations;
   }

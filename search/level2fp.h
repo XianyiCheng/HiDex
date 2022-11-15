@@ -36,7 +36,7 @@ namespace HMP
       for (int iter = 1;
            iter <= options.max_iterations || options.max_iterations < 0; ++iter)
       {
-        std::cout << "Iter " << iter << std::endl;
+        // std::cout << "Iter " << iter << std::endl;
         Node<State> *node = grow_node;
 
         while (!this->is_terminal(node))
@@ -234,7 +234,7 @@ namespace HMP
 
       if (if_valid)
       {
-        std::cout << "select action " << finger_idx << " at timestep " << t << std::endl;
+        // std::cout << "select action " << finger_idx << " at timestep " << t << std::endl;
         action_idx = this->m_task->encode_action_idx(finger_idx, t);
       }
       else
@@ -253,7 +253,7 @@ namespace HMP
 
       if (!this->is_terminal(current_node))
       {
-        std::cout << "first iter in search tree" << std::endl;
+        // std::cout << "first iter in search tree" << std::endl;
         this->grow_tree(current_node, compute_option_1st_iter);
         if (current_node->m_children.size() > 0)
         {
