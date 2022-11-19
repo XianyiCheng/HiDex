@@ -266,7 +266,7 @@ double CollisionInterpolation(const Vector6d &v,
 
 bool ifNeedVelocityCorrection(VectorXi mode,
                               const std::vector<ContactPoint> &pts) {
-  double thr = 0.03;
+  double thr = 0.02;
   for (int i = 0; i < pts.size(); i++) {
 
     if ((abs(pts[i].d) > thr) && mode[i] == 0) {
@@ -277,7 +277,7 @@ bool ifNeedVelocityCorrection(VectorXi mode,
 }
 
 bool is_penetrate(const std::vector<ContactPoint> &pts) {
-  double thr = 0.1;
+  double thr = 0.05;
   for (int i = 0; i < pts.size(); i++) {
     if ((abs(pts[i].d) > thr)) {
       return true;
@@ -345,7 +345,7 @@ VectorXi track_contacts_remain(const std::vector<ContactPoint> &pts,
   int i = 0;
   int j = 0;
   while ((i < pts.size()) && (j < pts_new.size())) {
-    if (contactTrack(pts[i], pts_new[j]), normal_product) {
+    if (contactTrack(pts[i], pts_new[j], normal_product)) {
       remain_idx[j] = i;
       j++;
     }
@@ -934,7 +934,7 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
 
     Vector6d v_b;
     if (mode_type == MODE_TYPE_FULL) {
-      EnvironmentConstrainedVelocity(v_star, envs, env_mode, *this->cons);
+      v_b = EnvironmentConstrainedVelocity(v_star, envs, env_mode, *this->cons);
     } else {
       // mode_type == MODE_TYPE_CS
       v_b = EnvironmentConstrainedVelocity_CSModeOnly(v_star, envs, env_mode,
@@ -950,7 +950,10 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
       // printf("v_b back and forth. \n");
       break;
     }
-
+    if (!this->pruning_check(x, env_mode.head(envs.size()), v_b, envs)) {
+      break;
+    }
+    
     steer_velocity(v_b, h, this->charac_len);
 
     // integrate v
@@ -1025,7 +1028,7 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
     if (envs.size() < pre_env_size) {
       VectorXi remain_idx = track_contacts_remain(envs_pre, envs);
       if (envs.size() != 0 && remain_idx.size() == 0) {
-        printf("contact track fails.\n");
+        // printf("contact track fails.\n");
         break;
       }
       if (ifContactingModeDeleted(env_mode, remain_idx, envs_pre.size())) {
@@ -1316,6 +1319,13 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
 
       // std::cout << "cs mode " << cs_mode.transpose() << std::endl;
 
+      // if (cs_mode.size() >= 4) {
+      //   if ((cs_mode[0] == 0) && (cs_mode[1] == 0) && (cs_mode[2] == 1) &&
+      //       (cs_mode[3] == 1)) {
+      //     std::cout << "debug here " << std::endl;
+      //   }
+      // }
+
       // extend cs_mode with all sticking mode and free sliding mode
 
       // check for force feasibilitiy of this cs_mode with all possible
@@ -1381,7 +1391,8 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
             continue;
           } else {
 
-            std::cout << "New node added! " << path.back().transpose() << std::endl;
+            std::cout << "New node added! " << path.back().transpose()
+                      << std::endl;
 
             ReusableRRT::Node new_node(path.back());
             ReusableRRT::Edge new_edge(mode, path);
@@ -1643,28 +1654,32 @@ void CMGTASK::save_trajectory(const std::vector<CMGTASK::State> &path) {
 
   if (!this->if_refine) {
     this->saved_object_trajectory = path;
-    return;
+  } else {
+
+    this->saved_object_trajectory.push_back(path[0]);
+
+    for (int i = 1; i < path.size(); ++i) {
+      State state = path[i];
+
+      for (int k = 0; k < state.m_path.size() - 1; k++) {
+        double cur_dist = this->shared_rrt->dist(
+            this->saved_object_trajectory.back().m_pose, state.m_path[k]);
+        if (cur_dist >= this->refine_dist) {
+          // add a new state
+          State new_state;
+          new_state.m_pose = state.m_path[k];
+          this->saved_object_trajectory.push_back(new_state);
+        }
+      }
+
+      this->m_world->getObjectContacts(&state.envs, state.m_pose);
+      this->saved_object_trajectory.push_back(state);
+    }
   }
 
-  this->saved_object_trajectory.push_back(path[0]);
-
-  for (int i = 1; i < path.size(); ++i) {
-    State state = path[i];
-
-    for (int k = 0; k < state.m_path.size() - 1; k++) {
-      double cur_dist = this->shared_rrt->dist(
-          this->saved_object_trajectory.back().m_pose, state.m_path[k]);
-      if (cur_dist >= this->refine_dist) {
-        // add a new state
-        State new_state;
-        new_state.m_pose = state.m_path[k];
-        this->m_world->getObjectContacts(&new_state.envs, new_state.m_pose);
-        this->saved_object_trajectory.push_back(new_state);
-      }
-    }
-
-    this->m_world->getObjectContacts(&state.envs, state.m_pose);
-    this->saved_object_trajectory.push_back(state);
+  for (int i = 0; i < this->saved_object_trajectory.size(); ++i) {
+    this->m_world->getObjectContacts(&(this->saved_object_trajectory[i].envs),
+                                     this->saved_object_trajectory[i].m_pose);
   }
 }
 
@@ -1800,12 +1815,20 @@ bool CMGTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
   int max_sample = 100;
   // TODO: calculate n_finger_combination during initialization
 
-  max_sample = (max_sample > this->n_finger_combinations)
-                   ? this->n_finger_combinations
-                   : max_sample;
+  // max_sample = (max_sample > this->n_finger_combinations)
+  //                  ? this->n_finger_combinations
+  //                  : max_sample;
 
   for (int k_sample = 0; k_sample < max_sample; k_sample++) {
-    int finger_idx = randi(this->n_finger_combinations);
+    int finger_idx;
+    if (max_sample > this->n_finger_combinations) {
+      if (k_sample >= this->n_finger_combinations) {
+        break;
+      }
+      finger_idx = k_sample;
+    } else {
+      finger_idx = randi(this->n_finger_combinations);
+    }
     std::vector<ContactPoint> mnps;
     std::vector<int> fingertip_idx;
     if (finger_idx != 0) {
@@ -1820,7 +1843,8 @@ bool CMGTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
       }
 
       // if the robot collides, not valid
-      if (this->m_world->isRobotCollide(mnp_config)) {
+      bool is_collide = this->m_world->isRobotCollide(mnp_config);
+      if (is_collide) {
         continue;
       }
 

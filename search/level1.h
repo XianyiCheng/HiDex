@@ -229,11 +229,11 @@ namespace HMP
 
       
 
-      std::vector<Vector7d> obj_traj;
-      for (auto s : this->m_task->saved_object_trajectory)
-      {
-        obj_traj.push_back(s.m_pose);
-      }
+      // std::vector<Vector7d> obj_traj;
+      // for (auto s : this->m_task->saved_object_trajectory)
+      // {
+      //   obj_traj.push_back(s.m_pose);
+      // }
       // // print the results
       // if (path_score > 0)
       // {

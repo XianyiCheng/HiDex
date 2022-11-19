@@ -47,8 +47,8 @@ void card(std::shared_ptr<CMGTASK> task) {
   //     -0.427257, 0.90413;
 
   // goal: rotate around y axis for 90 degrees
-  // x_goal << 2.5, 0, box_length/2 * 1.5, 0, -0.7071, 0, 0.7071;
-  x_goal << 0.5, 0, box_length / 2 * 1.5, 0, -0.7071, 0, 0.7071;
+  x_goal << 2.5, 0, box_length/2 * 1.5, 0, -0.7071, 0, 0.7071;
+  // x_goal << 0.5, 0, box_length / 2 * 1.5, 0, -0.7071, 0, 0.7071;
 
   double goal_thr = box_length * 3.14 * 10 / 180;
 

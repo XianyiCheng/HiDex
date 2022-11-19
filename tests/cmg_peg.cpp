@@ -61,7 +61,7 @@ void peg(std::shared_ptr<CMGTASK> task) {
 
   int n_robot_contacts = 3;
   DartPointManipulator *rpt =
-      new DartPointManipulator(n_robot_contacts, gap * 1.2);
+      new DartPointManipulator(n_robot_contacts, gap * 1.05);
   rpt->is_patch_contact = true;
   world->addRobot(rpt);
 
@@ -71,7 +71,7 @@ void peg(std::shared_ptr<CMGTASK> task) {
   Vector7d x_goal;
   x_start << 0, 0, box_height / 2, 0, 0, 0, 1;
 
-  x_goal << 0, -gap, box_height * 1.5, 0, 0, 0, 1;
+  x_goal << 0, -gap*2, box_height * 1.5, 0, 0, 0, 1;
 
   double goal_thr = box_length * 3.14 * 30 / 180;
 
@@ -97,7 +97,7 @@ void peg(std::shared_ptr<CMGTASK> task) {
   rrt_options.x_ub << box_length, box_length, box_height * 2;
   rrt_options.x_lb << -box_length, -box_length, 0.0;
 
-  rrt_options.eps_trans = 2.0;
+  rrt_options.eps_trans = 1.0;
   // rrt_options.eps_angle = 3.14 * 95 / 180;
   // rrt_options.eps_trans = 0.10;
   rrt_options.eps_angle = 3.14 * 35 / 180;
@@ -107,7 +107,7 @@ void peg(std::shared_ptr<CMGTASK> task) {
 
   rrt_options.goal_biased_prob = 0.7;
 
-  bool if_refine = true;
+  bool if_refine = false;
   bool refine_dist = 0.25;
 
   // read surface point, add robot contacts
@@ -218,6 +218,10 @@ void test_nominal_traj() {
   std::vector<VectorXd> mnp_traj;
   std::vector<CMGTASK::State2> action_trajectory =
       tree2.backtrack_state_path(final_node_2);
+
+  double score = task->evaluate_path(action_trajectory);
+  std::cout << "score " << score << std::endl;
+
   for (auto &action : action_trajectory) {
     std::cout << "Timestep " << action.timestep << std::endl;
     std::cout << "Pose " << task->saved_object_trajectory[action.timestep].m_pose.transpose()
@@ -275,7 +279,7 @@ int main(int argc, char *argv[]) {
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
                   CMGTASK>::HierarchicalComputeOptions compute_options;
 
-  compute_options.l1_1st.max_iterations = 2;
+  compute_options.l1_1st.max_iterations = 10;
   compute_options.l1.max_iterations = 5;
   compute_options.l2_1st.max_iterations = 20;
   compute_options.l2.max_iterations = 5;
