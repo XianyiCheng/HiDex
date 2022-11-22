@@ -917,6 +917,8 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
   int counter;
   int delete_c = 0;
 
+  int selected_finger_idx;
+
   for (counter = 0; counter < max_counter; counter++) {
     Vector6d v_star = compute_rbvel_body(x, x_goal);
 
@@ -950,10 +952,22 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
       // printf("v_b back and forth. \n");
       break;
     }
-    if (!this->pruning_check(x, env_mode.head(envs.size()), v_b, envs)) {
-      break;
+
+    //select a feasible finger index to execute the motion, if not feasible anymore, break
+    if (counter == 0) {
+      selected_finger_idx =
+          this->pruning_check(x, env_mode.head(envs.size()), v_b, envs);
     }
-    
+    if (selected_finger_idx == -1) {
+      break;
+    } else {
+      bool pass_pruning_check = this->robot_contact_feasibile_check(
+          selected_finger_idx, x, env_mode.head(envs.size()), v_b, envs);
+      if (!pass_pruning_check) {
+        break;
+      }
+    }
+
     steer_velocity(v_b, h, this->charac_len);
 
     // integrate v
@@ -1345,8 +1359,8 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
                       shared_rrt->angle_weight) < d_zero) &&
             (v.norm() > 1e-6)) {
           bool is_pass_pruning =
-              this->pruning_check(shared_rrt->nodes[near_idx].config, cs_mode,
-                                  v, shared_rrt->nodes[near_idx].envs);
+              (this->pruning_check(shared_rrt->nodes[near_idx].config, cs_mode,
+                                   v, shared_rrt->nodes[near_idx].envs) != -1);
 
           if (is_pass_pruning) {
             mode_to_extend.push_back(all_sticking_mode);
@@ -1363,8 +1377,8 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
             (v.norm() > 1e-6)) {
 
           bool is_pass_pruning =
-              this->pruning_check(shared_rrt->nodes[near_idx].config, cs_mode,
-                                  v, shared_rrt->nodes[near_idx].envs);
+              (this->pruning_check(shared_rrt->nodes[near_idx].config, cs_mode,
+                                   v, shared_rrt->nodes[near_idx].envs) != -1);
           if (is_pass_pruning) {
             mode_to_extend.push_back(cs_mode);
           }
@@ -1385,8 +1399,11 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
 
         // if integration is successful
         if (path.size() > 1) {
+          ReusableRRT::Node new_node(path.back());
+          this->m_world->getObjectContacts(&(new_node.envs), new_node.config);
 
-          if (shared_rrt->find_node(path.back(), mode, root_node_idx) != -1) {
+          if (shared_rrt->find_node(new_node.config, new_node.envs.size(),
+                                    near_idx) != -1) {
             // printf("This node is already in the tree!\n");
             continue;
           } else {
@@ -1394,7 +1411,6 @@ CMGTASK::search_a_new_path(const CMGTASK::State &start_state) {
             std::cout << "New node added! " << path.back().transpose()
                       << std::endl;
 
-            ReusableRRT::Node new_node(path.back());
             ReusableRRT::Edge new_edge(mode, path);
 
             shared_rrt->add_node(&new_node, near_idx, &new_edge);
@@ -1729,19 +1745,72 @@ std::vector<int> CMGTASK::get_finger_locations(int finger_location_index) {
   return locations;
 }
 
-bool CMGTASK::pruning_check(const Vector7d &x, const Vector6d &v,
-                            const std::vector<ContactPoint> &envs) {
+bool CMGTASK::robot_contact_feasibile_check(
+    int finger_idx, const Vector7d &x, const VectorXi &cs_mode,
+    const Vector6d &v, const std::vector<ContactPoint> &envs) {
+
+  VectorXi env_mode = mode_from_velocity(v, envs, this->cons.get());
+  env_mode.head(envs.size()) = cs_mode;
+
+  bool dynamic_feasibility = false;
+
+  std::vector<ContactPoint> mnps;
+  std::vector<int> fingertip_idx;
+  if (finger_idx != 0) {
+    VectorXd mnp_config = this->get_robot_config_from_action_idx(finger_idx);
+
+    // update object pose
+    this->m_world->updateObjectPose(x);
+
+    // if there is no ik solution, not valid
+    if (!this->m_world->getRobot()->ifIKsolution(mnp_config, x)) {
+      return false;
+    }
+
+    if (this->m_world->isRobotCollide(mnp_config)) {
+      return false;
+    }
+
+    // check if there is quasistatic, or quasidynamic
+
+    {
+      fingertip_idx = this->get_finger_locations(finger_idx);
+      std::vector<ContactPoint> fingertips;
+      for (int idx : fingertip_idx) {
+        if (idx != -1) {
+          fingertips.push_back(this->object_surface_pts[idx]);
+        }
+      }
+      this->m_world->getRobot()->Fingertips2PointContacts(fingertips, &mnps);
+    }
+  }
+
+  if (this->task_dynamics_type == CMG_QUASISTATIC) {
+
+    dynamic_feasibility =
+        isQuasistatic(mnps, envs, env_mode, this->f_gravity, x, this->mu_env,
+                      this->mu_mnp, this->cons.get());
+
+  } else if (this->task_dynamics_type == CMG_QUASIDYNAMIC) {
+    dynamic_feasibility = true; // TODO: implement quasidynamic
+  }
+
+  return dynamic_feasibility;
+}
+
+int CMGTASK::pruning_check(const Vector7d &x, const Vector6d &v,
+                           const std::vector<ContactPoint> &envs) {
 
   bool dynamic_feasibility = false;
   int max_sample = 100;
   // TODO: calculate n_finger_combination during initialization
-
+  int finger_idx;
   max_sample = (max_sample > this->n_finger_combinations)
                    ? this->n_finger_combinations
                    : max_sample;
 
   for (int k_sample = 0; k_sample < max_sample; k_sample++) {
-    int finger_idx = randi(this->n_finger_combinations);
+    finger_idx = randi(this->n_finger_combinations);
     std::vector<ContactPoint> mnps;
     std::vector<int> fingertip_idx;
     if (finger_idx != 0) {
@@ -1801,12 +1870,18 @@ bool CMGTASK::pruning_check(const Vector7d &x, const Vector6d &v,
     }
   }
 
+  if (dynamic_feasibility) {
+    return finger_idx;
+  } else {
+    return -1;
+  }
+
   return dynamic_feasibility;
 }
 
-bool CMGTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
-                            const Vector6d &v,
-                            const std::vector<ContactPoint> &envs) {
+int CMGTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
+                           const Vector6d &v,
+                           const std::vector<ContactPoint> &envs) {
 
   VectorXi env_mode = mode_from_velocity(v, envs, this->cons.get());
   env_mode.head(envs.size()) = cs_mode;
@@ -1818,9 +1893,9 @@ bool CMGTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
   // max_sample = (max_sample > this->n_finger_combinations)
   //                  ? this->n_finger_combinations
   //                  : max_sample;
-
+  int finger_idx;
   for (int k_sample = 0; k_sample < max_sample; k_sample++) {
-    int finger_idx;
+
     if (max_sample > this->n_finger_combinations) {
       if (k_sample >= this->n_finger_combinations) {
         break;
@@ -1842,11 +1917,14 @@ bool CMGTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
         continue;
       }
 
-      // if the robot collides, not valid
-      bool is_collide = this->m_world->isRobotCollide(mnp_config);
-      if (is_collide) {
+      if (this->m_world->isRobotCollide(mnp_config)) {
         continue;
       }
+      // if the robot collides, not valid
+      // bool is_collide = this->m_world->isRobotCollide(mnp_config);
+      // if (is_collide) {
+      //   continue;
+      // }
 
       // check if there is quasistatic, or quasidynamic
 
@@ -1880,7 +1958,11 @@ bool CMGTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
     }
   }
 
-  return dynamic_feasibility;
+  if (dynamic_feasibility) {
+    return finger_idx;
+  } else {
+    return -1;
+  }
 }
 
 int CMGTASK::max_forward_timestep(const CMGTASK::State2 &state) {

@@ -25,11 +25,11 @@ void stairs(std::shared_ptr<CMGTASK> task)
     SkeletonPtr object =
         createFreeBox("box_object", Vector3d(1, 1, 1));
     SkeletonPtr env1 =
-        createFixedBox("ground_1", Vector3d(8, 4, 1), Vector3d(0, 0, 0.5));
+        createFixedBox("ground_1", Vector3d(10, 4, 1), Vector3d(0, 0, 0.5));
     SkeletonPtr env2 =
-        createFixedBox("ground_2", Vector3d(4, 4, 1), Vector3d(0, 0, 1.5));
+        createFixedBox("ground_2", Vector3d(5, 4, 0.98), Vector3d(0, 0, 1.5));
     SkeletonPtr env3 =
-        createFixedBox("ground_3", Vector3d(2, 4, 1), Vector3d(0, 0, 2.5));
+        createFixedBox("ground_3", Vector3d(2, 4, 0.98), Vector3d(0, 0, 2.5));
 
     world->addObject(object);
     world->addEnvironmentComponent(env1);
@@ -45,12 +45,15 @@ void stairs(std::shared_ptr<CMGTASK> task)
 
     Vector7d x_start;
     Vector7d x_goal;
-    x_start << 3, 0, 1+0.5 * 0.9999, 0, 0, 0, 1;
-    x_goal << 2.47755 , 0.0264446  ,  1.68066  , 0.125041 ,-0.0264445 ,0.00948866 ,  0.991754;
-    // x_goal << 0, 0, 3+0.5 * 0.9999, 0, 0, 0, 1;
+    x_start << 4, 0, 1+0.5 * 0.9999, 0, 0, 0, 1;
+    // x_start << 2.47755 , 0.0264446  ,  1.68066  , 0,0,0,1;
+    // x_goal << 2.47755 , 0.0264446  ,  1.68066 + 0.2  , 0.125041 ,-0.0264445 ,0.00948866 ,  0.991754;
+    // x_goal << 3, 0, 2+0.5 * 0.9999, 0, 0, 0, 1;
+    x_goal << 0, 0, 3+0.5 * 0.9999, 0, 0, 0, 1;
     // x_goal << -3, 0, 1+0.5 * 0.9999, 0, 0, 0, 1;
 
-    double goal_thr = 3.14 * 30 / 180;
+    double goal_thr = 3.14 * 60 / 180;
+    // double goal_thr = 0.05;
 
     double wa = 0.1;
     double wt = 1;
@@ -71,16 +74,16 @@ void stairs(std::shared_ptr<CMGTASK> task)
 
     CMGTASK::SearchOptions rrt_options;
 
-    rrt_options.x_ub << 3, 0, 4;
+    rrt_options.x_ub << 4, 0, 4;
     rrt_options.x_lb << -3, 0, 0;
     rrt_options.sampleSO3 = false;
     rrt_options.sample_rotation_axis = Vector3d(0, 1, 0);
 
-    rrt_options.eps_trans = 2;
-    rrt_options.eps_angle = 3.14 * 95 / 180;
+    rrt_options.eps_trans = 1.0;
+    rrt_options.eps_angle = 3.14 * 50 / 180;
     rrt_options.max_samples = 200;
 
-    rrt_options.goal_biased_prob = 1.0;
+    rrt_options.goal_biased_prob = 0.6;
 
     bool is_refine = false;
     double refine_dist = 0.5;
@@ -118,62 +121,55 @@ int main(int argc, char *argv[])
     std::shared_ptr<CMGTASK> task = std::make_shared<CMGTASK>();
 
     stairs(task);
-    Vector7d q1;
 
-    Vector7d q2;
-    q1 << 2.47742 ,  0.026258 ,   1.67996 ,  0.124798, -0.0262484, 0.00947069 ,   0.99179;
-q2 << 2.47736  , 0.026447,    1.68036  , 0.125041 , -0.026154, 0.00945209 ,  0.991762;
+    CMGTASK::State start_state = task->get_start_state();
 
-    std::cout << task->shared_rrt->dist(q1, q2) << std::endl;
+    HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
+                    CMGTASK>::HierarchicalComputeOptions compute_options;
 
-    // CMGTASK::State start_state = task->get_start_state();
+    compute_options.l1_1st.max_iterations = 10;
+    compute_options.l1.max_iterations = 2;
+    compute_options.l2_1st.max_iterations = 10;
+    compute_options.l2.max_iterations = 2;
+    compute_options.final_l2_1st.max_iterations = 10;
+    compute_options.final_l2.max_iterations = 3;
 
-    // HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
-    //                 CMGTASK>::HierarchicalComputeOptions compute_options;
+    HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(
+        task, start_state, compute_options);
 
-    // compute_options.l1_1st.max_iterations = 10;
-    // compute_options.l1.max_iterations = 2;
-    // compute_options.l2_1st.max_iterations = 10;
-    // compute_options.l2.max_iterations = 3;
-    // compute_options.final_l2_1st.max_iterations = 10;
-    // compute_options.final_l2.max_iterations = 3;
+    HMP::Node<CMGTASK::State> *current_node = tree.search_tree();
 
-    // HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(
-    //     task, start_state, compute_options);
+    std::vector<CMGTASK::State> object_trajectory;
+    std::vector<CMGTASK::State2> action_trajectory;
+    tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
 
-    // HMP::Node<CMGTASK::State> *current_node = tree.search_tree();
+    std::vector<Vector7d> object_traj;
+    std::vector<VectorXd> mnp_traj;
 
-    // std::vector<CMGTASK::State> object_trajectory;
-    // std::vector<CMGTASK::State2> action_trajectory;
-    // tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
+    std::cout << "Best value " << current_node->m_value << std::endl;
 
-    // std::vector<Vector7d> object_traj;
-    // std::vector<VectorXd> mnp_traj;
+    for (auto &action : action_trajectory)
+    {
+        std::cout << "Timestep " << action.timestep << std::endl;
+        std::cout
+            << "Pose "
+            << task->saved_object_trajectory[action.timestep].m_pose.transpose()
+            << std::endl;
+        std::cout << "Fingers ";
+        for (int jj : task->get_finger_locations(action.finger_index))
+        {
+            std::cout << jj << " ";
+        }
+        std::cout << std::endl;
+    }
 
-    // std::cout << "Best value " << current_node->m_value << std::endl;
+    VializeStateTraj(task->m_world, task, object_trajectory, action_trajectory);
 
-    // for (auto &action : action_trajectory)
-    // {
-    //     std::cout << "Timestep " << action.timestep << std::endl;
-    //     std::cout
-    //         << "Pose "
-    //         << task->saved_object_trajectory[action.timestep].m_pose.transpose()
-    //         << std::endl;
-    //     std::cout << "Fingers ";
-    //     for (int jj : task->get_finger_locations(action.finger_index))
-    //     {
-    //         std::cout << jj << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
+    std::cout << "Total level 1 tree nodes " << tree.count_total_nodes()
+              << std::endl;
 
-    // VializeStateTraj(task->m_world, task, object_trajectory, action_trajectory);
+    std::cout << "Total shared rrt nodes " << tree.m_task->total_rrt_nodes()
+              << std::endl;
 
-    // std::cout << "Total level 1 tree nodes " << tree.count_total_nodes()
-    //           << std::endl;
-
-    // std::cout << "Total shared rrt nodes " << tree.m_task->total_rrt_nodes()
-    //           << std::endl;
-
-    // task->m_world->startWindow(&argc, argv);
+    task->m_world->startWindow(&argc, argv);
 }

@@ -477,11 +477,11 @@ namespace HMP
                            std::vector<State> *object_trajectory,
                            std::vector<State2> *action_trajectory)
     {
-      if (!this->is_terminal(best_terminal_node))
-      {
-        std::cerr << "This is not a terminal node!" << std::endl;
-        return;
-      }
+      // if (!this->is_terminal(best_terminal_node))
+      // {
+      //   std::cerr << "This is not a terminal node!" << std::endl;
+      //   return;
+      // }
 
       object_trajectory->push_back(best_terminal_node->m_state);
 

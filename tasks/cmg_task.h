@@ -116,6 +116,30 @@ public:
     return (min_d < thr) ? near_idx : -1;
   }
 
+  int find_node(const Vector7d &q, int n_envs, int parent_idx,
+                double thr = 1e-3){
+      
+    int near_idx = 0;
+    double min_d = this->dist(nodes[0].config, q);
+
+    for (int i = 1; i < nodes.size(); i++) {
+      if (nodes[i].parent != parent_idx) {
+        continue;
+      }
+      if (nodes[i].envs.size() != n_envs) {
+        continue;
+      }
+
+      double d = this->dist(nodes[i].config, q);
+      if (d < min_d) {
+        near_idx = i;
+        min_d = d;
+      }
+    }
+
+    return (min_d < thr) ? near_idx : -1;
+  }
+
   int find_node(const Vector7d &q, double thr = 1e-3) {
     int near_idx = 0;
     double min_d = this->dist(nodes[0].config, q);
@@ -409,9 +433,12 @@ public:
   generate_a_finer_object_trajectory(std::vector<State> &object_traj,
                                      double dist);
 
-  bool pruning_check(const Vector7d &x, const Vector6d &v,
+  bool robot_contact_feasibile_check(int finger_idx, const Vector7d &x, const VectorXi &cs_mode, const Vector6d& v,
                      const std::vector<ContactPoint> &envs);
-  bool pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d& v,
+
+  int pruning_check(const Vector7d &x, const Vector6d &v,
+                     const std::vector<ContactPoint> &envs);
+  int pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d& v,
                      const std::vector<ContactPoint> &envs);
 
   int max_forward_timestep(const CMGTASK::State2 &state);
