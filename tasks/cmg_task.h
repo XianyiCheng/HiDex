@@ -436,6 +436,8 @@ public:
       m_world; // save the object, environment, do collision detections, ...
   int n_finger_combinations = -1;
 
+  std::shared_ptr<ReusableRRT> shared_rrt;
+
 private:
   bool m_initialized = false;
   Vector7d start_object_pose;
@@ -459,7 +461,7 @@ private:
 
   std::unique_ptr<ContactConstraints> cons;
 
-  std::shared_ptr<ReusableRRT> shared_rrt;
+  
 
   bool if_refine = false;
   bool refine_dist = 0.0;

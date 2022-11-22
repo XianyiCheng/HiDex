@@ -48,4 +48,7 @@ target_link_libraries(cmg_peg PRIVATE mcts-mechanics ${dart_libs})
 add_executable(cmg_wall cmg_wall.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
 target_link_libraries(cmg_wall PRIVATE mcts-mechanics ${dart_libs})
 
+add_executable(cmg_stairs cmg_stairs.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
+target_link_libraries(cmg_stairs PRIVATE mcts-mechanics ${dart_libs})
+
 add_executable(test_action_idx test_action_idx.cpp)
