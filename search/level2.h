@@ -56,6 +56,10 @@ namespace HMP
 
         double reward = this->get_result(node);
         // std::cout << "Evaluation: " << reward << std::endl;
+        if (reward > 0)
+        {
+          this->found_positive_reward = true;
+        }
 
         this->backprop_reward(node, reward);
 

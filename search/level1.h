@@ -105,34 +105,34 @@ namespace HMP
         return -1;
       }
 
-      if ((node->m_type == "pose") && (node->m_parent != nullptr))
-      {
-        // if m_type is "pose", select from modes
+      // if ((node->m_type == "pose") && (node->m_parent != nullptr))
+      // {
+      //   // if m_type is "pose", select from modes
 
-        // current policy: 0.5 changes of doing the previous mode
-        // todo: need to connect with m_tasks to provide a heuristic to do UCT
-        if (randd() > 0.5)
-        {
-          action_idx = node->m_parent->m_state.m_mode_idx;
-        }
-        else
-        {
-          action_idx = -1;
-        }
-      }
-
+      //   // current policy: 0.5 changes of doing the previous mode
+      //   // todo: need to connect with m_tasks to provide a heuristic to do UCT
+      //   if (randd() > 0.5)
+      //   {
+      //     action_idx = node->m_parent->m_state.m_mode_idx;
+      //   }
+      //   else
+      //   {
+      //     action_idx = -1;
+      //   }
+      // }
+      double U_max;
       if ((action_idx == -1) || (action_idx >= node->number_of_next_actions))
       {
         // else: select from
 
-        double U_max = -1.0;
+        U_max = -1.0;
 
         for (int k = 0; k < node->number_of_next_actions; ++k)
         {
 
           Node<State> *new_node = this->next_node(node, k);
 
-          double U = new_node->m_value +
+          double U = new_node->m_value + new_node->m_value_estimate +
                      this->ita * (1 / double(node->number_of_next_actions)) *
                          std::sqrt(double(node->m_visits)) /
                          (1 + double(new_node->m_visits));
@@ -144,6 +144,20 @@ namespace HMP
           }
         }
       }
+
+      if (node->m_type == "mode")
+      {
+
+        double U_unexplored =
+            0.0 + this->ita * (1 / double(node->number_of_next_actions)) *
+                      std::sqrt(double(node->m_visits)) / double(1);
+
+        if (U_unexplored > U_max)
+        {
+          return -1;
+        }
+      }
+
       return action_idx;
     }
 
@@ -199,11 +213,44 @@ namespace HMP
       // Level2Tree<State2, Task> tree2(this->m_task,
       //                                this->m_task->get_start_state2());
       Level2TreeFP<State2, Task> tree2(this->m_task,
-                                     this->m_task->get_start_state2());
+                                       this->m_task->get_start_state2());
       tree2.ita = 2.0;
 
       Node<State2> *final_node_2 = tree2.search_tree(this->compute_options.l2_1st,
                                                      this->compute_options.l2);
+
+      // pass the heuristic value back to the tree 1
+      int t_max = final_node_2->m_state.t_max;
+
+      std::cout << "t_max: " << t_max << std::endl;
+
+      // update the value estimation
+      node_ = node;
+      bool flag = false;
+      while (node_ != 0)
+      {
+        if (!flag)
+        {
+          for (int i = 0; i <= t_max; ++i)
+          {
+            if (this->m_task->shared_rrt->dist(node_->m_state.m_pose,
+                                               state_path[i].m_pose) < 1e-6)
+            {
+              flag = true;
+              break;
+            }
+          }
+        }
+        if (flag)
+        {
+          node_->m_value_estimate = 0.1;
+        }
+        else
+        {
+          node_->m_value_estimate = -0.05;
+        }
+        node_ = node_->m_parent;
+      }
 
       double final_best_reward = final_node_2->m_value;
 
@@ -222,47 +269,12 @@ namespace HMP
       else
       {
         double score_level1 = this->m_task->evaluate_path(state_path);
-        double score_level2 = this->m_task->evaluate_path(tree2.backtrack_state_path(final_node_2)); // this is different than final_node_2->m_value
+        double score_level2 =
+            this->m_task->evaluate_path(tree2.backtrack_state_path(
+                final_node_2)); // this is different than final_node_2->m_value
         path_score = score_level1 * 2.0 + score_level2;
       }
 
-
-      
-
-      // std::vector<Vector7d> obj_traj;
-      // for (auto s : this->m_task->saved_object_trajectory)
-      // {
-      //   obj_traj.push_back(s.m_pose);
-      // }
-      // // print the results
-      // if (path_score > 0)
-      // {
-
-      //   std::vector<State2> action_trajectory =
-      //       tree2.backtrack_state_path(final_node_2);
-      //   for (int kk = 0; kk < this->m_task->saved_object_trajectory.size(); ++kk)
-      //   {
-      //     std::cout << "Timestep " << kk << std::endl;
-      //     std::cout
-      //         << "Pose "
-      //         << this->m_task->saved_object_trajectory[kk].m_pose.transpose()
-      //         << std::endl;
-      //     std::cout << "Fingers ";
-      //     for (int jj :
-      //          this->m_task->get_finger_locations(action_trajectory[kk].finger_index))
-      //     {
-      //       std::cout << jj << " ";
-      //     }
-      //   }
-      // }
-
-      // // visualize the object trajectory
-      // this->m_task->m_world->setObjectTrajectory(obj_traj);
-      // char *aa;
-      // int a = 1;
-      // this->m_task->m_world->startWindow(&a, &aa);
-
-      // clear object trajectory
       this->m_task->saved_object_trajectory.clear();
 
       return path_score;
@@ -330,9 +342,14 @@ namespace HMP
 
           else if (node->m_type == "mode")
           {
-            if ((node->number_of_next_actions +
-                 node->number_of_invalid_attempts) <=
-                pow(node->m_visits + 1, m_alpha) - 1)
+            action = this->select_action(node);
+            if ((action == -1) // if action == -1, explore a new action
+                || ((node->number_of_next_actions +
+                     node->number_of_invalid_attempts) <=
+                    pow(node->m_visits + 1, m_alpha) - 1))
+            // if (((node->number_of_next_actions +
+            //      node->number_of_invalid_attempts) <=
+            //     pow(node->m_visits + 1, m_alpha) - 1))
             {
               // std::cout << "number_of_next_actions "
               //           << node->number_of_next_actions
@@ -410,12 +427,6 @@ namespace HMP
             }
             else
             {
-              action = this->select_action(node);
-              if (action == -1)
-              {
-                // no child, evaluate the node (its reward should be 0.0)
-                break;
-              }
               node = this->next_node(node, action);
 
               if (this->is_terminal(node))
@@ -436,6 +447,11 @@ namespace HMP
         }
 
         double reward = this->get_result(node);
+
+        if (reward > 0)
+        {
+          this->found_positive_reward = true;
+        }
         std::cout << "Evaluation: " << reward << std::endl;
 
         this->backprop_reward(node, reward);
@@ -444,9 +460,18 @@ namespace HMP
 
     Node<State> *search_tree()
     {
+
+      bool if_check_time = (this->compute_options.l1.max_time > 0);
+      std::chrono::time_point<std::chrono::system_clock> start_time, current_time;
+      start_time = std::chrono::system_clock::now();
+
+      bool if_early_stop = false;
+      // Using time point and system_clock
+
       Node<State> *current_node = this->m_root_node.get();
 
       int iter = 0;
+
       while (!this->is_terminal(current_node))
       {
         if (iter == 0)
@@ -459,14 +484,35 @@ namespace HMP
         }
 
         current_node = this->best_child(current_node);
+
+        // early stop when found a solution and time is up
+        if (if_check_time && this->found_positive_reward)
+        {
+          current_time = std::chrono::system_clock::now();
+          std::chrono::duration<double> elapsed_seconds = current_time - start_time;
+          if (elapsed_seconds.count() > this->compute_options.l1.max_time)
+          {
+            if_early_stop = true;
+            std::cout << "Time out" << std::endl;
+          }
+        }
+
+        // early stop if cannot find a positive reward path through the first round
         if (current_node->m_value == 0.0)
         {
           std::cout << "Cannot find positive reward path" << std::endl;
-          while(current_node->m_children.size() > 0){
+          if_early_stop = true;
+        }
+
+        if (if_early_stop)
+        {
+          while (current_node->m_children.size() > 0)
+          {
             current_node = this->best_child(current_node);
           }
           break;
         }
+
         iter++;
       }
       // double best_final_reward = current_node->m_value;
@@ -505,7 +551,7 @@ namespace HMP
       //                                this->m_task->get_start_state2());
       // tree2.ita = 0.1;
       Level2TreeFP<State2, Task> tree2(this->m_task,
-                                     this->m_task->get_start_state2());
+                                       this->m_task->get_start_state2());
       tree2.ita = 2.0;
 
       Node<State2> *final_node_2 = tree2.search_tree(compute_options.final_l2_1st,

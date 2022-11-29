@@ -124,6 +124,9 @@ int main(int argc, char *argv[])
   compute_options.final_l2_1st.max_iterations = 10;
   compute_options.final_l2.max_iterations = 3;
 
+  compute_options.l1.max_time = 5;
+  compute_options.l2.max_time = 1.0;
+
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(
       task, start_state, compute_options);
 

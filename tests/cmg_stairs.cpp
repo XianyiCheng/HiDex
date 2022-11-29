@@ -37,7 +37,7 @@ void stairs(std::shared_ptr<CMGTASK> task)
     world->addEnvironmentComponent(env3);
 
     int n_robot_contacts = 1;
-    DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, 0.2);
+    DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, 0.3);
     rpt->is_patch_contact = true;
     world->addRobot(rpt);
 
@@ -46,19 +46,21 @@ void stairs(std::shared_ptr<CMGTASK> task)
     Vector7d x_start;
     Vector7d x_goal;
     x_start << 4, 0, 1+0.5 * 0.9999, 0, 0, 0, 1;
+    // x_start << 3.02863,  9.43904e-21  ,     1.5094, -1.99596e-18 ,  -0.0098747 ,  1.0909e-20,    0.99995;
     // x_start << 2.47755 , 0.0264446  ,  1.68066  , 0,0,0,1;
     // x_goal << 2.47755 , 0.0264446  ,  1.68066 + 0.2  , 0.125041 ,-0.0264445 ,0.00948866 ,  0.991754;
     // x_goal << 3, 0, 2+0.5 * 0.9999, 0, 0, 0, 1;
-    x_goal << 0, 0, 3+0.5 * 0.9999, 0, 0, 0, 1;
-    // x_goal << -3, 0, 1+0.5 * 0.9999, 0, 0, 0, 1;
+    // x_goal << 0, 0, 3.48, 0, -1, 0, 0;
+    // x_goal << 1.54232, 0  , 2.48 , 0 ,-0.7071 ,0 , 0.7071;
+    x_goal << -3, 0, 1+0.5 * 0.9999, 0, 0, 0, 1;
 
-    double goal_thr = 3.14 * 60 / 180;
+    double goal_thr = 3.14 * 45 / 180;
     // double goal_thr = 0.05;
 
     double wa = 0.1;
     double wt = 1;
 
-    double mu_env = 0.4;
+    double mu_env = 0.2;
     double mu_mnp = 0.8;
 
     double charac_len = 1;
@@ -80,10 +82,12 @@ void stairs(std::shared_ptr<CMGTASK> task)
     rrt_options.sample_rotation_axis = Vector3d(0, 1, 0);
 
     rrt_options.eps_trans = 1.0;
-    rrt_options.eps_angle = 3.14 * 50 / 180;
-    rrt_options.max_samples = 200;
+    rrt_options.eps_angle = 3.14 * 95 / 180;
+    rrt_options.max_samples = 2000;
 
     rrt_options.goal_biased_prob = 0.6;
+
+    rrt_options.control_neighbors = true;
 
     bool is_refine = false;
     double refine_dist = 0.5;
@@ -128,7 +132,7 @@ int main(int argc, char *argv[])
                     CMGTASK>::HierarchicalComputeOptions compute_options;
 
     compute_options.l1_1st.max_iterations = 10;
-    compute_options.l1.max_iterations = 2;
+    compute_options.l1.max_iterations = 1;
     compute_options.l2_1st.max_iterations = 10;
     compute_options.l2.max_iterations = 2;
     compute_options.final_l2_1st.max_iterations = 10;

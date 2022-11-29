@@ -58,7 +58,7 @@ void wall(std::shared_ptr<CMGTASK> task) {
   double wa = 0.1;
   double wt = 5;
 
-  double mu_env = 0.4;
+  double mu_env = 0.2;
   double mu_mnp = 0.8;
 
   double charac_len = 1;
@@ -83,7 +83,7 @@ void wall(std::shared_ptr<CMGTASK> task) {
   rrt_options.eps_angle = 3.14 * 30 / 180;
   rrt_options.max_samples = 200;
 
-  rrt_options.goal_biased_prob = 0.8;
+  rrt_options.goal_biased_prob = 0.6;
 
   bool is_refine = true;
   double refine_dist = 0.15;

@@ -298,6 +298,8 @@ public:
     int max_samples = 100;
     Vector3d sample_rotation_axis;
 
+    bool control_neighbors = false;
+
     SearchOptions() {}
   };
 
@@ -311,6 +313,9 @@ public:
                   int dynamic_type, std::vector<ContactPoint> surface_pts,
                   const SearchOptions &options, bool if_refine = false,
                   double refine_dist = 0.0);
+
+  int neighbors_on_the_same_manifold(const Vector7d &q, std::vector<ContactPoint> envs, std::vector<VectorXi> env_modes,
+                                     double dist_thr);
 
   // --- Level 1 Tree functions ---
   State get_start_state() const { return generate_state(start_object_pose); }

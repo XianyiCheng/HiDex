@@ -98,14 +98,16 @@ bool DartWorld::isRobotCollide(const Eigen::VectorXd & robot_config){
 
     CollisionGroup * env_collision_group = environmentCollisionGroup.get();
     // bool collision = env_collision_group->collide(robotCollisionGroup.get(), option, &result);
-    bool collision = robotCollisionGroup->collide(env_collision_group, option, &result);
+    if(robotCollisionGroup->collide(env_collision_group, option, &result)){
+        return true;
+    }
     
     if (robot_ptr->ifCheckObjectCollision){
         bool object_collision = robotCollisionGroup->collide(objectCollisionGroup.get(), option, &result);
-        return (object_collision | collision);
+        return object_collision;
     }
     
-    return collision;
+    return false;
 }
 
 void DartWorld::getObjectContacts(std::vector<ContactPoint>* pts){

@@ -74,6 +74,7 @@ namespace HMP
   {
 
   public:
+    bool found_positive_reward = false;
     double ita = 0.2;             // hyper-parameter controlling the degree of exploration
     std::shared_ptr<Task> m_task; // a shared pointer for Task
     std::unique_ptr<Node<State>>
@@ -210,6 +211,9 @@ namespace HMP
 
         Node<State> *new_node = this->next_node(node, k);
 
+        // double U = ??*new_node->m_value + ??*new_node->m_value_estimate + ita * (new_node->m_heuristics / double(node->number_of_next_actions)) *
+                                          //  std::sqrt(double(node->m_visits)) /
+                                          //  (1 + double(new_node->m_visits));
         double U = new_node->m_value + ita * (1 / double(node->number_of_next_actions)) *
                                            std::sqrt(double(node->m_visits)) /
                                            (1 + double(new_node->m_visits));

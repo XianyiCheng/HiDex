@@ -43,13 +43,6 @@ namespace HMP
         {
           int action;
           action = this->select_action(node);
-          // if (action > node->number_of_next_actions)
-          // {
-          //   std::cerr << "Error in Tree::grow_tree (level2.h). Action index out "
-          //                "of range. "
-          //             << std::endl;
-          //   exit(-1);
-          // }
 
           // if cannot find a feasible action
           // break and evaluate the heuristics of this path
@@ -68,6 +61,10 @@ namespace HMP
 
         double reward = this->get_result(node);
         // std::cout << "Evaluation: " << reward << std::endl;
+        if (reward > 0)
+        {
+          this->found_positive_reward = true;
+        }
 
         this->backprop_reward(node, reward);
 
@@ -248,6 +245,12 @@ namespace HMP
     Node<State> *search_tree(const MCTSOptions &compute_option_1st_iter,
                              const MCTSOptions &compute_options)
     {
+      bool if_check_time = (compute_options.max_time > 0);
+      std::chrono::time_point<std::chrono::system_clock> start_time, current_time;
+      start_time = std::chrono::system_clock::now();
+
+      bool if_early_stop = false;
+      // Using time point and system_clock
 
       Node<State> *current_node = this->m_root_node.get();
 
@@ -272,6 +275,27 @@ namespace HMP
           break;
         }
         current_node = this->best_child(current_node);
+
+        // early stop when found a solution and time is up
+        if (if_check_time && this->found_positive_reward)
+        {
+          current_time = std::chrono::system_clock::now();
+          std::chrono::duration<double> elapsed_seconds = current_time - start_time;
+          if (elapsed_seconds.count() > compute_options.max_time)
+          {
+            if_early_stop = true;
+            std::cout << "Time out" << std::endl;
+          }
+        }
+
+        if (if_early_stop)
+        {
+          while (current_node->m_children.size() > 0)
+          {
+            current_node = this->best_child(current_node);
+          }
+          break;
+        }
       }
 
       // double final_best_reward = current_node->m_value;
