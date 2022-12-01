@@ -44,5 +44,9 @@ public:
     virtual bool ifIKsolution(const VectorXd& mnp_config, const Vector7d& object_pose){
         return true;
     }
+
+    virtual void points_in_workspace(int finger_idx, std::vector<ContactPoint> object_surface_world,  std::vector<int>* points_in_ws){
+        return;
+    }
     
 };

@@ -52,5 +52,9 @@ add_executable(cmg_stairs cmg_stairs.cpp ../tasks/cmg_task.cpp ../mechanics/mani
 target_link_libraries(cmg_stairs PRIVATE mcts-mechanics ${dart_libs})
 
 add_executable(test_action_idx test_action_idx.cpp)
+target_link_libraries(test_action_idx PRIVATE mcts-mechanics)
 
 add_executable(test_time test_time.cpp)
+
+add_executable(inhand_simplest inhand_simplest.cpp ../tasks/inhand_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
+target_link_libraries(inhand_simplest PRIVATE mcts-mechanics ${dart_libs})

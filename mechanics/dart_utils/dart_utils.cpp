@@ -48,7 +48,7 @@ SkeletonPtr createFreeBall(const std::string& name, double radius,
 }
 
 SkeletonPtr createFreeBox(const std::string& name, const Eigen::Vector3d& dim, 
-                            const Eigen::Vector3d& color)
+                            const Eigen::Vector3d& color, double alpha)
 {
     SkeletonPtr object = Skeleton::create(name);
 
@@ -63,7 +63,7 @@ SkeletonPtr createFreeBox(const std::string& name, const Eigen::Vector3d& dim,
             shape);
 
     shapeNode->getVisualAspect()->setColor(color);
-    shapeNode->getVisualAspect()->setAlpha(0.85);
+    shapeNode->getVisualAspect()->setAlpha(alpha);
 
 
     Eigen::Vector6d positions(Eigen::Vector6d::Zero());
@@ -102,7 +102,7 @@ SkeletonPtr createFreeCylinder(const std::string& name, double radius, double he
 
 SkeletonPtr createFixedBox(const std::string& name, const Eigen::Vector3d& dim, 
                              const Eigen::Vector3d& pos, 
-                             const Eigen::Vector3d& color)
+                             const Eigen::Vector3d& color, double alpha)
 {
     SkeletonPtr object = Skeleton::create(name);
 
@@ -117,7 +117,7 @@ SkeletonPtr createFixedBox(const std::string& name, const Eigen::Vector3d& dim,
             shape);
 
     shapeNode->getVisualAspect()->setColor(color);
-    shapeNode->getVisualAspect()->setAlpha(0.7);
+    shapeNode->getVisualAspect()->setAlpha(alpha);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     tf.translation() = pos;

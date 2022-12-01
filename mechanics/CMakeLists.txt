@@ -20,6 +20,8 @@ add_library(mcts-mechanics
     utilities/sample.cpp
     utilities/utilities.cpp
     utilities/io.cpp
+    utilities/combinatorics.cpp
+    utilities/miscellaneous.cpp
     worlds/DartWorld.cpp
     dart_utils/dart_utils.cpp
     )

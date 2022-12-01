@@ -9,7 +9,8 @@ void VisualizeTraj(std::shared_ptr<WorldTemplate> world, const std::vector<Vecto
   world->setPlaybackTrajectory(object_traj, mnp_traj);
 }
 
-void VializeStateTraj(std::shared_ptr<WorldTemplate> world, std::shared_ptr<CMGTASK> task, const std::vector<CMGTASK::State> & object_traj, const std::vector<CMGTASK::State2> & mnp_traj ){
+template <class State, class State2, class Task> 
+void VializeStateTraj(std::shared_ptr<WorldTemplate> world, std::shared_ptr<Task> task, const std::vector<State> & object_traj, const std::vector<State2> & mnp_traj ){
   std::vector<Vector7d> object_traj_vec;
   std::vector<VectorXd> mnp_traj_vec;
 

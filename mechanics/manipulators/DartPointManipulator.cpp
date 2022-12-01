@@ -45,9 +45,14 @@ void DartPointManipulator::setConfig(const VectorXd &config,
   int n = int(config.size() / 6);
   for (int i = 0; i < this->n_pts; i++) {
     Eigen::Vector6d pos(Eigen::Vector6d::Zero());
+    Vector3d pp;
+    if (std::isnan(config[6 * i])) {
+      pp << 100, 100, 100;
+    } else {
+      pp << config[6 * i], config[6 * i + 1], config[6 * i + 2];
+    }
     if (i < n) {
-      pos.tail(3) =
-          R * Vector3d(config[6 * i], config[6 * i + 1], config[6 * i + 2]) + p;
+      pos.tail(3) = R * pp + p;
     }
     this->bodies[i]->setPositions(pos);
   }
@@ -156,7 +161,81 @@ void DartPointManipulator::Fingertips2PointContacts(
 void DartPointManipulator::setupCollisionGroup(WorldPtr world) {
   auto collisionEngine = world->getConstraintSolver()->getCollisionDetector();
   this->mCollisionGroup = collisionEngine->createCollisionGroup();
-  for (int i = 0; i < this->bodies.size(); i++) {
+  for (int i = 0; i < this->n_pts; i++) {
     this->mCollisionGroup->addShapeFramesOf(this->bodies[i].get());
   }
+}
+
+void DartPointManipulator::set_workspace_limit(
+    std::vector<Vector6d> workspace_limits) {
+  // workspace limits with the format of [x_min, x_max, y_min, y_max, z_min,
+  // z_max]
+
+  this->is_workspace_limit = true;
+  this->workspace_limits = workspace_limits;
+
+  // create fixed box for every workspace limit
+  for (int i = 0; i < workspace_limits.size(); i++) {
+    Vector6d wl = workspace_limits[i];
+    double lx = wl[1] - wl[0];
+    double ly = wl[3] - wl[2];
+    double lz = wl[5] - wl[4];
+
+    SkeletonPtr wl_box =
+        createFixedBox("ws_" + std::to_string(i), Vector3d(lx, ly, lz),
+                       Vector3d(wl[0] + lx / 2, wl[2] + ly / 2, wl[4] + lz / 2),
+                       Vector3d(0.3, 0.4, 0.6), 0.2);
+    this->addBody(wl_box);
+  }
+}
+
+bool DartPointManipulator::ifIKsolution(const VectorXd &mnp_config,
+                                        const Vector7d &object_pose) {
+
+  if (!this->is_workspace_limit) {
+    return true;
+  }
+  Eigen::Matrix4d T;
+  T = pose2SE3(object_pose);
+  Eigen::Matrix3d R;
+  R = T.block(0, 0, 3, 3);
+  Eigen::Vector3d p;
+  p = T.block(0, 3, 3, 1);
+
+  int n = int(mnp_config.size() / 6);
+  for (int i = 0; i < this->n_pts; i++) {
+    if (std::isnan(mnp_config[6 * i])) {
+      continue;
+    }
+    Vector3d pos;
+    if (i < n) {
+      pos = R * Vector3d(mnp_config[6 * i], mnp_config[6 * i + 1],
+                                 mnp_config[6 * i + 2]) +
+                    p;
+    }
+    if (pos[0] > workspace_limits[i][1] || pos[0] < workspace_limits[i][0] ||
+        pos[1] > workspace_limits[i][3] || pos[1] < workspace_limits[i][2] ||
+        pos[2] > workspace_limits[i][5] || pos[2] < workspace_limits[i][4]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void DartPointManipulator::points_in_workspace(int finger_idx, std::vector<ContactPoint> object_surface_world, std::vector<int>* points_in_ws){
+  
+  
+  for (int i = 0; i < object_surface_world.size(); i++) {
+    Vector3d pos = object_surface_world[i].p;
+    if (pos[0] > workspace_limits[finger_idx][1] || pos[0] < workspace_limits[finger_idx][0] ||
+        pos[1] > workspace_limits[finger_idx][3] || pos[1] < workspace_limits[finger_idx][2] ||
+        pos[2] > workspace_limits[finger_idx][5] || pos[2] < workspace_limits[finger_idx][4]) {
+      continue;
+    }
+    else{
+      points_in_ws->push_back(i);
+    }
+  }
+  return;
+
 }

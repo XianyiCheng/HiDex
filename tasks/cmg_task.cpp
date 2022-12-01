@@ -1,70 +1,13 @@
 #include "cmg_task.h"
 #include "../mechanics/contacts/contact_kinematics.h"
 #include "../mechanics/utilities/eiquadprog.hpp"
+#include "../mechanics/utilities/combinatorics.h"
 
 // ---------------------------
 // Utility functions
 #define MODE_TYPE_CS 0
 #define MODE_TYPE_FULL 1
 
-int permutation(int N, int k) {
-  int result = 1;
-  for (int i = 0; i < k; i++) {
-    result *= (N - i);
-  }
-  return result;
-}
-
-int combination(int N, int k) { return permutation(N, k) / permutation(k, k); }
-
-std::vector<int> combination_set(int N, int k, int idx) {
-  // N: number of surface contact points
-  // k: number of fingers on a surface contact point
-  // idx: index of the combination set
-  std::vector<int> set;
-
-  int comb_idx = idx;
-  int counter = 0;
-  for (int i = 0; i < k; i++) {
-    // i: the index of the combination set
-    int sum = 0;
-    int j;
-    for (j = counter; j <= N - k + i; j++) {
-      // j: the index of the sub combination set
-      int comb_i = combination(N - 1 - j, k - 1 - i);
-      if (sum + comb_i > comb_idx) {
-        comb_idx = comb_idx - sum;
-        break;
-      }
-      sum += comb_i;
-    }
-    set.push_back(j);
-    counter = j + 1;
-  }
-
-  return set;
-}
-
-std::vector<int> permutation_set(int N, int k, int idx) {
-  // N: number of surface contact points
-  // k: number of fingers on a surface contact point
-  // idx: index of the combination set
-  std::vector<int> set;
-  std::vector<int> set_i;
-  for (int i = 0; i < N; i++) {
-    set_i.push_back(i);
-  }
-
-  int permu_idx = idx;
-  for (int i = 0; i < k; i++) {
-    int permu_i = permutation(N - i - 1, k - i - 1);
-    int set_idx = permu_idx / permu_i;
-    set.push_back(set_i[set_idx]);
-    set_i.erase(set_i.begin() + set_idx);
-    permu_idx = permu_idx % permu_i;
-  }
-  return set;
-}
 
 int number_of_different_elements(const std::vector<int> &v1,
                                  const std::vector<int> &v2) {
@@ -92,13 +35,6 @@ Vector6d weight_w2o(const Vector7d &x, const Vector6d &f_ext_w) {
   T_.block(0, 0, 3, 3) = T.block(0, 0, 3, 3);
   Vector6d f_ext_o = SE32Adj(T_).transpose() * f_ext_w;
   return f_ext_o;
-}
-
-void copy_pts(const std::vector<ContactPoint> &pts,
-              std::vector<ContactPoint> *pts_new) {
-  for (auto &pt : pts) {
-    pts_new->push_back(pt);
-  }
 }
 
 Vector7d steer_config(Vector7d x_near, Vector7d x_rand,
@@ -2304,7 +2240,7 @@ bool CMGTASK::is_valid_transition(const CMGTASK::State2 &state,
       remain_idxes.push_back(cur_fingertips[k]);
     } else {
       if_relocate = true;
-      break;
+      // break;
     }
   }
 
