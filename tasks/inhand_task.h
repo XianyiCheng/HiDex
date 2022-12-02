@@ -60,7 +60,7 @@ public:
             m_path = state_.m_path;
         }
 
-        void do_action(int action) { m_mode_idx = action; }
+        void do_action(unsigned long int action) { m_mode_idx = action; }
 
         State &operator=(const State &state_)
         {
@@ -81,7 +81,7 @@ public:
         int t_max = -1; // maximum time step this can reach
         State2() {}
         State2(int t, int idx) : timestep(t), finger_index(idx) {}
-        void do_action(int action)
+        void do_action(unsigned long int action)
         {
             this->finger_index = action;
             this->timestep++;
@@ -194,13 +194,13 @@ public:
 
     double evaluate_path(const std::vector<State2> &path);
 
-    double estimate_next_state_value(const State2 &state, int action)
+    double estimate_next_state_value(const State2 &state, unsigned long int action)
     {
         // return 0.0 for now, can use neural networks to estimate values
         return 0.0;
     }
 
-    double action_heuristics_level2(int action_idx, const State2 &state,
+    double action_heuristics_level2(unsigned long int action_idx, const State2 &state,
                                     const State2 &pre_state)
     {
         // return the heuristics of an action in level2, this can be hand designed
@@ -282,12 +282,15 @@ public:
     int max_forward_timestep(const State2 &state);
     int select_finger_change_timestep(const State2 &state);
 
-    int encode_action_idx(int finger_idx, int timestep)
+    unsigned long int encode_action_idx(int finger_idx, int timestep)
     {
-        return timestep * this->n_finger_combinations + finger_idx;
+        unsigned long int t = timestep;
+        unsigned long int f = this->n_finger_combinations;
+        unsigned long int action_idx = t* f + finger_idx;
+        return action_idx;
     }
 
-    void do_action(State2 &state, int action)
+    void do_action(State2 &state, unsigned long int action)
     {
         state.timestep = action / this->n_finger_combinations;
         state.finger_index = action % this->n_finger_combinations;

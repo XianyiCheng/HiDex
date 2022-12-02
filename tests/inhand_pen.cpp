@@ -19,9 +19,9 @@
 void cube(std::shared_ptr<InhandTASK> task) {
   // create world, create environment, an object sliding on the table
 
-  double box_lx = 1;
-  double box_ly = 1;
-  double box_lz = 1;
+  double box_lx = 8;
+  double box_ly = 0.5;
+  double box_lz = 0.5;
 
   std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
 
@@ -35,33 +35,42 @@ void cube(std::shared_ptr<InhandTASK> task) {
 
   world->addEnvironmentComponent(env1);
 
-  int n_robot_contacts = 4;
+  int n_robot_contacts = 5;
   DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, 0.1);
 
   std::vector<Vector6d> workspace_limits;
   {
     // [x_min, x_max, y_min, y_max, z_min, z_max]
     Vector6d wl1;
-    wl1 << -box_lx / 2 - box_lx * 0.25, -box_lx / 2 + box_lx * 0.25,
-        -1.25 * box_ly / 2, 1.25 * box_ly / 2, -1.25 * box_lz / 2,
-        1.25 * box_lz / 2;
+    wl1 << -3, 0,
+        0, 1.5,
+        -1, 1;
     workspace_limits.push_back(wl1);
 
     Vector6d wl2;
-    wl2 << box_lx / 2 - box_lx * 0.25, box_lx / 2 + box_lx * 0.25,
-        -1.25 * box_ly / 2, 1.25 * box_ly / 2, -1.25 * box_lz / 2,
-        1.25 * box_lz / 2;
+    wl2 << -2, 1,
+        0, 1.5,
+        -1, 1;
     workspace_limits.push_back(wl2);
 
     Vector6d wl3;
-    wl3 << -1.25 * box_lx / 2, 1.25 * box_lx / 2, -box_ly / 2 - box_ly * 0.25,
-        -box_ly / 2 + box_ly * 0.25, -1.25 * box_lz / 2, 1.25 * box_lz / 2;
+    wl3 << -1, 2,
+        0, 1.5,
+        -1, 1;
     workspace_limits.push_back(wl3);
 
     Vector6d wl4;
-    wl4 << -1.25 * box_lx / 2, 1.25 * box_lx / 2, box_ly / 2 - box_ly * 0.25,
-        box_ly / 2 + box_ly * 0.25, -1.25 * box_lz / 2, 1.25 * box_lz / 2;
+    wl4 << 0, 3,
+        0, 1.5,
+        -1, 1;
     workspace_limits.push_back(wl4);
+
+
+    Vector6d wl5;
+    wl5 << 0, 3.5,
+        -1.5, 1,
+        -1, 1;
+    workspace_limits.push_back(wl5);
   }
 
   rpt->set_workspace_limit(workspace_limits);
@@ -105,7 +114,7 @@ void cube(std::shared_ptr<InhandTASK> task) {
 
   rrt_options.eps_trans = 0.2;
   rrt_options.eps_angle = 3.14 * 15 / 180;
-  rrt_options.max_samples = 100;
+  rrt_options.max_samples = 50;
 
   rrt_options.goal_biased_prob = 0.8;
 
@@ -115,7 +124,7 @@ void cube(std::shared_ptr<InhandTASK> task) {
   // read surface point, add robot contacts
   std::vector<ContactPoint> surface_pts;
   std::ifstream f(std::string(SRC_DIR) +
-                  "/data/test_inhand_simplest/surface_contacts.csv");
+                  "/data/test_inhand_pen/surface_contacts.csv");
   aria::csv::CsvParser parser(f);
 
   for (auto &row : parser) {
@@ -126,11 +135,16 @@ void cube(std::shared_ptr<InhandTASK> task) {
     for (int j = 0; j < 6; ++j) {
       v(j) = std::stod(row[j]);
     }
+    // only use contacts have normals in y direction
+    if ((v[4] > -0.8) && (v[4] < 0.8)) {
+      continue;
+    }
     Vector3d pos;
     pos << v(0) * box_lx / 2, v(1) * box_ly / 2, v(2) * box_lz / 2;
     ContactPoint p(pos, v.tail(3));
     surface_pts.push_back(p);
   }
+  std::cout << "surface pts: " << surface_pts.size() << std::endl;
   // pass the world and task parameters to the task through task->initialize
 
   task->initialize(x_start, x_goal, start_finger_idx, goal_finger_idx, goal_thr,
@@ -138,7 +152,7 @@ void cube(std::shared_ptr<InhandTASK> task) {
                    n_robot_contacts, surface_pts, rrt_options, is_refine,
                    refine_dist);
 
-  //   VisualizeSG(task->m_world, x_start, x_goal);
+    // VisualizeSG(task->m_world, x_start, x_goal);
 }
 
 void test_finger_idx(std::shared_ptr<InhandTASK> task) {

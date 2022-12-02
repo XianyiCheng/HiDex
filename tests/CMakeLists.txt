@@ -58,3 +58,6 @@ add_executable(test_time test_time.cpp)
 
 add_executable(inhand_simplest inhand_simplest.cpp ../tasks/inhand_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
 target_link_libraries(inhand_simplest PRIVATE mcts-mechanics ${dart_libs})
+
+add_executable(inhand_pen inhand_pen.cpp ../tasks/inhand_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
+target_link_libraries(inhand_pen PRIVATE mcts-mechanics ${dart_libs})

@@ -40,7 +40,7 @@ namespace HMP
 
         while (!this->is_terminal(node))
         {
-          int action;
+          unsigned long int action;
           action = this->select_action(node);
           if (action > node->number_of_next_actions)
           {
@@ -85,7 +85,7 @@ namespace HMP
       }
     }
 
-    virtual State generate_next_state(Node<State> *node, int action)
+    virtual State generate_next_state(Node<State> *node, unsigned long int action)
     {
       State new_state = node->m_state;
       new_state.do_action(action);
@@ -137,7 +137,7 @@ namespace HMP
       return this->m_task->is_terminal(node->m_state);
     }
 
-    virtual int select_action(Node<State> *node)
+    virtual unsigned long int select_action(Node<State> *node)
     {
       // sample based action selection
       int K = 50;
@@ -215,7 +215,7 @@ namespace HMP
 
       // select the largest U value
       double U_max = -1.0;
-      int action_idx = -1;
+      unsigned long int action_idx = -1;
       for (int i = 0; i < U_values.size(); ++i)
       {
         if (U_values[i] > U_max)

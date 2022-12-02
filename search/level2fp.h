@@ -35,7 +35,7 @@ public:
       Node<State> *node = grow_node;
 
       while (!this->is_terminal(node)) {
-        int action;
+        unsigned long int action;
         action = this->select_action(node);
 
         // if cannot find a feasible action
@@ -84,7 +84,8 @@ public:
     }
   }
 
-  virtual State generate_next_state(Node<State> *node, int action) {
+  virtual State generate_next_state(Node<State> *node,
+                                    unsigned long int action) {
     State new_state = node->m_state;
     this->m_task->do_action(new_state, action);
     new_state.is_valid =
@@ -140,7 +141,7 @@ public:
     return this->m_task->is_terminal(node->m_state);
   }
 
-  virtual int select_action(Node<State> *node) {
+  virtual unsigned long int select_action(Node<State> *node) {
 
     // select a child or create a new child
 
@@ -169,7 +170,7 @@ public:
 
     // select the largest U value
     double U_max = -1.0;
-    int action_idx = -1;
+    unsigned long int action_idx = -1;
     for (int i = 0; i < U_values.size(); ++i) {
       if (U_values[i] > U_max) {
         U_max = U_values[i];
@@ -195,8 +196,8 @@ public:
     std::vector<int> sampled_finger_idxes;
 
     // TODO: here sample finger idxes based on State2
-    this->m_task->sample_likely_feasible_finger_idx(node->m_state, t, max_sample,
-                                            &sampled_finger_idxes);
+    this->m_task->sample_likely_feasible_finger_idx(
+        node->m_state, t, max_sample, &sampled_finger_idxes);
 
     for (int k_sample = 0; k_sample < sampled_finger_idxes.size(); k_sample++) {
       finger_idx = sampled_finger_idxes[k_sample];
@@ -206,6 +207,12 @@ public:
 
       State new_state = this->generate_next_state(
           node, this->m_task->encode_action_idx(finger_idx, t));
+
+      if ((new_state.timestep < 0) || (new_state.timestep >= this->m_task->saved_object_trajectory.size())) {
+        std::cout << "timestep is issue, debug here" << std::endl;
+        State new_state_ = this->generate_next_state(
+            node, this->m_task->encode_action_idx(finger_idx, t));
+      }
 
       // is valid transition & valid for at least one timestep
       if (this->m_task->is_finger_valid(finger_idx, t)) {

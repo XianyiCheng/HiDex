@@ -46,7 +46,7 @@ namespace HMP
 
     Node(const State &state_) { m_state = state_; }
 
-    Node(const State &state_, int action_, Node *parent_)
+    Node(const State &state_, unsigned long int action_, Node *parent_)
     {
       m_state = state_;
       m_action = action_;
@@ -111,7 +111,7 @@ namespace HMP
       }
     }
 
-    Node<State> *add_child(Node<State> *node, int action_, const State &state_)
+    Node<State> *add_child(Node<State> *node, unsigned long int action_, const State &state_)
     {
       if (action_ == -1){
         std::cout << "action_ is -1" << std::endl;
@@ -122,7 +122,7 @@ namespace HMP
       return child_node;
     }
 
-    Node<State> *next_node(Node<State> *node, int action)
+    Node<State> *next_node(Node<State> *node, unsigned long int action)
     {
 
       // check is the action already has a child
@@ -189,11 +189,11 @@ namespace HMP
       ;
     }
 
-    virtual int select_action(Node<State> *node)
+    virtual unsigned long int select_action(Node<State> *node)
     {
       // TODO: return an action that either unexplored or have the best UCT
 
-      int action_idx = 0;
+      unsigned long int action_idx = 0;
 
       if (node->number_of_next_actions == 0)
       {
@@ -229,7 +229,7 @@ namespace HMP
 
     virtual void grow_tree(Node<State> *grow_node,
                            const MCTSOptions &options) = 0;
-    virtual State generate_next_state(Node<State> *node, int action) = 0;
+    virtual State generate_next_state(Node<State> *node, unsigned long int action) = 0;
     virtual double get_result(Node<State> *node) = 0;
     virtual bool is_terminal(Node<State> *node) = 0;
   };
