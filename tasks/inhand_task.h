@@ -36,6 +36,8 @@ class InhandTASK
 public:
     struct State
     {
+        typedef int Action;
+        static const Action no_action;
         Vector7d m_pose;
         std::vector<ContactPoint> envs;
         int m_mode_idx = -1; // the mode chosen for this state, to the next state
@@ -43,6 +45,12 @@ public:
         std::vector<Vector7d>
             m_path; // the path to this state (TODO: only save this path when
                     // m_mode_idx = -1 (node type: "pose"))
+
+        static Action action_index_to_action(int action_idx)
+        {
+            Action action = action_idx;
+            return action;
+        }
 
         State() {}
 
@@ -60,7 +68,7 @@ public:
             m_path = state_.m_path;
         }
 
-        void do_action(unsigned long int action) { m_mode_idx = action; }
+        void do_action(Action action) { m_mode_idx = action; }
 
         State &operator=(const State &state_)
         {
@@ -75,16 +83,36 @@ public:
 
     struct State2
     {
+        struct Action
+        {
+            long int finger_idx = -1;
+            int timestep = -1;
+            Action(){}
+            Action(int timestep_, long int finger_idx_) : timestep(timestep_), finger_idx(finger_idx_) {}
+            Action &operator=(const Action &action_)
+            {
+                this->finger_idx = action_.finger_idx;
+                this->timestep = action_.timestep;
+                return *this;
+            }
+            bool operator==(const Action &action_) const
+            {
+                return (timestep == action_.timestep && finger_idx == action_.finger_idx);
+            }
+        };
+
+        static const Action no_action;
+
         int timestep = 0;
-        int finger_index; // current finger index
+        long int finger_index; // current finger index
         bool is_valid;
         int t_max = -1; // maximum time step this can reach
         State2() {}
         State2(int t, int idx) : timestep(t), finger_index(idx) {}
-        void do_action(unsigned long int action)
+        void do_action(Action action)
         {
-            this->finger_index = action;
-            this->timestep++;
+            this->finger_index = action.finger_idx;
+            this->timestep = action.timestep;
         }
     };
 
@@ -103,11 +131,14 @@ public:
         SearchOptions() {}
     };
 
-    InhandTASK() { this->cons = std::make_unique<ContactConstraints>(2); }
+    InhandTASK()
+    {
+        this->cons = std::make_unique<ContactConstraints>(2);
+    }
 
     void initialize(const Vector7d &start_object_pose,
-                    const Vector7d &goal_object_pose, int start_finger_idx, int goal_finger_idx, double goal_thr, double wa,
-                    double wt, double charac_len, double mu_env, double mu_mnp,  Vector6d f_gravity,
+                    const Vector7d &goal_object_pose, long int start_finger_idx, long int goal_finger_idx, double goal_thr, double wa,
+                    double wt, double charac_len, double mu_env, double mu_mnp, Vector6d f_gravity,
                     std::shared_ptr<WorldTemplate> world, int n_robot_contacts,
                     std::vector<ContactPoint> surface_pts,
                     const SearchOptions &options, bool if_refine = false,
@@ -133,8 +164,9 @@ public:
 
         double dist = 0.0;
 
-        for(int i = 0; i < path.size() - 1; ++i){
-            dist += this->shared_rrt->dist(path[i].m_pose, path[i+1].m_pose);
+        for (int i = 0; i < path.size() - 1; ++i)
+        {
+            dist += this->shared_rrt->dist(path[i].m_pose, path[i + 1].m_pose);
         }
 
         double dist_reward = 1.0 / (1.0 + std::exp(dist));
@@ -147,13 +179,13 @@ public:
 
     // --- Level 2 Tree functions for robot contact planning ----
 
-    std::vector<int> get_finger_locations(int finger_location_index);
+    std::vector<int> get_finger_locations(long int finger_location_index);
 
-    int finger_locations_to_finger_idx(const std::vector<int> &finger_idxs);
+    long int finger_locations_to_finger_idx(const std::vector<int> &finger_idxs);
 
-    void sample_likely_feasible_finger_idx(Vector7d x_object, int number, std::vector<int> *finger_idxs);
+    void sample_likely_feasible_finger_idx(Vector7d x_object, int number, std::vector<long int> *finger_idxs);
 
-    void sample_likely_feasible_finger_idx(State2 state, double t_change, int number, std::vector<int> *finger_idxs);
+    void sample_likely_feasible_finger_idx(State2 state, double t_change, int number, std::vector<long int> *finger_idxs);
 
     VectorXd get_robot_config_from_action_idx(int action_index)
     {
@@ -194,13 +226,13 @@ public:
 
     double evaluate_path(const std::vector<State2> &path);
 
-    double estimate_next_state_value(const State2 &state, unsigned long int action)
+    double estimate_next_state_value(const State2 &state, State2::Action action)
     {
         // return 0.0 for now, can use neural networks to estimate values
         return 0.0;
     }
 
-    double action_heuristics_level2(unsigned long int action_idx, const State2 &state,
+    double action_heuristics_level2(State2::Action action, const State2 &state,
                                     const State2 &pre_state)
     {
         // return the heuristics of an action in level2, this can be hand designed
@@ -208,7 +240,7 @@ public:
         std::vector<int> finger_locations_1 =
             this->get_finger_locations(pre_state.finger_index);
         std::vector<int> finger_locations_2 =
-            this->get_finger_locations(action_idx);
+            this->get_finger_locations(action.finger_idx);
 
         double heu = 1.0;
         for (int i = 0; i < finger_locations_1.size(); ++i)
@@ -261,17 +293,17 @@ public:
 
     // bool is_valid(const State2 &state, const State2 &prev_state);
 
-    bool is_finger_valid(int finger_idx, int timestep);
+    bool is_finger_valid(long int finger_idx, int timestep);
 
     bool is_valid_transition(const State2 &state, const State2 &prev_state);
-    
+
     void save_trajectory(const std::vector<State> &path);
 
     std::vector<State>
     generate_a_finer_object_trajectory(std::vector<State> &object_traj,
                                        double dist);
 
-    bool robot_contact_feasibile_check(int finger_idx, const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
+    bool robot_contact_feasibile_check(long int finger_idx, const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
                                        const std::vector<ContactPoint> &envs);
 
     int pruning_check(const Vector7d &x, const Vector6d &v,
@@ -282,19 +314,19 @@ public:
     int max_forward_timestep(const State2 &state);
     int select_finger_change_timestep(const State2 &state);
 
-    unsigned long int encode_action_idx(int finger_idx, int timestep)
-    {
-        unsigned long int t = timestep;
-        unsigned long int f = this->n_finger_combinations;
-        unsigned long int action_idx = t* f + finger_idx;
-        return action_idx;
-    }
+    // unsigned long int encode_action_idx(int finger_idx, int timestep)
+    // {
+    //     unsigned long int t = timestep;
+    //     unsigned long int f = this->n_finger_combinations;
+    //     unsigned long int action_idx = t * f + finger_idx;
+    //     return action_idx;
+    // }
 
-    void do_action(State2 &state, unsigned long int action)
-    {
-        state.timestep = action / this->n_finger_combinations;
-        state.finger_index = action % this->n_finger_combinations;
-    }
+    // void do_action(State2 &state, unsigned long int action)
+    // {
+    //     state.timestep = action / this->n_finger_combinations;
+    //     state.finger_index = action % this->n_finger_combinations;
+    // }
 
     std::vector<State> saved_object_trajectory;
     std::vector<ContactPoint> object_surface_pts;
@@ -302,18 +334,18 @@ public:
 
     std::shared_ptr<WorldTemplate>
         m_world; // save the object, environment, do collision detections, ...
-    int n_finger_combinations = -1;
+    unsigned long int n_finger_combinations = 0;
 
     std::shared_ptr<ReusableRRT> shared_rrt;
 
 private:
     bool m_initialized = false;
-    
+
     Vector7d start_object_pose;
     Vector7d goal_object_pose;
 
-    int start_finger_idx = -1;
-    int goal_finger_idx = -1;
+    long int start_finger_idx = -1;
+    long int goal_finger_idx = -1;
 
     double goal_thr;
     double wa; // weigh the importance of angle

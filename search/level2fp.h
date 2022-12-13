@@ -16,9 +16,13 @@ namespace HMP {
 template <typename State, typename Task>
 class Level2TreeFP : public Tree<State, Task> {
 public:
+typedef typename Tree<State, Task>::Action Action;
   Level2TreeFP() {}
   Level2TreeFP(std::shared_ptr<Task> task, State start_state)
-      : Tree<State, Task>(task, start_state) {
+       {
+              this->m_root_node = std::make_unique<Node<State>>(start_state, State::no_action, nullptr);
+      this->m_current_node = this->m_root_node.get();
+      this->m_task = task;
     this->m_root_node->number_of_next_actions =
         this->m_task->get_number_of_actions(start_state);
     this->m_root_node->m_state.is_valid = true;
@@ -35,12 +39,12 @@ public:
       Node<State> *node = grow_node;
 
       while (!this->is_terminal(node)) {
-        unsigned long int action;
+        Action action;
         action = this->select_action(node);
 
         // if cannot find a feasible action
         // break and evaluate the heuristics of this path
-        if (action == -1) {
+        if (action == State::no_action) {
           break;
         }
         node = this->next_node(node, action);
@@ -85,9 +89,10 @@ public:
   }
 
   virtual State generate_next_state(Node<State> *node,
-                                    unsigned long int action) {
+                                    Action action) {
     State new_state = node->m_state;
-    this->m_task->do_action(new_state, action);
+    new_state.do_action(action);
+    // this->m_task->do_action(new_state, action);
     new_state.is_valid =
         true; // make sure it is valid for every state in select_action
     new_state.t_max = -1;
@@ -141,7 +146,7 @@ public:
     return this->m_task->is_terminal(node->m_state);
   }
 
-  virtual unsigned long int select_action(Node<State> *node) {
+  virtual Action select_action(Node<State> *node) {
 
     // select a child or create a new child
 
@@ -170,18 +175,18 @@ public:
 
     // select the largest U value
     double U_max = -1.0;
-    unsigned long int action_idx = -1;
+    Action selected_action = State::no_action;
     for (int i = 0; i < U_values.size(); ++i) {
       if (U_values[i] > U_max) {
         U_max = U_values[i];
-        action_idx = node->m_children[i]->m_action;
+        selected_action = node->m_children[i]->m_action;
       }
     }
 
     double U_unexplored =
         0.0 + this->ita * std::sqrt(double(node->m_visits)) / double(1);
     if (U_unexplored < U_max) {
-      return action_idx;
+      return selected_action;
     }
 
     // cretae a new child
@@ -193,7 +198,7 @@ public:
 
     int max_sample = 300;
 
-    std::vector<int> sampled_finger_idxes;
+    std::vector<long int> sampled_finger_idxes;
 
     // TODO: here sample finger idxes based on State2
     this->m_task->sample_likely_feasible_finger_idx(
@@ -205,13 +210,15 @@ public:
       // finger_idx =
       //     randi(this->m_task->get_number_of_robot_actions(node->m_state));
 
+      Action new_action = Action(t, finger_idx);
+
       State new_state = this->generate_next_state(
-          node, this->m_task->encode_action_idx(finger_idx, t));
+          node, new_action);
 
       if ((new_state.timestep < 0) || (new_state.timestep >= this->m_task->saved_object_trajectory.size())) {
         std::cout << "timestep is issue, debug here" << std::endl;
         State new_state_ = this->generate_next_state(
-            node, this->m_task->encode_action_idx(finger_idx, t));
+            node, new_action);
       }
 
       // is valid transition & valid for at least one timestep
@@ -226,12 +233,12 @@ public:
     if (if_valid) {
       // std::cout << "select action " << finger_idx << " at timestep " << t
       // << std::endl;
-      action_idx = this->m_task->encode_action_idx(finger_idx, t);
+      selected_action = Action(t, finger_idx);
     } else {
-      action_idx = -1;
+      selected_action = State::no_action;
     }
 
-    return action_idx;
+    return selected_action;
   }
 
   Node<State> *search_tree(const MCTSOptions &compute_option_1st_iter,

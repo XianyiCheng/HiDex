@@ -16,6 +16,9 @@
 
 #include "visualization.h"
 
+const InhandTASK::State2::Action InhandTASK::State2::no_action = InhandTASK::State2::Action(-1, -1);
+const InhandTASK::State::Action InhandTASK::State::no_action = -1;
+
 void cube(std::shared_ptr<InhandTASK> task) {
   // create world, create environment, an object sliding on the table
 
@@ -85,8 +88,8 @@ void cube(std::shared_ptr<InhandTASK> task) {
   //   x_goal << 0, 0, 0, 0, 0, 0.7071, 0.7071;
   x_goal << 0, 0, 0, 0, 0, -1, 0;
 
-  int start_finger_idx = -1;
-  int goal_finger_idx = -1;
+  long int start_finger_idx = -1;
+  long int goal_finger_idx = -1;
 
   double goal_thr = 3.14 * 5 / 180;
 
@@ -157,12 +160,12 @@ void cube(std::shared_ptr<InhandTASK> task) {
 
 void test_finger_idx(std::shared_ptr<InhandTASK> task) {
   std::cout << task->n_finger_combinations << std::endl;
-  for (int iter = 0; iter < 100; iter++) {
-    int idx = randi(task->n_finger_combinations);
+  for (int iter = 0; iter < 200; iter++) {
+    long int idx = randi(task->n_finger_combinations);
 
     std::vector<int> locs = task->get_finger_locations(idx);
 
-    int idx2 = task->finger_locations_to_finger_idx(locs);
+    long int idx2 = task->finger_locations_to_finger_idx(locs);
 
     std::cout << "idx: " << idx << " idx2: " << idx2 << ", if equal "
               << (idx == idx2) << std::endl;
@@ -173,6 +176,8 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
 
   cube(task);
+
+  // test_finger_idx(task);
 
   InhandTASK::State start_state = task->get_start_state();
 
@@ -186,7 +191,7 @@ int main(int argc, char *argv[]) {
   compute_options.final_l2_1st.max_iterations = 10;
   compute_options.final_l2.max_iterations = 3;
 
-  compute_options.l1.max_time = 10;
+  compute_options.l1.max_time = 30;
 
   HMP::Level1Tree<InhandTASK::State, InhandTASK::State2, InhandTASK> tree(
       task, start_state, compute_options);

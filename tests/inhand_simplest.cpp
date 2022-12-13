@@ -16,6 +16,9 @@
 
 #include "visualization.h"
 
+const InhandTASK::State2::Action InhandTASK::State2::no_action = InhandTASK::State2::Action(-1, -1);
+const InhandTASK::State::Action InhandTASK::State::no_action = -1;
+
 void cube(std::shared_ptr<InhandTASK> task) {
   // create world, create environment, an object sliding on the table
 
@@ -76,8 +79,8 @@ void cube(std::shared_ptr<InhandTASK> task) {
   //   x_goal << 0, 0, 0, 0, 0, 0.7071, 0.7071;
   x_goal << 0, 0, 0, 0, 0, -1, 0;
 
-  int start_finger_idx = -1;
-  int goal_finger_idx = -1;
+  long int start_finger_idx = -1;
+  long int goal_finger_idx = -1;
 
   double goal_thr = 3.14 * 5 / 180;
 

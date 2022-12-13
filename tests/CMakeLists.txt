@@ -30,6 +30,7 @@ target_link_libraries(test_force PRIVATE mcts-mechanics ${dart_libs})
 # # target_link_libraries(test_cmg PRIVATE mcts-mechanics ${GLPKLIB} ${dart_libs} ${modus_libs})
 # # target_link_libraries(test_cmg PRIVATE mcts-mechanics ${dart_libs} ${modus_libs})
 # target_link_libraries(test_cmg PRIVATE mcts-mechanics ${dart_libs})
+
 add_executable(cmg_pushing cmg_pushing.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
 target_link_libraries(cmg_pushing PRIVATE mcts-mechanics ${dart_libs})
 

@@ -910,7 +910,7 @@ bool isQuasistatic(const std::vector<ContactPoint> &mnps,
 
 void InhandTASK::initialize(
     const Vector7d &start_object_pose, const Vector7d &goal_object_pose,
-    int start_finger_idx, int goal_finger_idx, double goal_thr, double wa,
+    long int start_finger_idx, long int goal_finger_idx, double goal_thr, double wa,
     double wt, double charac_len, double mu_env, double mu_mnp,
     Vector6d f_gravity, std::shared_ptr<WorldTemplate> world,
     int n_robot_contacts, std::vector<ContactPoint> surface_pts,
@@ -949,7 +949,7 @@ void InhandTASK::initialize(
   this->n_finger_combinations = 0;
   for (int k = 0; k <= this->number_of_robot_contacts; k++) {
     // k: number of fingers on a surface contact point
-    int sum_i = combination(this->number_of_robot_contacts, k) *
+    unsigned long int sum_i = combination(this->number_of_robot_contacts, k) *
                 permutation(this->object_surface_pts.size(), k);
     // std::cout << "sum_i: " << sum_i << std::endl;
     this->n_finger_combinations += sum_i;
@@ -1047,23 +1047,23 @@ void InhandTASK::save_trajectory(const std::vector<InhandTASK::State> &path) {
   }
 }
 
-std::vector<int> InhandTASK::get_finger_locations(int finger_location_index) {
+std::vector<int> InhandTASK::get_finger_locations(long int finger_location_index) {
 
   // obtain finger location idxes from the single location idx
 
   int N =
       this->object_surface_pts.size();    // N: number of surface contact points
   int n = this->number_of_robot_contacts; // n: number of fingers
-  int action_idx = finger_location_index; // action_idx: index of the action
+  long int action_idx = finger_location_index; // action_idx: index of the action
 
   std::vector<int> locations;
 
   // find out the number of active fingers
   int k = 0; // the number of active fingers
-  int sum = 0;
+  long int sum = 0;
   for (k = 0; k <= n; k++) {
     // k: number of fingers on a surface contact point
-    int sum_i = combination(n, k) * permutation(N, k);
+    long int sum_i = combination(n, k) * permutation(N, k);
     if (sum + sum_i > action_idx) {
       break;
     }
@@ -1072,10 +1072,10 @@ std::vector<int> InhandTASK::get_finger_locations(int finger_location_index) {
 
   // find out active finger indices
   std::vector<int> active_idxes;
-  int comb_idx = (action_idx - sum) / permutation(N, k);
+  long int comb_idx = (action_idx - sum) / permutation(N, k);
   active_idxes = combination_set(n, k, comb_idx);
   // find out the locations of active finger indices
-  int loc_idx = (action_idx - sum) % permutation(N, k);
+  long int loc_idx = (action_idx - sum) % permutation(N, k);
   std::vector<int> loc_idxes;
   loc_idxes = permutation_set(N, k, loc_idx);
 
@@ -1093,10 +1093,10 @@ std::vector<int> InhandTASK::get_finger_locations(int finger_location_index) {
   return locations;
 }
 
-int InhandTASK::finger_locations_to_finger_idx(
+long int InhandTASK::finger_locations_to_finger_idx(
     const std::vector<int> &finger_idxs) {
 
-  int finger_idx = 0;
+  long int finger_idx = 0;
 
   int n_active = 0;
   std::vector<int> active_idxes;
@@ -1114,9 +1114,9 @@ int InhandTASK::finger_locations_to_finger_idx(
                   permutation(this->object_surface_pts.size(), k);
   }
 
-  int comb_idx = index_in_combination_set(this->number_of_robot_contacts,
+  long int comb_idx = index_in_combination_set(this->number_of_robot_contacts,
                                           n_active, active_idxes);
-  int loc_idx = index_in_permutation_set(this->object_surface_pts.size(),
+  long int loc_idx = index_in_permutation_set(this->object_surface_pts.size(),
                                          n_active, loc_idxes);
 
   finger_idx +=
@@ -1127,7 +1127,7 @@ int InhandTASK::finger_locations_to_finger_idx(
 }
 
 bool InhandTASK::robot_contact_feasibile_check(
-    int finger_idx, const Vector7d &x, const VectorXi &cs_mode,
+    long int finger_idx, const Vector7d &x, const VectorXi &cs_mode,
     const Vector6d &v, const std::vector<ContactPoint> &envs) {
 
   VectorXi env_mode = mode_from_velocity(v, envs, this->cons.get());
@@ -1178,12 +1178,12 @@ int InhandTASK::pruning_check(const Vector7d &x, const Vector6d &v,
 
   bool dynamic_feasibility = false;
   int max_sample = 100;
-  int finger_idx;
+  long int finger_idx;
   max_sample = (max_sample > this->n_finger_combinations)
                    ? this->n_finger_combinations
                    : max_sample;
 
-  std::vector<int> sampled_finger_idxes;
+  std::vector<long int> sampled_finger_idxes;
   this->sample_likely_feasible_finger_idx(x, max_sample, &sampled_finger_idxes);
 
   for (int k_sample = 0; k_sample < sampled_finger_idxes.size(); k_sample++) {
@@ -1255,8 +1255,8 @@ int InhandTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
   // max_sample = (max_sample > this->n_finger_combinations)
   //                  ? this->n_finger_combinations
   //                  : max_sample;
-  int finger_idx;
-  std::vector<int> sampled_finger_idxes;
+  long int finger_idx;
+  std::vector<long int> sampled_finger_idxes;
   this->sample_likely_feasible_finger_idx(x, max_sample, &sampled_finger_idxes);
 
   for (int k_sample = 0; k_sample < sampled_finger_idxes.size(); k_sample++) {
@@ -1350,7 +1350,7 @@ int InhandTASK::select_finger_change_timestep(const InhandTASK::State2 &state) {
   }
 }
 
-bool InhandTASK::is_finger_valid(int finger_idx, int timestep) {
+bool InhandTASK::is_finger_valid(long int finger_idx, int timestep) {
   // check if the finger is valid to move one timestep forward
 
   // check for the validity of timestep and timestep+1
@@ -2019,7 +2019,7 @@ bool InhandTASK::is_valid_transition(const InhandTASK::State2 &state,
 }
 
 void InhandTASK::sample_likely_feasible_finger_idx(
-    Vector7d x_object, int number, std::vector<int> *finger_idxs) {
+    Vector7d x_object, int number, std::vector<long int> *finger_idxs) {
 
   std::vector<ContactPoint> object_surface_world;
   Eigen::Matrix4d T;
@@ -2079,7 +2079,7 @@ void InhandTASK::sample_likely_feasible_finger_idx(
 }
 
 void InhandTASK::sample_likely_feasible_finger_idx(
-    State2 state, double t_change, int number, std::vector<int> *finger_idxs) {
+    State2 state, double t_change, int number, std::vector<long int> *finger_idxs) {
   // sample the finger idxes that are likely to be feasible in this state and
   // move to the next state
 

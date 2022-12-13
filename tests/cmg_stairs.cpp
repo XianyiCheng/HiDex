@@ -16,6 +16,9 @@
 
 #include "visualization.h"
 
+const CMGTASK::State2::Action CMGTASK::State2::no_action = CMGTASK::State2::Action(-1, -1);
+const CMGTASK::State::Action CMGTASK::State::no_action = -1;
+
 void stairs(std::shared_ptr<CMGTASK> task)
 {
     // create world, create environment, an object sliding on the table

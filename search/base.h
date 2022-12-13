@@ -28,6 +28,7 @@ namespace HMP
   {
 
   public:
+    typedef typename State::Action Action;
     double m_value = 0.0;
     double m_value_estimate = 0.0;
     int m_visits = 0;
@@ -36,8 +37,8 @@ namespace HMP
     std::string m_type; // store any type information for interleaving node types
 
     Node *m_parent;
-    int m_action = -1; // action that lead to this node
-    int number_of_next_actions = 0; // action actions are stored in state
+    Action m_action = State::no_action;                  // action that lead to this node
+    int number_of_next_actions = 0;     // action actions are stored in state
     int number_of_invalid_attempts = 0; // number of invalid new attempts for search_a_new_path
     State m_state;
     std::vector<Node *> m_children;
@@ -46,7 +47,7 @@ namespace HMP
 
     Node(const State &state_) { m_state = state_; }
 
-    Node(const State &state_, unsigned long int action_, Node *parent_)
+    Node(const State &state_, Action action_, Node *parent_)
     {
       m_state = state_;
       m_action = action_;
@@ -74,6 +75,7 @@ namespace HMP
   {
 
   public:
+    typedef typename State::Action Action;
     bool found_positive_reward = false;
     double ita = 0.2;             // hyper-parameter controlling the degree of exploration
     std::shared_ptr<Task> m_task; // a shared pointer for Task
@@ -84,21 +86,24 @@ namespace HMP
     Tree() {}
     Tree(std::shared_ptr<Task> task_, State start_state)
     {
-      this->m_root_node = std::make_unique<Node<State>>(start_state, -1, nullptr);
+      this->m_root_node = std::make_unique<Node<State>>(start_state, State::no_action, nullptr);
       this->m_current_node = this->m_root_node.get();
       m_task = task_;
     }
     ~Tree() {}
 
-    int number_of_nodes_in_subtree(Node<State> *node){
+    int number_of_nodes_in_subtree(Node<State> *node)
+    {
       int n = node->m_children.size();
-      for (auto child: node->m_children){
+      for (auto child : node->m_children)
+      {
         n += this->number_of_nodes_in_subtree(child);
       }
       return n;
     }
 
-    int number_of_tree_nodes(){
+    int number_of_tree_nodes()
+    {
       return this->number_of_nodes_in_subtree(this->m_root_node.get());
     }
 
@@ -111,10 +116,11 @@ namespace HMP
       }
     }
 
-    Node<State> *add_child(Node<State> *node, unsigned long int action_, const State &state_)
+    Node<State> *add_child(Node<State> *node, Action action_, const State &state_)
     {
-      if (action_ == -1){
-        std::cout << "action_ is -1" << std::endl;
+      if (action_ == State::no_action)
+      {
+        std::cout << "Node<State> *add_child: has no action" << std::endl;
         exit(0);
       }
       auto child_node = new Node<State>(state_, action_, node);
@@ -122,7 +128,7 @@ namespace HMP
       return child_node;
     }
 
-    Node<State> *next_node(Node<State> *node, unsigned long int action)
+    Node<State> *next_node(Node<State> *node, Action action)
     {
 
       // check is the action already has a child
@@ -139,8 +145,9 @@ namespace HMP
       State next_state = this->generate_next_state(node, action);
 
       // add the child
-      if (action == -1){
-        std::cout << "action is -1" << std::endl;
+      if (action == State::no_action)
+      {
+        std::cout << "next_node: has no action" << std::endl;
         exit(0);
       }
       Node<State> *next_node = new Node<State>(next_state, action, node);
@@ -152,7 +159,8 @@ namespace HMP
     {
       std::vector<State> path;
       Node<State> *node = terminal_node;
-      while(node != nullptr){
+      while (node != nullptr)
+      {
         path.push_back(node->m_state);
         node = node->m_parent;
       }
@@ -160,16 +168,18 @@ namespace HMP
       return path;
     }
 
-
-    int count_subtree_nodes(Node<State>* root_node){
+    int count_subtree_nodes(Node<State> *root_node)
+    {
       int n_total = 1;
-      for (auto n: root_node->m_children){
+      for (auto n : root_node->m_children)
+      {
         n_total += count_subtree_nodes(n);
       }
       return n_total;
     }
 
-    int count_total_nodes(){
+    int count_total_nodes()
+    {
       return count_subtree_nodes(this->m_root_node.get());
     }
 
@@ -189,47 +199,48 @@ namespace HMP
       ;
     }
 
-    virtual unsigned long int select_action(Node<State> *node)
-    {
-      // TODO: return an action that either unexplored or have the best UCT
+    // virtual unsigned long int select_action(Node<State> *node)
+    // {
+    //   // TODO: return an action that either unexplored or have the best UCT
 
-      unsigned long int action_idx = 0;
+    //   unsigned long int action_idx = 0;
 
-      if (node->number_of_next_actions == 0)
-      {
-        std::cerr
-            << "Error in Tree::select_action (base.h). No next action found. "
-            << std::endl;
-        exit(-1);
-        return -1;
-      }
+    //   if (node->number_of_next_actions == 0)
+    //   {
+    //     std::cerr
+    //         << "Error in Tree::select_action (base.h). No next action found. "
+    //         << std::endl;
+    //     exit(-1);
+    //     return -1;
+    //   }
 
-      double U_max = -1.0;
+    //   double U_max = -1.0;
 
-      for (int k = 0; k < node->number_of_next_actions; ++k)
-      {
+    //   for (int k = 0; k < node->number_of_next_actions; ++k)
+    //   {
 
-        Node<State> *new_node = this->next_node(node, k);
+    //     Node<State> *new_node = this->next_node(node, k);
 
-        // double U = ??*new_node->m_value + ??*new_node->m_value_estimate + ita * (new_node->m_heuristics / double(node->number_of_next_actions)) *
-                                          //  std::sqrt(double(node->m_visits)) /
-                                          //  (1 + double(new_node->m_visits));
-        double U = new_node->m_value + ita * (1 / double(node->number_of_next_actions)) *
-                                           std::sqrt(double(node->m_visits)) /
-                                           (1 + double(new_node->m_visits));
+    //     // double U = ??*new_node->m_value + ??*new_node->m_value_estimate + ita * (new_node->m_heuristics / double(node->number_of_next_actions)) *
+    //     //  std::sqrt(double(node->m_visits)) /
+    //     //  (1 + double(new_node->m_visits));
+    //     double U = new_node->m_value + ita * (1 / double(node->number_of_next_actions)) *
+    //                                        std::sqrt(double(node->m_visits)) /
+    //                                        (1 + double(new_node->m_visits));
 
-        if (U > U_max)
-        {
-          U_max = U;
-          action_idx = k;
-        }
-      }
-      return action_idx;
-    }
+    //     if (U > U_max)
+    //     {
+    //       U_max = U;
+    //       action_idx = k;
+    //     }
+    //   }
+    //   return action_idx;
+    // }
 
+    virtual Action select_action(Node<State> *node) = 0;
     virtual void grow_tree(Node<State> *grow_node,
                            const MCTSOptions &options) = 0;
-    virtual State generate_next_state(Node<State> *node, unsigned long int action) = 0;
+    virtual State generate_next_state(Node<State> *node, Action action) = 0;
     virtual double get_result(Node<State> *node) = 0;
     virtual bool is_terminal(Node<State> *node) = 0;
   };

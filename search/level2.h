@@ -17,10 +17,14 @@ namespace HMP
   class Level2Tree : public Tree<State, Task>
   {
   public:
+  typedef typename Tree<State, Task>::Action Action;
     Level2Tree() {}
     Level2Tree(std::shared_ptr<Task> task, State start_state)
-        : Tree<State, Task>(task, start_state)
+
     {
+            this->m_root_node = std::make_unique<Node<State>>(start_state, State::no_action, nullptr);
+      this->m_current_node = this->m_root_node.get();
+      this->m_task = task;
       this->m_root_node->number_of_next_actions =
           this->m_task->get_number_of_robot_actions(start_state);
       this->m_root_node->m_state.is_valid = true;

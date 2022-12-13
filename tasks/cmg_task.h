@@ -20,7 +20,6 @@
 #include "../mechanics/utilities/sample.h"
 #endif
 
-
 #ifndef _WORLD_TEMPLATE
 #define _WORLD_TEMPLATE
 #include "../mechanics/worlds/WorldTemplate.h"
@@ -35,10 +34,14 @@
 #define CMG_QUASIDYNAMIC 1
 #define CMG_NODYNAMICS -1
 
-class CMGTASK {
+class CMGTASK
+{
 
 public:
-  struct State {
+  struct State
+  {
+    typedef int Action;
+    static const Action no_action;
     Vector7d m_pose;
     std::vector<ContactPoint> envs;
     int m_mode_idx = -1; // the mode chosen for this state, to the next state
@@ -47,13 +50,20 @@ public:
         m_path; // the path to this state (TODO: only save this path when
                 // m_mode_idx = -1 (node type: "pose"))
 
+    static Action action_index_to_action(int action_idx)
+    {
+      Action action = action_idx;
+      return action;
+    }
+
     State() {}
 
     State(Vector7d pose, const std::vector<ContactPoint> &envs_, int mode_idx,
           const std::vector<Eigen::VectorXi> &modes_)
         : m_pose(pose), envs(envs_), m_mode_idx(mode_idx), modes(modes_) {}
 
-    State(const State &state_) {
+    State(const State &state_)
+    {
       // copy constructor
       m_pose = state_.m_pose;
       m_mode_idx = state_.m_mode_idx;
@@ -62,9 +72,10 @@ public:
       m_path = state_.m_path;
     }
 
-    void do_action(unsigned long int action) { m_mode_idx = action; }
+    void do_action(Action action) { m_mode_idx = action; }
 
-    State &operator=(const State &state_) {
+    State &operator=(const State &state_)
+    {
       this->m_pose = state_.m_pose;
       this->m_mode_idx = state_.m_mode_idx;
       this->modes = state_.modes;
@@ -74,20 +85,42 @@ public:
     }
   };
 
-  struct State2 {
+  struct State2
+  {
+    struct Action
+    {
+      long int finger_idx = -1;
+      int timestep = -1;
+      Action() {}
+      Action(int timestep_, long int finger_idx_) : timestep(timestep_), finger_idx(finger_idx_) {}
+      Action &operator=(const Action &action_)
+      {
+        this->finger_idx = action_.finger_idx;
+        this->timestep = action_.timestep;
+        return *this;
+      }
+      bool operator==(const Action &action_) const
+      {
+        return (timestep == action_.timestep && finger_idx == action_.finger_idx);
+      }
+    };
+    static const Action no_action;
+
     int timestep = 0;
-    int finger_index; // current finger index
+    long int finger_index; // current finger index
     bool is_valid;
     int t_max = -1; // maximum time step this can reach
     State2() {}
-    State2(int t, int idx) : timestep(t), finger_index(idx) {}
-    void do_action(unsigned long int action) {
-      this->finger_index = action;
-      this->timestep++;
+    State2(int t, long int idx) : timestep(t), finger_index(idx) {}
+    void do_action(Action action)
+    {
+      this->finger_index = action.finger_idx;
+      this->timestep = action.timestep;
     }
   };
 
-  struct SearchOptions {
+  struct SearchOptions
+  {
     // the search options for search_a_new_path using RRT
     Eigen::Vector3d x_lb;
     Eigen::Vector3d x_ub;
@@ -131,7 +164,8 @@ public:
                            const VectorXi &env_mode_,
                            std::vector<Vector7d> *path);
 
-  double evaluate_path(const std::vector<State> &path) const {
+  double evaluate_path(const std::vector<State> &path) const
+  {
     double reward = 1 / double(path.size());
 
     return reward;
@@ -139,17 +173,20 @@ public:
 
   // --- Level 2 Tree functions for robot contact planning ----
 
-  std::vector<int> get_finger_locations(int finger_location_index);
+  std::vector<int> get_finger_locations(long int finger_location_index);
 
-  VectorXd get_robot_config_from_action_idx(int action_index) {
+  VectorXd get_robot_config_from_action_idx(long int action_index)
+  {
 
     std::vector<int> finger_locations =
         this->get_finger_locations(action_index);
 
     // for point fingers
     VectorXd mnp_config(6 * finger_locations.size());
-    for (int k = 0; k < finger_locations.size(); ++k) {
-      if (finger_locations[k] == -1) {
+    for (int k = 0; k < finger_locations.size(); ++k)
+    {
+      if (finger_locations[k] == -1)
+      {
         // temporary solution:
         // when not in contact, set the finger location to a very far away
         // point, only works for point fingers
@@ -167,7 +204,8 @@ public:
     return mnp_config;
   }
 
-  State2 get_start_state2() const {
+  State2 get_start_state2() const
+  {
     State2 state(0, -1);
     return state;
   }
@@ -175,23 +213,27 @@ public:
   double total_finger_change_ratio(const std::vector<State2> &path);
   double evaluate_path(const std::vector<State2> &path);
 
-  double estimate_next_state_value(const State2 &state, unsigned long int action) {
+  double estimate_next_state_value(const State2 &state, State2::Action action)
+  {
     // return 0.0 for now, can use neural networks to estimate values
     return 0.0;
   }
 
-  double action_heuristics_level2(unsigned long int action_idx, const State2 &state,
-                                  const State2 &pre_state) {
+  double action_heuristics_level2(State2::Action action, const State2 &state,
+                                  const State2 &pre_state)
+  {
     // return the heuristics of an action in level2, this can be hand designed
     // or learned todo: improve this heuristics
     std::vector<int> finger_locations_1 =
         this->get_finger_locations(pre_state.finger_index);
     std::vector<int> finger_locations_2 =
-        this->get_finger_locations(action_idx);
+        this->get_finger_locations(action.finger_idx);
 
     double heu = 1.0;
-    for (int i = 0; i < finger_locations_1.size(); ++i) {
-      if (finger_locations_1[i] == finger_locations_2[i]) {
+    for (int i = 0; i < finger_locations_1.size(); ++i)
+    {
+      if (finger_locations_1[i] == finger_locations_2[i])
+      {
         heu *= 2.0;
       }
     }
@@ -199,26 +241,34 @@ public:
     return heu;
   }
 
-  int get_number_of_robot_actions(const State2 &state) {
+  long int get_number_of_robot_actions(const State2 &state)
+  {
     return this->n_finger_combinations;
   }
 
-  int get_number_of_actions(const State2 &state) {
+  long int get_number_of_actions(const State2 &state)
+  {
     return this->n_finger_combinations * this->saved_object_trajectory.size();
   }
 
-  bool is_terminal(const State2 &state) {
+  bool is_terminal(const State2 &state)
+  {
     // check if terminal, also check if valid,
     // if not valid it is also terminal
 
-    if (!state.is_valid) {
+    if (!state.is_valid)
+    {
       return true;
-    } else {
-      if (state.timestep >= this->saved_object_trajectory.size() - 1) {
+    }
+    else
+    {
+      if (state.timestep >= this->saved_object_trajectory.size() - 1)
+      {
         return true;
       }
     }
-    if (state.t_max == (this->saved_object_trajectory.size() - 1)) {
+    if (state.t_max == (this->saved_object_trajectory.size() - 1))
+    {
       return true;
     }
     return false;
@@ -228,7 +278,7 @@ public:
 
   bool is_valid(const State2 &state, const State2 &prev_state);
 
-  bool is_finger_valid(int finger_idx, int timestep);
+  bool is_finger_valid(long int finger_idx, int timestep);
 
   bool is_valid_transition(const State2 &state, const State2 &prev_state);
 
@@ -238,37 +288,42 @@ public:
   generate_a_finer_object_trajectory(std::vector<State> &object_traj,
                                      double dist);
 
-  bool robot_contact_feasibile_check(int finger_idx, const Vector7d &x, const VectorXi &cs_mode, const Vector6d& v,
-                     const std::vector<ContactPoint> &envs);
+  bool robot_contact_feasibile_check(long int finger_idx, const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
+                                     const std::vector<ContactPoint> &envs);
 
-  void sample_likely_feasible_finger_idx(Vector7d x_object, int number, std::vector<int> *finger_idxs){
-    for (int n = number; n > 0; n--){
+  void sample_likely_feasible_finger_idx(Vector7d x_object, int number, std::vector<long int> *finger_idxs)
+  {
+    for (int n = number; n > 0; n--)
+    {
       finger_idxs->push_back(randi(this->n_finger_combinations));
     }
   }
 
-  void sample_likely_feasible_finger_idx(State2 state, double t_change, int number, std::vector<int> *finger_idxs){
-    for (int n = number; n > 0; n--){
+  void sample_likely_feasible_finger_idx(State2 state, double t_change, int number, std::vector<long int> *finger_idxs)
+  {
+    for (int n = number; n > 0; n--)
+    {
       finger_idxs->push_back(randi(this->n_finger_combinations));
     }
   }
 
   int pruning_check(const Vector7d &x, const Vector6d &v,
-                     const std::vector<ContactPoint> &envs);
-  int pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d& v,
-                     const std::vector<ContactPoint> &envs);
+                    const std::vector<ContactPoint> &envs);
+  int pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
+                    const std::vector<ContactPoint> &envs);
 
   int max_forward_timestep(const CMGTASK::State2 &state);
   int select_finger_change_timestep(const State2 &state);
 
-  int encode_action_idx(int finger_idx, int timestep) {
+  long int encode_action_idx(long int finger_idx, int timestep)
+  {
     return timestep * this->n_finger_combinations + finger_idx;
   }
 
-  void do_action(State2 &state, unsigned long int action) {
-    state.timestep = action / this->n_finger_combinations;
-    state.finger_index = action % this->n_finger_combinations;
-  }
+  // void do_action(State2 &state, State::Action action) {
+  //   state.timestep = action / this->n_finger_combinations;
+  //   state.finger_index = action % this->n_finger_combinations;
+  // }
 
   std::vector<State> saved_object_trajectory;
   std::vector<ContactPoint> object_surface_pts;
@@ -278,7 +333,7 @@ public:
 
   std::shared_ptr<WorldTemplate>
       m_world; // save the object, environment, do collision detections, ...
-  int n_finger_combinations = -1;
+  unsigned long int n_finger_combinations = 0;
 
   std::shared_ptr<ReusableRRT> shared_rrt;
 
@@ -304,8 +359,6 @@ private:
   SearchOptions search_options;
 
   std::unique_ptr<ContactConstraints> cons;
-
-  
 
   bool if_refine = false;
   bool refine_dist = 0.0;

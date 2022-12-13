@@ -877,7 +877,7 @@ int CMGTASK::neighbors_on_the_same_manifold(const Vector7d &q,
                                             std::vector<VectorXi> env_modes,
                                             double dist_thr) {
 
-  std::vector<int> sampled_finger_idxes;
+  std::vector<long int> sampled_finger_idxes;
   Vector6d v;
   v.setZero();
 
@@ -954,7 +954,7 @@ bool CMGTASK::forward_integration(const Vector7d &x_start,
   int counter;
   int delete_c = 0;
 
-  int selected_finger_idx;
+  long int selected_finger_idx;
 
   for (counter = 0; counter < max_counter; counter++) {
     Vector6d v_star = compute_rbvel_body(x, x_goal);
@@ -1220,7 +1220,7 @@ void CMGTASK::initialize(
   this->n_finger_combinations = 0;
   for (int k = 0; k <= this->number_of_robot_contacts; k++) {
     // k: number of fingers on a surface contact point
-    int sum_i = combination(this->number_of_robot_contacts, k) *
+    long int sum_i = combination(this->number_of_robot_contacts, k) *
                 permutation(this->object_surface_pts.size(), k);
     // std::cout << "sum_i: " << sum_i << std::endl;
     this->n_finger_combinations += sum_i;
@@ -1615,7 +1615,7 @@ bool CMGTASK::is_valid(const CMGTASK::State2 &state, const State2 &prev_state) {
   Vector7d x_object = this->saved_object_trajectory[pre_timestep].m_pose;
   Vector7d x_object_now = this->saved_object_trajectory[state.timestep].m_pose;
 
-  int finger_idx = state.finger_index;
+  long int finger_idx = state.finger_index;
 
   std::vector<ContactPoint> mnps;
 
@@ -1808,23 +1808,23 @@ void CMGTASK::save_trajectory(const std::vector<CMGTASK::State> &path) {
   }
 }
 
-std::vector<int> CMGTASK::get_finger_locations(int finger_location_index) {
+std::vector<int> CMGTASK::get_finger_locations(long int finger_location_index) {
 
   // obtain finger location idxes from the single location idx
 
   int N =
       this->object_surface_pts.size();    // N: number of surface contact points
   int n = this->number_of_robot_contacts; // n: number of fingers
-  int action_idx = finger_location_index; // action_idx: index of the action
+  long int action_idx = finger_location_index; // action_idx: index of the action
 
   std::vector<int> locations;
 
   // find out the number of active fingers
   int k = 0; // the number of active fingers
-  int sum = 0;
+  long int sum = 0;
   for (k = 0; k <= n; k++) {
     // k: number of fingers on a surface contact point
-    int sum_i = combination(n, k) * permutation(N, k);
+    long int sum_i = combination(n, k) * permutation(N, k);
     if (sum + sum_i > action_idx) {
       break;
     }
@@ -1833,10 +1833,10 @@ std::vector<int> CMGTASK::get_finger_locations(int finger_location_index) {
 
   // find out active finger indices
   std::vector<int> active_idxes;
-  int comb_idx = (action_idx - sum) / permutation(N, k);
+  long int comb_idx = (action_idx - sum) / permutation(N, k);
   active_idxes = combination_set(n, k, comb_idx);
   // find out the locations of active finger indices
-  int loc_idx = (action_idx - sum) % permutation(N, k);
+  long int loc_idx = (action_idx - sum) % permutation(N, k);
   std::vector<int> loc_idxes;
   loc_idxes = permutation_set(N, k, loc_idx);
 
@@ -1855,7 +1855,7 @@ std::vector<int> CMGTASK::get_finger_locations(int finger_location_index) {
 }
 
 bool CMGTASK::robot_contact_feasibile_check(
-    int finger_idx, const Vector7d &x, const VectorXi &cs_mode,
+    long int finger_idx, const Vector7d &x, const VectorXi &cs_mode,
     const Vector6d &v, const std::vector<ContactPoint> &envs) {
 
   VectorXi env_mode = mode_from_velocity(v, envs, this->cons.get());
@@ -1912,7 +1912,7 @@ int CMGTASK::pruning_check(const Vector7d &x, const Vector6d &v,
   bool dynamic_feasibility = false;
   int max_sample = 100;
   // TODO: calculate n_finger_combination during initialization
-  int finger_idx;
+  long int finger_idx;
   max_sample = (max_sample > this->n_finger_combinations)
                    ? this->n_finger_combinations
                    : max_sample;
@@ -2001,7 +2001,7 @@ int CMGTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
   // max_sample = (max_sample > this->n_finger_combinations)
   //                  ? this->n_finger_combinations
   //                  : max_sample;
-  int finger_idx;
+  long int finger_idx;
   for (int k_sample = 0; k_sample < max_sample; k_sample++) {
 
     if (max_sample > this->n_finger_combinations) {
@@ -2108,7 +2108,7 @@ int CMGTASK::select_finger_change_timestep(const CMGTASK::State2 &state) {
   }
 }
 
-bool CMGTASK::is_finger_valid(int finger_idx, int timestep) {
+bool CMGTASK::is_finger_valid(long int finger_idx, int timestep) {
   // check if the finger is valid to move one timestep forward
 
   // check for the validity of timestep and timestep+1
