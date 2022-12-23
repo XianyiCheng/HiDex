@@ -164,9 +164,46 @@ public:
                            const VectorXi &env_mode_,
                            std::vector<Vector7d> *path);
 
+  double travel_distance(const std::vector<State> &path) const
+  {
+    double dist = 0.0;
+
+    for (int i = 0; i < path.size() - 1; ++i)
+    {
+      dist += this->shared_rrt->dist(path[i].m_pose, path[i + 1].m_pose);
+    }
+    return dist;
+  }
+
   double evaluate_path(const std::vector<State> &path) const
   {
     double reward = 1 / double(path.size());
+
+    return reward;
+  }
+
+  double evaluate_path(const std::vector<State> &path, const std::vector<State2> &path2)
+  {
+    //
+
+    double dist = this->travel_distance(path);
+    double best_dist = this->shared_rrt->dist(this->start_object_pose, this->goal_object_pose);
+    double x_dist = dist / best_dist;
+    double y_dist = 3.39617221 * x_dist - 7.59164285;
+
+    double x_path = double(path.size());
+    double y_path = 0.64872688 * x_path - 4.52948518;
+
+    double total_finger_changes = this->total_finger_change_ratio(path2);
+
+    double x_finger = total_finger_changes / double(path2.back().t_max);
+    double y_finger = 11.14845406 * x_finger - 4.59804752;
+
+    double r_dist = 1.0 / (1.0 + std::exp(y_dist));
+    double r_path = 1.0 / (1.0 + std::exp(y_path));
+    double r_finger = 1.0 / (1.0 + std::exp(y_finger));
+
+    double reward = 0.4 * r_dist + 0.4 * r_path + 0.2 * r_finger;
 
     return reward;
   }
@@ -337,10 +374,12 @@ public:
 
   std::shared_ptr<ReusableRRT> shared_rrt;
 
-private:
-  bool m_initialized = false;
   Vector7d start_object_pose;
   Vector7d goal_object_pose;
+
+private:
+  bool m_initialized = false;
+
   double goal_thr;
   double wa; // weigh the importance of angle
   double wt; // weigh the importance of translation

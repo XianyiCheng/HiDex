@@ -186,5 +186,6 @@ int main(int argc, char *argv[])
 
   // world->setObjectTrajectory(object_traj);
   // VisualizeTraj(task->m_world, object_traj, mnp_traj);
-  task->m_world->startWindow(&argc, argv);
+  // task->m_world->startWindow(&argc, argv);
+  output_results(&tree, task, object_trajectory, action_trajectory, current_node->m_value);
 }

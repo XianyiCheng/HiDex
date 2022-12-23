@@ -17,12 +17,6 @@ namespace HMP
     typedef typename Tree<State, Task>::Action Action;
     double m_alpha = 0.4; // the parameter for expanding new continuous node
 
-    std::chrono::time_point<std::chrono::system_clock> m_start_time; // timer
-
-    bool time_up = false;
-
-    bool if_check_time = false;
-
     struct HierarchicalComputeOptions
     {
       MCTSOptions l1_1st;       // MCTS compute options for 1st MCTS search in level 1
@@ -48,12 +42,12 @@ namespace HMP
     Level1Tree() {}
     Level1Tree(std::shared_ptr<Task> task, State start_state,
                HierarchicalComputeOptions compute_options_)
-        
+
     {
       // specify the type of the root node
       // this->m_root_node = std::make_unique<Node<State>>(start_state, -1,
       // nullptr); // already done in Tree
-            this->m_root_node = std::make_unique<Node<State>>(start_state, State::no_action, nullptr);
+      this->m_root_node = std::make_unique<Node<State>>(start_state, State::no_action, nullptr);
       this->m_current_node = this->m_root_node.get();
       this->m_task = task;
 
@@ -228,7 +222,8 @@ namespace HMP
       //                                this->m_task->get_start_state2());
       Level2TreeFP<State2, Task> tree2(this->m_task,
                                        this->m_task->get_start_state2());
-      tree2.ita = 2.0;
+      // tree2.ita = 2.0;
+      tree2.ita = 0.1;
 
       Node<State2> *final_node_2 = tree2.search_tree(this->compute_options.l2_1st,
                                                      this->compute_options.l2);
@@ -282,11 +277,12 @@ namespace HMP
       }
       else
       {
-        double score_level1 = this->m_task->evaluate_path(state_path);
-        double score_level2 =
-            this->m_task->evaluate_path(tree2.backtrack_state_path(
-                final_node_2)); // this is different than final_node_2->m_value
-        path_score = score_level1 * 2.0 + score_level2;
+        // double score_level1 = this->m_task->evaluate_path(state_path);
+        // double score_level2 =
+        //     this->m_task->evaluate_path(tree2.backtrack_state_path(
+        //         final_node_2)); // this is different than final_node_2->m_value
+        // path_score = score_level1 * 2.0 + score_level2;
+        path_score = this->m_task->evaluate_path(state_path, tree2.backtrack_state_path(final_node_2));
       }
 
       this->m_task->saved_object_trajectory.clear();
@@ -463,7 +459,11 @@ namespace HMP
 
         if (reward > 0)
         {
-          this->found_positive_reward = true;
+          if (this->found_positive_reward == false)
+          {
+            this->solution_found_time = this->elasped_time();
+            this->found_positive_reward = true;
+          }
         }
 
         std::cout << "Evaluation: " << reward << std::endl;
@@ -472,7 +472,7 @@ namespace HMP
 
         if (this->if_check_time && this->found_positive_reward)
         {
-          this->check_time();
+          this->check_time(this->compute_options.l1.max_time);
           if (this->time_up)
           {
             break;
@@ -510,10 +510,11 @@ namespace HMP
         // early stop when found a solution and time is up
         if (this->if_check_time && this->found_positive_reward)
         {
-          this->check_time();
+          this->check_time(this->compute_options.l1.max_time);
           if (this->time_up)
           {
             if_early_stop = true;
+            this->total_time = this->elasped_time();
             std::cout << "Time out" << std::endl;
           }
         }
@@ -574,7 +575,8 @@ namespace HMP
       // tree2.ita = 0.1;
       Level2TreeFP<State2, Task> tree2(this->m_task,
                                        this->m_task->get_start_state2());
-      tree2.ita = 2.0;
+      // tree2.ita = 2.0;
+      tree2.ita = 0.1;
 
       Node<State2> *final_node_2 = tree2.search_tree(compute_options.final_l2_1st,
                                                      compute_options.final_l2);
@@ -585,17 +587,5 @@ namespace HMP
       return;
     }
 
-    void check_time()
-    {
-
-      std::chrono::time_point<std::chrono::system_clock> current_time =
-          std::chrono::system_clock::now();
-      std::chrono::duration<double> elapsed_seconds =
-          current_time - this->m_start_time;
-      if (elapsed_seconds.count() > this->compute_options.l1.max_time)
-      {
-        this->time_up = true;
-      }
-    }
   };
 } // namespace HMP

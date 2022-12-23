@@ -4,6 +4,7 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <chrono>
 
 namespace HMP
 {
@@ -37,7 +38,7 @@ namespace HMP
     std::string m_type; // store any type information for interleaving node types
 
     Node *m_parent;
-    Action m_action = State::no_action;                  // action that lead to this node
+    Action m_action = State::no_action; // action that lead to this node
     int number_of_next_actions = 0;     // action actions are stored in state
     int number_of_invalid_attempts = 0; // number of invalid new attempts for search_a_new_path
     State m_state;
@@ -75,9 +76,16 @@ namespace HMP
   {
 
   public:
+    // time check
+    std::chrono::time_point<std::chrono::system_clock> m_start_time; // timer
+    bool time_up = false;
+    bool if_check_time = false;
+    double solution_found_time = 0;
+    double total_time = 0;
+
     typedef typename State::Action Action;
     bool found_positive_reward = false;
-    double ita = 0.2;             // hyper-parameter controlling the degree of exploration
+    double ita = 0.1;             // hyper-parameter controlling the degree of exploration
     std::shared_ptr<Task> m_task; // a shared pointer for Task
     std::unique_ptr<Node<State>>
         m_root_node;             // unique pointer for root node to store everything
@@ -236,6 +244,26 @@ namespace HMP
     //   }
     //   return action_idx;
     // }
+
+    double elasped_time()
+    {
+      std::chrono::time_point<std::chrono::system_clock> current_time =
+          std::chrono::system_clock::now();
+      std::chrono::duration<double> elapsed_seconds =
+          current_time - this->m_start_time;
+      double time_now = double(elapsed_seconds.count());
+      return time_now;
+    }
+
+    void check_time(double max_time)
+    {
+
+      double time_now = this->elasped_time();
+      if (time_now > max_time)
+      {
+        this->time_up = true;
+      }
+    }
 
     virtual Action select_action(Node<State> *node) = 0;
     virtual void grow_tree(Node<State> *grow_node,

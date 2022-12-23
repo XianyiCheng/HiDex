@@ -17,12 +17,21 @@ namespace HMP
   class Level2Tree : public Tree<State, Task>
   {
   public:
-  typedef typename Tree<State, Task>::Action Action;
+    typedef typename Tree<State, Task>::Action Action;
+
+    std::chrono::time_point<std::chrono::system_clock> m_start_time; // timer
+
+    bool time_up = false;
+
+    bool if_check_time = false;
+
+    double solution_found_time = 0;
+    double total_time = 0;
     Level2Tree() {}
     Level2Tree(std::shared_ptr<Task> task, State start_state)
 
     {
-            this->m_root_node = std::make_unique<Node<State>>(start_state, State::no_action, nullptr);
+      this->m_root_node = std::make_unique<Node<State>>(start_state, State::no_action, nullptr);
       this->m_current_node = this->m_root_node.get();
       this->m_task = task;
       this->m_root_node->number_of_next_actions =
@@ -236,6 +245,11 @@ namespace HMP
                              const MCTSOptions &compute_options)
     {
 
+      bool if_check_time = (compute_options.max_time > 0);
+      this->m_start_time = std::chrono::system_clock::now();
+
+      bool if_early_stop = false;
+
       Node<State> *current_node = this->m_root_node.get();
 
       if (!this->is_terminal(current_node))
@@ -248,6 +262,25 @@ namespace HMP
       {
         this->grow_tree(current_node, compute_options);
         current_node = this->best_child(current_node);
+        if (this->if_check_time && this->found_positive_reward)
+        {
+          this->check_time(compute_options.max_time);
+          if (this->time_up)
+          {
+            if_early_stop = true;
+            this->total_time = this->elasped_time();
+            std::cout << "Time out" << std::endl;
+          }
+        }
+
+        if (if_early_stop)
+        {
+          while (current_node->m_children.size() > 0)
+          {
+            current_node = this->best_child(current_node);
+          }
+          break;
+        }
       }
 
       // double final_best_reward = current_node->m_value;
@@ -255,6 +288,7 @@ namespace HMP
                 << std::endl;
       this->m_task->is_valid(current_node->m_state,
                              current_node->m_parent->m_state);
+      this->total_time = this->elasped_time();
       return current_node;
     }
   };

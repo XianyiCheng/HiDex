@@ -30,7 +30,7 @@ void peg(std::shared_ptr<CMGTASK> task) {
 
   std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
 
-  double gap = 0.1;
+  double gap = 0.3;
 
   SkeletonPtr object =
       createFreeBox("box_object", Vector3d(box_length, box_length, box_height));
@@ -80,8 +80,8 @@ void peg(std::shared_ptr<CMGTASK> task) {
   double wa = 1.0;
   double wt = 1.0;
 
-  double mu_env = 0.1;
-  double mu_mnp = 0.9;
+  double mu_env = 0.4;
+  double mu_mnp = 0.8;
 
   double charac_len = 1;
 

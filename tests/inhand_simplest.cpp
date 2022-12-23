@@ -19,7 +19,8 @@
 const InhandTASK::State2::Action InhandTASK::State2::no_action = InhandTASK::State2::Action(-1, -1);
 const InhandTASK::State::Action InhandTASK::State::no_action = -1;
 
-void cube(std::shared_ptr<InhandTASK> task) {
+void cube(std::shared_ptr<InhandTASK> task)
+{
   // create world, create environment, an object sliding on the table
 
   double box_lx = 1;
@@ -107,7 +108,7 @@ void cube(std::shared_ptr<InhandTASK> task) {
   rrt_options.x_lb << -3, 0, 0;
 
   rrt_options.eps_trans = 0.2;
-  rrt_options.eps_angle = 3.14 * 15 / 180;
+  rrt_options.eps_angle = 3.14 * 20 / 180;
   rrt_options.max_samples = 100;
 
   rrt_options.goal_biased_prob = 0.8;
@@ -121,17 +122,19 @@ void cube(std::shared_ptr<InhandTASK> task) {
                   "/data/test_inhand_simplest/surface_contacts.csv");
   aria::csv::CsvParser parser(f);
 
-  for (auto &row : parser) {
+  for (auto &row : parser)
+  {
     int n_cols = row.size();
     assert(n_cols == 6);
 
     Vector6d v;
-    for (int j = 0; j < 6; ++j) {
+    for (int j = 0; j < 6; ++j)
+    {
       v(j) = std::stod(row[j]);
     }
     Vector3d pos;
     pos << v(0) * box_lx / 2, v(1) * box_ly / 2, v(2) * box_lz / 2;
-    ContactPoint p(pos, v.tail(3));
+    ContactPoint p(pos, -v.tail(3));
     surface_pts.push_back(p);
   }
   // pass the world and task parameters to the task through task->initialize
@@ -144,9 +147,11 @@ void cube(std::shared_ptr<InhandTASK> task) {
   //   VisualizeSG(task->m_world, x_start, x_goal);
 }
 
-void test_finger_idx(std::shared_ptr<InhandTASK> task) {
+void test_finger_idx(std::shared_ptr<InhandTASK> task)
+{
   std::cout << task->n_finger_combinations << std::endl;
-  for (int iter = 0; iter < 100; iter++) {
+  for (int iter = 0; iter < 100; iter++)
+  {
     int idx = randi(task->n_finger_combinations);
 
     std::vector<int> locs = task->get_finger_locations(idx);
@@ -158,7 +163,8 @@ void test_finger_idx(std::shared_ptr<InhandTASK> task) {
   }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
 
   cube(task);
@@ -170,8 +176,8 @@ int main(int argc, char *argv[]) {
 
   compute_options.l1_1st.max_iterations = 10;
   compute_options.l1.max_iterations = 1;
-  compute_options.l2_1st.max_iterations = 10;
-  compute_options.l2.max_iterations = 2;
+  compute_options.l2_1st.max_iterations = 5;
+  compute_options.l2.max_iterations = 1;
   compute_options.final_l2_1st.max_iterations = 10;
   compute_options.final_l2.max_iterations = 3;
 
@@ -179,6 +185,8 @@ int main(int argc, char *argv[]) {
 
   HMP::Level1Tree<InhandTASK::State, InhandTASK::State2, InhandTASK> tree(
       task, start_state, compute_options);
+
+  tree.ita = 0.2;
 
   HMP::Node<InhandTASK::State> *current_node = tree.search_tree();
 
@@ -191,14 +199,16 @@ int main(int argc, char *argv[]) {
 
   std::cout << "Best value " << current_node->m_value << std::endl;
 
-  for (auto &action : action_trajectory) {
+  for (auto &action : action_trajectory)
+  {
     std::cout << "Timestep " << action.timestep << std::endl;
     std::cout
         << "Pose "
         << task->saved_object_trajectory[action.timestep].m_pose.transpose()
         << std::endl;
     std::cout << "Fingers ";
-    for (int jj : task->get_finger_locations(action.finger_index)) {
+    for (int jj : task->get_finger_locations(action.finger_index))
+    {
       std::cout << jj << " ";
     }
     std::cout << std::endl;
@@ -206,11 +216,7 @@ int main(int argc, char *argv[]) {
 
   VializeStateTraj(task->m_world, task, object_trajectory, action_trajectory);
 
-  std::cout << "Total level 1 tree nodes " << tree.count_total_nodes()
-            << std::endl;
+  output_results(&tree, task, object_trajectory, action_trajectory, current_node->m_value);
 
-  std::cout << "Total shared rrt nodes " << tree.m_task->total_rrt_nodes()
-            << std::endl;
-
-  task->m_world->startWindow(&argc, argv);
+  // task->m_world->startWindow(&argc, argv);
 }

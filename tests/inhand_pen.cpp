@@ -144,7 +144,7 @@ void cube(std::shared_ptr<InhandTASK> task) {
     }
     Vector3d pos;
     pos << v(0) * box_lx / 2, v(1) * box_ly / 2, v(2) * box_lz / 2;
-    ContactPoint p(pos, v.tail(3));
+    ContactPoint p(pos, -v.tail(3));
     surface_pts.push_back(p);
   }
   std::cout << "surface pts: " << surface_pts.size() << std::endl;

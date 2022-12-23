@@ -379,21 +379,28 @@ bool contactTrack(ContactPoint pt0, ContactPoint pt1,
 
 VectorXi track_contacts_remain(const std::vector<ContactPoint> &pts,
                                const std::vector<ContactPoint> &pts_new,
-                               double normal_product = 0.85, double thr = 0.1) {
-  VectorXi remain_idx(pts_new.size());
-  int i = 0;
-  int j = 0;
-  while ((i < pts.size()) && (j < pts_new.size())) {
-    if (contactTrack(pts[i], pts_new[j], normal_product, thr)) {
-      remain_idx[j] = i;
-      j++;
+                               double normal_product = 0.85, double thr = 0.1) 
+{
+  std::vector<int> remain_idxes;
+  for (int i = 0; i < pts_new.size(); i++) {
+    for (int j = 0; j < pts.size(); j++) {
+      if (contactTrack(pts[j], pts_new[i], normal_product, thr)) {
+        remain_idxes.push_back(j);
+        break;
+      }
     }
-    i++;
   }
-  if (j < pts_new.size()) {
+
+  if (remain_idxes.size() < pts_new.size()) {
     VectorXi empty_idx(0);
     return empty_idx;
   }
+
+  VectorXi remain_idx(remain_idxes.size());
+  for (int i = 0; i < remain_idxes.size(); i++) {
+    remain_idx[i] = remain_idxes[i];
+  }
+
   return remain_idx;
 }
 
@@ -1834,6 +1841,7 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
             *this->cons);
 
         if (v.norm() > 1e-6) {
+          // TODO: add transition check here
           bool is_pass_pruning =
               (this->pruning_check(shared_rrt->nodes[near_idx].config, cs_mode,
                                    v, shared_rrt->nodes[near_idx].envs) != -1);
@@ -1850,6 +1858,8 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
             v_star, shared_rrt->nodes[near_idx].envs, cs_mode, *this->cons);
 
         if (v.norm() > 1e-6) {
+
+          // TODO: add transition check here
 
           bool is_pass_pruning =
               (this->pruning_check(shared_rrt->nodes[near_idx].config, cs_mode,

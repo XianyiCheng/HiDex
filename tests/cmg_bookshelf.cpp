@@ -18,14 +18,14 @@
 #include "visualization.h"
 const CMGTASK::State2::Action CMGTASK::State2::no_action = CMGTASK::State2::Action(-1, -1);
 const CMGTASK::State::Action CMGTASK::State::no_action = -1;
-void bookshelf(std::shared_ptr<CMGTASK> task) {
+void bookshelf(std::shared_ptr<CMGTASK> task)
+{
   // Test with two fingers and one finger quasidynamics
-
-  double box_length = 4.0;
-  double box_width = 1.0;
 
   std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
 
+  double box_length = 4.0;
+  double box_width = 1.0;
   double gap = 0.1;
 
   SkeletonPtr object =
@@ -116,12 +116,14 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
                   "/data/test_cmg_bookshelf/surface_contacts.csv");
   aria::csv::CsvParser parser(f);
 
-  for (auto &row : parser) {
+  for (auto &row : parser)
+  {
     int n_cols = row.size();
     assert(n_cols == 6);
 
     Vector6d v;
-    for (int j = 0; j < 6; ++j) {
+    for (int j = 0; j < 6; ++j)
+    {
       v(j) = std::stod(row[j]);
     }
     ContactPoint p(v.head(3), v.tail(3));
@@ -134,7 +136,8 @@ void bookshelf(std::shared_ptr<CMGTASK> task) {
   // VisualizeSG(task->m_world, x_start, x_goal);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   std::shared_ptr<CMGTASK> task = std::make_shared<CMGTASK>();
 
   bookshelf(task);
@@ -209,10 +212,9 @@ int main(int argc, char *argv[]) {
   //   }
   // }
 
-
   // VisualizeTraj(task->m_world, object_traj, mnp_traj);
 
-    for (auto &action : action_trajectory)
+  for (auto &action : action_trajectory)
   {
     std::cout << "Timestep " << action.timestep << std::endl;
     std::cout << "Pose " << task->saved_object_trajectory[action.timestep].m_pose.transpose()
