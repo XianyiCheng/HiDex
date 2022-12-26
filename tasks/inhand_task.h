@@ -329,6 +329,8 @@ public:
 
     bool is_valid_transition(const State2 &state, const State2 &prev_state);
 
+    bool is_valid_transition(int pre_finger_idx, int finger_idx, const Vector7d &x, const std::vector<ContactPoint> &envs);
+
     void save_trajectory(const std::vector<State> &path);
 
     std::vector<State>
@@ -340,8 +342,12 @@ public:
 
     int pruning_check(const Vector7d &x, const Vector6d &v,
                       const std::vector<ContactPoint> &envs);
+
     int pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
                       const std::vector<ContactPoint> &envs);
+
+    int pruning_check_w_transition(const Vector7d &x, const Vector7d &x_pre, const VectorXi &cs_mode, const Vector6d &v,
+                      const std::vector<ContactPoint> &envs, const std::vector<ContactPoint> &envs_pre);
 
     int max_forward_timestep(const State2 &state);
     int select_finger_change_timestep(const State2 &state);
@@ -373,6 +379,8 @@ public:
     Vector7d start_object_pose;
     Vector7d goal_object_pose;
 
+    bool if_transition_pruning = false;
+
 private:
     bool m_initialized = false;
 
@@ -400,6 +408,8 @@ private:
 
     bool if_refine = false;
     bool refine_dist = 0.0;
+
+    
 };
 
 bool force_closure(Vector7d x, const std::vector<ContactPoint> &mnps, double friction_coeff);

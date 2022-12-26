@@ -39,7 +39,7 @@ void cube(std::shared_ptr<InhandTASK> task)
 
     world->addEnvironmentComponent(env1);
 
-    int n_robot_contacts = 3;
+    int n_robot_contacts = 2;
     DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, 0.2);
 
     double a = 0.8;
@@ -103,13 +103,13 @@ void cube(std::shared_ptr<InhandTASK> task)
     Vector7d x_start;
     Vector7d x_goal;
     x_start << 0, 0, 0.9999 * box_lz / 2 + 0.1, 0, 0, 0, 1;
-    //   x_goal << 0, 0, 0, 0, 0, 0.7071, 0.7071;
+    // x_goal << 0, 0, 0.9999 * box_lz / 2 + 0.1, 0, 0, 0.7071, 0.7071;
     x_goal << 0, 0, 0.9999 * box_lz / 2 + 0.3, 0, 0, -1, 0;
 
     long int start_finger_idx = -1;
     long int goal_finger_idx = -1;
 
-    double goal_thr = 3.14 * 10 / 180;
+    double goal_thr = 3.14 * 15 / 180;
 
     double wa = 1;
     double wt = 1;
@@ -134,8 +134,8 @@ void cube(std::shared_ptr<InhandTASK> task)
     rrt_options.x_lb << -1.5, -1.5, -1;
 
     rrt_options.eps_trans = 0.2;
-    rrt_options.eps_angle = 3.14 * 10 / 180;
-    rrt_options.max_samples = 50;
+    rrt_options.eps_angle = 3.14 * 20 / 180;
+    rrt_options.max_samples = 75;
 
     rrt_options.goal_biased_prob = 0.7;
 
@@ -175,6 +175,8 @@ void cube(std::shared_ptr<InhandTASK> task)
                      wa, wt, charac_len, mu_env, mu_mnp, f_g, world,
                      n_robot_contacts, surface_pts, rrt_options, is_refine,
                      refine_dist);
+    
+    task->if_transition_pruning = true;
 
     // VisualizeSG(task->m_world, x_start, x_goal);
 }

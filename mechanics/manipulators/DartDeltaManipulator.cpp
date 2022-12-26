@@ -8,7 +8,7 @@ bool is_in_cylindar(Vector3d p, Vector3d loc, double r, double h){
     if (p[2] < loc[2] || p[2] > loc[2] + h){
         return false;
     }
-    if (((p[1] - loc[1])*(p[1] - loc[1]) + (p[2] - loc[2])*(p[2] - loc[2])) > r*r){
+    if (((p[0] - loc[0])*(p[0] - loc[0]) + (p[1] - loc[1])*(p[1] - loc[1])) > r*r){
         return false;
     }
     return true;
