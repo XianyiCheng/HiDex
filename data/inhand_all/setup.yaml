@@ -1,0 +1,11 @@
+hand_type: "palm_2"
+object: "apple"
+object_scale: 1
+visualize_setup: true
+visualize_result: true
+number_of_experiments: 1
+start_position:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+random_seed: 212512

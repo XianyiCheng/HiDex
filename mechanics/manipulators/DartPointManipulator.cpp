@@ -184,7 +184,7 @@ void DartPointManipulator::set_workspace_limit(
     SkeletonPtr wl_box =
         createFixedBox("ws_" + std::to_string(i), Vector3d(lx, ly, lz),
                        Vector3d(wl[0] + lx / 2, wl[2] + ly / 2, wl[4] + lz / 2),
-                       Vector3d(0.3, 0.4, 0.6), 0.2);
+                       Vector3d(0.1, 0.8, 0.9), 0.1);
     this->addBody(wl_box);
   }
 }

@@ -150,10 +150,16 @@ SkeletonPtr createFreeObjectfromMesh(const std::string &name, const std::string 
   std::shared_ptr<MeshShape> shape =
       std::make_shared<MeshShape>(scale, MeshShape::loadMesh(filePath));
 
+  
   shape->setColorMode(MeshShape::ColorMode::MATERIAL_COLOR);
+  // shape->setColorMode(MeshShape::ColorMode::COLOR_INDEX);
+  // shape->setColorMode(MeshShape::ColorMode::SHAPE_COLOR);
 
   auto shapeNode = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
       shape);
+
+  // shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.7,0.3,0.3));
+  // shapeNode->getVisualAspect()->setAlpha(0.9);
 
   // Setup the inertia for the body
   // Inertia inertia;

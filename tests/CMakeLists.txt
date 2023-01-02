@@ -57,17 +57,5 @@ target_link_libraries(test_action_idx PRIVATE mcts-mechanics)
 
 add_executable(test_time test_time.cpp)
 
-add_executable(inhand_simplest inhand_simplest.cpp ../tasks/inhand_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
-target_link_libraries(inhand_simplest PRIVATE mcts-mechanics ${dart_libs})
-
-add_executable(inhand_pen inhand_pen.cpp ../tasks/inhand_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
-target_link_libraries(inhand_pen PRIVATE mcts-mechanics ${dart_libs})
-
-add_executable(inhand_3finger_palm inhand_3finger_palm.cpp ../tasks/inhand_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
-target_link_libraries(inhand_3finger_palm PRIVATE mcts-mechanics ${dart_libs})
-
-add_executable(compare_2nd_level compare_2nd_level.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
-target_link_libraries(compare_2nd_level PRIVATE mcts-mechanics ${dart_libs})
-
 add_executable(delta_array delta_array.cpp ../tasks/inhand_task.cpp ../mechanics/manipulators/DartDeltaManipulator.cpp)
 target_link_libraries(delta_array PRIVATE mcts-mechanics ${dart_libs})
