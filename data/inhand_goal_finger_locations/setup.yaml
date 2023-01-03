@@ -1,0 +1,46 @@
+object: "hammer"
+object_scale: 1.0
+visualize_setup: false
+visualize_result: false
+
+start_position:
+  x: 0.25
+  y: 0.0
+  z: 0.0
+random_seed: 122
+goal_orientation:
+  qx: 0.0
+  qy: 0.0
+  qz: 0.7071
+  qw: 0.7071
+
+goal_finger_distance_threshold: 3
+
+goal_finger_locations:
+  finger_1_idx: 42
+  finger_2_idx: 58
+  finger_3_idx: 38
+  finger_4_idx: -1
+  finger_5_idx: 56
+
+# goal_finger_locations:
+#   finger_1:
+#     x: -0.11616219329834
+#     y: 2.20849560546875
+#     z: -0.284948547363281
+#   finger_2:
+#     x: 0.607208190917969
+#     y: 1.02678369140625
+#     z: 0.273550140380859
+#   finger_3:
+#     x: 0.289844665527344
+#     y: -0.433630737304687
+#     z: -0.352011779785156
+#   finger_4:
+#     x: 0.272112548828125
+#     y: -1.35852124023437
+#     z: -0.256119018554687
+#   finger_5:
+#     x: -0.5267
+#     y: -1.75127856445313
+#     z: 0.113059036254883

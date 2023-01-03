@@ -121,9 +121,13 @@ namespace HMP
       // backtrack to get the a std::vector<State> for all mode nodes (except for
       // the last node)
 
-      if (!this->is_terminal(node))
+      // if (!this->is_terminal(node))
+      // {
+      //   // we can also learn a valua function... and return the value
+      //   return 0.0;
+      // }
+      if (node->m_state.t_max < this->m_task->saved_object_trajectory.size() - 1)
       {
-        // we can also learn a valua function... and return the value
         return 0.0;
       }
       if (!node->m_state.is_valid)
@@ -136,34 +140,9 @@ namespace HMP
         return node->m_value;
       }
 
-      double total_finger_changes = this->m_task->total_finger_change_ratio(
-          this->backtrack_state_path(node));
-
-      // double reward = double(node->m_state.t_max) + 1.0 - total_finger_changes;
-
-      double x = total_finger_changes / double(node->m_state.t_max);
-      double y = 10.80772595 * x + -4.59511985;
-      double reward = 1.0 / (1.0 + std::exp(y));
+      double reward = this->m_task->evaluate_path(this->backtrack_state_path(node));
 
       return reward;
-
-      // std::vector<State> state_path;
-
-      // state_path.push_back(node->m_state);
-
-      // Node<State> *node_ = node;
-
-      // while (node_ != 0)
-      // {
-      //   state_path.push_back(node_->m_state);
-      //   node_ = node_->m_parent;
-      // }
-
-      // std::reverse(state_path.begin(), state_path.end());
-
-      // double path_score = this->m_task->evaluate_path(state_path);
-
-      // return path_score;
     }
 
     virtual bool is_terminal(Node<State> *node)
@@ -223,19 +202,25 @@ namespace HMP
 
       bool if_valid = false;
 
-      int finger_idx;
+      long int finger_idx;
 
       int max_sample = 300;
 
       std::vector<long int> sampled_finger_idxes;
+      std::vector<double> probs;
 
       // TODO: here sample finger idxes based on State2
       this->m_task->sample_likely_feasible_finger_idx(
-          node->m_state, t, max_sample, &sampled_finger_idxes);
+          node->m_state, t, max_sample, &sampled_finger_idxes, &probs);
+
+      std::default_random_engine randgen;
+      std::discrete_distribution<int> distribution{probs.begin(), probs.end()};
 
       for (int k_sample = 0; k_sample < sampled_finger_idxes.size(); k_sample++)
       {
-        finger_idx = sampled_finger_idxes[k_sample];
+        int ik_sample = distribution(randgen);
+        finger_idx = sampled_finger_idxes[ik_sample];
+        // finger_idx = sampled_finger_idxes[k_sample];
 
         // finger_idx =
         //     randi(this->m_task->get_number_of_robot_actions(node->m_state));

@@ -215,9 +215,9 @@ public:
 
     long int finger_locations_to_finger_idx(const std::vector<int> &finger_idxs);
 
-    void sample_likely_feasible_finger_idx(Vector7d x_object, int number, std::vector<long int> *finger_idxs);
+    void sample_likely_feasible_finger_idx(Vector7d x_object, int number, std::vector<long int> *finger_idxs, std::vector<double> *probabilities);
 
-    void sample_likely_feasible_finger_idx(State2 state, double t_change, int number, std::vector<long int> *finger_idxs);
+    void sample_likely_feasible_finger_idx(State2 state, double t_change, int number, std::vector<long int> *finger_idxs, std::vector<double> *probabilities);
 
     VectorXd get_robot_config_from_action_idx(int action_index)
     {
@@ -314,6 +314,19 @@ public:
                 return true;
             }
         }
+        if (this->if_goal_finger)
+        {
+            if (state.t_max == (this->saved_object_trajectory.size() - 1))
+            {
+
+                double total_finger_distance = this->get_finger_distance(state.finger_index);
+                if (total_finger_distance < this->goal_finger_distance_thr)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
         if (state.t_max == (this->saved_object_trajectory.size() - 1))
         {
             return true;
@@ -329,7 +342,7 @@ public:
 
     bool is_valid_transition(const State2 &state, const State2 &prev_state);
 
-    bool is_valid_transition(int pre_finger_idx, int finger_idx, const Vector7d &x, const std::vector<ContactPoint> &envs);
+    bool is_valid_transition(long int pre_finger_idx, long int finger_idx, const Vector7d &x, const std::vector<ContactPoint> &envs);
 
     void save_trajectory(const std::vector<State> &path);
 
@@ -340,17 +353,57 @@ public:
     bool robot_contact_feasibile_check(long int finger_idx, const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
                                        const std::vector<ContactPoint> &envs);
 
-    int pruning_check(const Vector7d &x, const Vector6d &v,
-                      const std::vector<ContactPoint> &envs);
+    long int pruning_check(const Vector7d &x, const Vector6d &v,
+                           const std::vector<ContactPoint> &envs);
 
-    int pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
-                      const std::vector<ContactPoint> &envs);
+    long int pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
+                           const std::vector<ContactPoint> &envs);
 
-    int pruning_check_w_transition(const Vector7d &x, const Vector7d &x_pre, const VectorXi &cs_mode, const Vector6d &v,
-                      const std::vector<ContactPoint> &envs, const std::vector<ContactPoint> &envs_pre);
+    long int pruning_check_w_transition(const Vector7d &x, const Vector7d &x_pre, const VectorXi &cs_mode, const Vector6d &v,
+                                        const std::vector<ContactPoint> &envs, const std::vector<ContactPoint> &envs_pre);
 
     int max_forward_timestep(const State2 &state);
     int select_finger_change_timestep(const State2 &state);
+
+    void set_goal_finger_locations(const std::vector<Vector3d> &goal_finger_locations_, double goal_finger_distance_thr = 1.0)
+    {
+        this->if_goal_finger = true;
+        this->goal_finger_locations = goal_finger_locations_;
+        this->goal_finger_distance_thr = goal_finger_distance_thr;
+    }
+
+    double get_finger_distance(int finger_idx)
+    {
+        double total_finger_distance = 0.0;
+        std::vector<int> fingertip_idx = this->get_finger_locations(finger_idx);
+        for (int k = 0; k < this->number_of_robot_contacts; k++)
+        {
+            if (this->goal_finger_locations[k].norm() > 0.0)
+            {
+                int idx = fingertip_idx[k];
+                Vector3d p;
+                if (idx < 0)
+                {
+                    p.setZero();
+                }
+                else
+                {
+                    p = this->object_surface_pts[idx].p;
+                }
+                double d = (p - this->goal_finger_locations[k]).norm();
+                total_finger_distance += d;
+            }
+        }
+        return total_finger_distance;
+    }
+
+    double finger_idx_prob(long int finger_idx)
+    {
+        double d = this->get_finger_distance(finger_idx);
+        d = d / double(this->number_of_robot_contacts);
+        double p = 1.0 / (1.0 + std::exp(6.89 * d - 3.16));
+        return p;
+    }
 
     // unsigned long int encode_action_idx(int finger_idx, int timestep)
     // {
@@ -409,7 +462,9 @@ private:
     bool if_refine = false;
     bool refine_dist = 0.0;
 
-    
+    bool if_goal_finger = false;
+    double goal_finger_distance_thr = 1.0;
+    std::vector<Vector3d> goal_finger_locations;
 };
 
 bool force_closure(Vector7d x, const std::vector<ContactPoint> &mnps, double friction_coeff);

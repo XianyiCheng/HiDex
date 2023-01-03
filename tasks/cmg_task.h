@@ -328,25 +328,27 @@ public:
   bool robot_contact_feasibile_check(long int finger_idx, const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
                                      const std::vector<ContactPoint> &envs);
 
-  void sample_likely_feasible_finger_idx(Vector7d x_object, int number, std::vector<long int> *finger_idxs)
+  void sample_likely_feasible_finger_idx(Vector7d x_object, int number, std::vector<long int> *finger_idxs, std::vector<double>* probabilities)
   {
     for (int n = number; n > 0; n--)
     {
       finger_idxs->push_back(randi(this->n_finger_combinations));
+      probabilities->push_back(1.0);
     }
   }
 
-  void sample_likely_feasible_finger_idx(State2 state, double t_change, int number, std::vector<long int> *finger_idxs)
+  void sample_likely_feasible_finger_idx(State2 state, double t_change, int number, std::vector<long int> *finger_idxs, std::vector<double>* probabilities)
   {
     for (int n = number; n > 0; n--)
     {
       finger_idxs->push_back(randi(this->n_finger_combinations));
+      probabilities->push_back(1.0);
     }
   }
 
-  int pruning_check(const Vector7d &x, const Vector6d &v,
+  long int pruning_check(const Vector7d &x, const Vector6d &v,
                     const std::vector<ContactPoint> &envs);
-  int pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
+  long int pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
                     const std::vector<ContactPoint> &envs);
 
   int max_forward_timestep(const CMGTASK::State2 &state);

@@ -1139,27 +1139,27 @@ double InhandTASK::total_finger_change_ratio(const std::vector<State2> &path)
 
 double InhandTASK::evaluate_path(const std::vector<State2> &path)
 {
-  // TODO: change this
+  double total_finger_changes = this->total_finger_change_ratio(
+      path);
 
-  if (!path.back().is_valid)
+  // double reward = double(node->m_state.t_max) + 1.0 - total_finger_changes;
+
+  double x = total_finger_changes / double(path.back().t_max);
+  double y = 10.80772595 * x + -4.59511985;
+  double reward = 1.0 / (1.0 + std::exp(y));
+
+  if (this->if_goal_finger)
   {
-    return 0.0;
+    double total_finger_distance = 0.0;
+    for (auto state : path)
+    {
+      total_finger_distance += get_finger_distance(state.finger_index);
+    }
+    total_finger_distance += 3*get_finger_distance(path.back().finger_index);
+    total_finger_distance /= 3.0 + double(path.size());
+    double reward_finger_distance = 1.0 / (1 + std::exp(10 * total_finger_distance - 5));
+    reward = 0.2 * reward + 0.8 * reward_finger_distance;
   }
-
-  double finger_change = 0.0;
-
-  for (int k = 0; k < path.size() - 1; ++k)
-  {
-
-    finger_change += this->total_finger_change_ratio(path);
-  }
-
-  double reward_finger_change = 1.0 / (1 + std::exp(finger_change));
-
-  // double reward_path_size = 1.0 / double(path.size());
-
-  // double reward = reward_finger_change + 2 * reward_path_size;
-  double reward = reward_finger_change;
 
   return reward;
 }
@@ -1357,19 +1357,20 @@ bool InhandTASK::robot_contact_feasibile_check(
   return dynamic_feasibility;
 }
 
-int InhandTASK::pruning_check(const Vector7d &x, const Vector6d &v,
-                              const std::vector<ContactPoint> &envs)
+long int InhandTASK::pruning_check(const Vector7d &x, const Vector6d &v,
+                                   const std::vector<ContactPoint> &envs)
 {
 
   bool dynamic_feasibility = false;
-  int max_sample = 100;
+  int max_sample = 1000;
   long int finger_idx;
   max_sample = (max_sample > this->n_finger_combinations)
                    ? this->n_finger_combinations
                    : max_sample;
 
   std::vector<long int> sampled_finger_idxes;
-  this->sample_likely_feasible_finger_idx(x, max_sample, &sampled_finger_idxes);
+  std::vector<double> probs;
+  this->sample_likely_feasible_finger_idx(x, max_sample, &sampled_finger_idxes, &probs);
 
   for (int k_sample = 0; k_sample < sampled_finger_idxes.size(); k_sample++)
   {
@@ -1436,9 +1437,9 @@ int InhandTASK::pruning_check(const Vector7d &x, const Vector6d &v,
   return dynamic_feasibility;
 }
 
-int InhandTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
-                              const Vector6d &v,
-                              const std::vector<ContactPoint> &envs)
+long int InhandTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
+                                   const Vector6d &v,
+                                   const std::vector<ContactPoint> &envs)
 {
 
   VectorXi env_mode = mode_from_velocity(v, envs, this->cons.get());
@@ -1453,7 +1454,8 @@ int InhandTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
   //                  : max_sample;
   long int finger_idx;
   std::vector<long int> sampled_finger_idxes;
-  this->sample_likely_feasible_finger_idx(x, max_sample, &sampled_finger_idxes);
+  std::vector<double> probs;
+  this->sample_likely_feasible_finger_idx(x, max_sample, &sampled_finger_idxes, &probs);
 
   for (int k_sample = 0; k_sample < sampled_finger_idxes.size(); k_sample++)
   {
@@ -1517,8 +1519,8 @@ int InhandTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
   }
 }
 
-int InhandTASK::pruning_check_w_transition(const Vector7d &x, const Vector7d &x_pre, const VectorXi &cs_mode, const Vector6d &v,
-                                           const std::vector<ContactPoint> &envs, const std::vector<ContactPoint> &envs_pre)
+long int InhandTASK::pruning_check_w_transition(const Vector7d &x, const Vector7d &x_pre, const VectorXi &cs_mode, const Vector6d &v,
+                                                const std::vector<ContactPoint> &envs, const std::vector<ContactPoint> &envs_pre)
 {
   // while loop
   // sample a finger from last timestep
@@ -1533,10 +1535,12 @@ int InhandTASK::pruning_check_w_transition(const Vector7d &x, const Vector7d &x_
                    : max_sample;
 
   std::vector<long int> sampled_finger_idxes_pre;
-  this->sample_likely_feasible_finger_idx(x_pre, max_sample, &sampled_finger_idxes_pre);
+  std::vector<double> probs_pre;
+  this->sample_likely_feasible_finger_idx(x_pre, max_sample, &sampled_finger_idxes_pre, &probs_pre);
 
   std::vector<long int> sampled_finger_idxes;
-  this->sample_likely_feasible_finger_idx(x, max_sample, &sampled_finger_idxes);
+  std::vector<double> probs;
+  this->sample_likely_feasible_finger_idx(x, max_sample, &sampled_finger_idxes, &probs);
 
   for (int k_sample = 0; k_sample < sampled_finger_idxes_pre.size(); k_sample++)
   {
@@ -1608,18 +1612,25 @@ int InhandTASK::select_finger_change_timestep(const InhandTASK::State2 &state)
     t_max = state.t_max;
   }
 
+  int t;
+
   double random_prob = 0.5;
   if ((randd() > random_prob) || (t_max + 1 - state.timestep) <= 1)
   {
-    return t_max + 1;
+    t = t_max + 1;
   }
   else
   {
     // [state.timestep+1, t_max + 1]
     // return randi(t_max + 1 - state.timestep) + state.timestep + 1;
     // [state.timestep, t_max+1]
-    return randi(t_max + 2 - state.timestep) + state.timestep;
+    t = randi(t_max + 2 - state.timestep) + state.timestep;
   }
+  if (t > this->saved_object_trajectory.size() - 1)
+  {
+    t = this->saved_object_trajectory.size() - 1;
+  }
+  return t;
 }
 
 bool InhandTASK::is_finger_valid(long int finger_idx, int timestep)
@@ -1768,7 +1779,7 @@ bool InhandTASK::forward_integration(const Vector7d &x_start,
   int counter;
   int delete_c = 0;
 
-  int selected_finger_idx;
+  long int selected_finger_idx;
 
   for (counter = 0; counter < max_counter; counter++)
   {
@@ -2387,7 +2398,7 @@ bool InhandTASK::is_valid_transition(const InhandTASK::State2 &state,
   return true;
 }
 
-bool InhandTASK::is_valid_transition(int pre_finger_idx, int finger_idx, const Vector7d &x, const std::vector<ContactPoint> &envs)
+bool InhandTASK::is_valid_transition(long int pre_finger_idx, long int finger_idx, const Vector7d &x, const std::vector<ContactPoint> &envs)
 {
 
   // also check if the relocation is feasible
@@ -2438,7 +2449,7 @@ bool InhandTASK::is_valid_transition(int pre_finger_idx, int finger_idx, const V
 }
 
 void InhandTASK::sample_likely_feasible_finger_idx(
-    Vector7d x_object, int number, std::vector<long int> *finger_idxs)
+    Vector7d x_object, int number, std::vector<long int> *finger_idxs, std::vector<double> *probabilities)
 {
 
   std::vector<ContactPoint> object_surface_world;
@@ -2504,13 +2515,21 @@ void InhandTASK::sample_likely_feasible_finger_idx(
       continue;
     }
     finger_idxs->push_back(this->finger_locations_to_finger_idx(locs));
+    if (this->if_goal_finger)
+    {
+      probabilities->push_back(this->finger_idx_prob(finger_idxs->back()));
+    }
+    else
+    {
+      probabilities->push_back(1.0);
+    }
   }
 
   return;
 }
 
 void InhandTASK::sample_likely_feasible_finger_idx(
-    State2 state, double t_change, int number, std::vector<long int> *finger_idxs)
+    State2 state, double t_change, int number, std::vector<long int> *finger_idxs, std::vector<double> *probabilities)
 {
   // sample the finger idxes that are likely to be feasible in this state and
   // move to the next state
@@ -2797,6 +2816,14 @@ void InhandTASK::sample_likely_feasible_finger_idx(
         // t_change);
 
         finger_idxs->push_back(this->finger_locations_to_finger_idx(locs));
+        if (this->if_goal_finger)
+        {
+          probabilities->push_back(this->finger_idx_prob(finger_idxs->back()));
+        }
+        else
+        {
+          probabilities->push_back(1.0);
+        }
       }
     }
     return;
@@ -2837,6 +2864,14 @@ void InhandTASK::sample_likely_feasible_finger_idx(
       continue;
     }
     finger_idxs->push_back(this->finger_locations_to_finger_idx(locs));
+    if (this->if_goal_finger)
+    {
+      probabilities->push_back(this->finger_idx_prob(finger_idxs->back()));
+    }
+    else
+    {
+      probabilities->push_back(1.0);
+    }
   }
   return;
 }

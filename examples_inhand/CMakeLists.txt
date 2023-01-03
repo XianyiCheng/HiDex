@@ -25,3 +25,6 @@ target_link_libraries(compare_2nd_level PRIVATE mcts-mechanics ${dart_libs})
 
 add_executable(inhand_all inhand_all.cpp ../tasks/inhand_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
 target_link_libraries(inhand_all PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})
+
+add_executable(inhand_goal_finger inhand_goal_finger_locations.cpp ../tasks/inhand_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
+target_link_libraries(inhand_goal_finger PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})
