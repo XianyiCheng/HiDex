@@ -219,7 +219,7 @@ public:
 
     void sample_likely_feasible_finger_idx(State2 state, double t_change, int number, std::vector<long int> *finger_idxs, std::vector<double> *probabilities);
 
-    VectorXd get_robot_config_from_action_idx(int action_index)
+    VectorXd get_robot_config_from_action_idx(long int action_index)
     {
 
         std::vector<int> finger_locations =

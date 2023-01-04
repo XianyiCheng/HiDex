@@ -1,7 +1,7 @@
-hand_type: "palm_2"
-object: "apple"
+hand_type: "2x2"
+object: "airplanetoy_b"
 object_scale: 1
-visualize_setup: true
+visualize_setup: false
 visualize_result: true
 number_of_experiments: 1
 start_position:

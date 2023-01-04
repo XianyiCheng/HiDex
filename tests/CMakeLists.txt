@@ -57,7 +57,4 @@ target_link_libraries(test_action_idx PRIVATE mcts-mechanics)
 
 add_executable(test_time test_time.cpp)
 
-add_executable(delta_array delta_array.cpp ../tasks/inhand_task.cpp ../mechanics/manipulators/DartDeltaManipulator.cpp)
-target_link_libraries(delta_array PRIVATE mcts-mechanics ${dart_libs})
-
 add_executable(test_discrete_sample test_discrete_sample.cpp)
