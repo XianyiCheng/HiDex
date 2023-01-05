@@ -1,8 +1,12 @@
 void VisualizeSG(std::shared_ptr<WorldTemplate> world, Vector7d start_pose,
                  Vector7d goal_pose) {
   std::vector<Vector7d> traj;
-  traj.push_back(start_pose);
-  traj.push_back(goal_pose);
+  for (int i = 0; i < 100; i++) {
+    traj.push_back(start_pose);
+  }
+  for (int i = 0; i < 100; i++) {
+    traj.push_back(goal_pose);
+  }
   world->setObjectTrajectory(traj);
 }
 
@@ -13,22 +17,32 @@ void VisualizeTraj(std::shared_ptr<WorldTemplate> world,
 }
 
 template <class State, class State2, class Task>
-void VializeStateTraj(std::shared_ptr<WorldTemplate> world,
+void VisualizeStateTrajectory(std::shared_ptr<WorldTemplate> world,
                       std::shared_ptr<Task> task,
                       const std::vector<State> &object_traj,
-                      const std::vector<State2> &mnp_traj) {
+                      const std::vector<State2> &mnp_traj)
+{
   std::vector<Vector7d> object_traj_vec;
   std::vector<VectorXd> mnp_traj_vec;
 
-  for (int i = 0; i < object_traj.size(); i++) {
+  for (int kk = 0; kk < 5; kk++) {
+    object_traj_vec.push_back(object_traj[0].m_pose);
+    mnp_traj_vec.push_back(
+          task->get_robot_config_from_action_idx(mnp_traj[1].finger_index));
+  }
+
+  for (int i = 0; i < object_traj.size(); i++)
+  {
     object_traj_vec.push_back(object_traj[i].m_pose);
     std::cout << object_traj[i].m_pose.transpose() << std::endl;
   }
-  for (int k = 1; k < mnp_traj.size(); k++) {
+  for (int k = 1; k < mnp_traj.size(); k++)
+  {
     int start_j = mnp_traj[k].timestep;
     int end_j = ((k + 1) == mnp_traj.size()) ? object_traj.size()
                                              : mnp_traj[k + 1].timestep;
-    for (int j = start_j; j < end_j; j++) {
+    for (int j = start_j; j < end_j; j++)
+    {
       mnp_traj_vec.push_back(
           task->get_robot_config_from_action_idx(mnp_traj[k].finger_index));
     }
@@ -161,12 +175,13 @@ MatrixXd get_output(const std::vector<State> &object_trajectory,
       }
     } else {
       std::vector<Vector7d> object_poses_all;
-      for (int kk = t; kk < t_next; ++kk) {
+      // object_poses_all.push_back(object_trajectory[t].m_pose);
+      for (int kk = t+1; kk <= t_next; ++kk) {
         object_poses_all.insert(object_poses_all.end(),
                                 object_trajectory[kk].m_path.begin(),
                                 object_trajectory[kk].m_path.end());
       }
-      int n_span = (object_poses_all.size() - 2) / 3;
+      int n_span = std::max(int(object_poses_all.size())- 2, 0) / 3;
       object_poses.push_back(object_poses_all[0]);
       object_poses.push_back(object_poses_all[n_span]);
       object_poses.push_back(object_poses_all[2 * n_span]);

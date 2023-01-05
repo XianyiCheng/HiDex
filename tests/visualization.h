@@ -1,9 +1,12 @@
 void VisualizeSG(std::shared_ptr<WorldTemplate> world, Vector7d start_pose,
-                 Vector7d goal_pose)
-{
+                 Vector7d goal_pose) {
   std::vector<Vector7d> traj;
-  traj.push_back(start_pose);
-  traj.push_back(goal_pose);
+  for (int i = 0; i < 100; i++) {
+    traj.push_back(start_pose);
+  }
+  for (int i = 0; i < 100; i++) {
+    traj.push_back(goal_pose);
+  }
   world->setObjectTrajectory(traj);
 }
 
@@ -22,6 +25,12 @@ void VializeStateTraj(std::shared_ptr<WorldTemplate> world,
 {
   std::vector<Vector7d> object_traj_vec;
   std::vector<VectorXd> mnp_traj_vec;
+
+  for (int kk = 0; kk < 5; kk++) {
+    object_traj_vec.push_back(object_traj[0].m_pose);
+    mnp_traj_vec.push_back(
+          task->get_robot_config_from_action_idx(mnp_traj[1].finger_index));
+  }
 
   for (int i = 0; i < object_traj.size(); i++)
   {
