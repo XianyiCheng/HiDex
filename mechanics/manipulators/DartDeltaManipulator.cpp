@@ -233,7 +233,9 @@ bool DartDeltaManipulator::ifIKsolution(const VectorXd &mnp_config,
     Eigen::Vector3d p;
     p = T.block(0, 3, 3, 1);
 
-    int n = int(mnp_config.size() / 6);
+    // int n = int(mnp_config.size() / 6);
+
+    // check if the fingertips are in the workspace
     for (int i = 0; i < this->n_pts; i++)
     {
         if (std::isnan(mnp_config[6 * i]))
@@ -245,6 +247,27 @@ bool DartDeltaManipulator::ifIKsolution(const VectorXd &mnp_config,
         if (!is_in_cylindar(pos, this->robot_locations[i], this->workspace_radius, this->workspace_height))
         {
             return false;
+        }
+    }
+
+    // check the distance between two fingers
+    for (int i = 0; i < this->n_pts; i++){
+        if (std::isnan(mnp_config[6 * i])){
+            continue;
+        } 
+        Vector3d pos1 = Vector3d(mnp_config[6 * i], mnp_config[6 * i + 1], mnp_config[6 * i + 2]);
+        for (int j = 0; j < this->n_pts; j++){
+            if (i == j){
+                continue;
+            }
+            if (std::isnan(mnp_config[6 * j])){
+                continue;
+            }
+            Vector3d pos2 = Vector3d(mnp_config[6 * j], mnp_config[6 * j + 1], mnp_config[6 * j + 2]);
+            // in cm
+            if ((pos1 - pos2).norm() < this->fingertip_radius*2.5){
+                return false;
+            }
         }
     }
     return true;
