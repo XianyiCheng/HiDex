@@ -3,6 +3,8 @@ random_seed: 122
 visualize_setup: false
 visualize_results: true
 
+visualize_csv: true
+
 object_type: "cube"
 
 max_time: 20

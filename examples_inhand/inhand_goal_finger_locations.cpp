@@ -196,7 +196,7 @@ void setup(const std::string &object_name, std::shared_ptr<InhandTASK> task,
     // hand_type == "5"
     {
         SkeletonPtr env1 =
-            createFixedBox("ground", Vector3d(5, 5, 0.2), Vector3d(0, 0, -1000));
+            createFixedBox("ground", Vector3d(5, 5, 0.2), Vector3d(0, 0, -1000), Vector3d(0.9,0.9,0.9), 0.01);
         n_robot_contacts = 5;
         DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, 0.1);
 

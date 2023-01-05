@@ -221,3 +221,35 @@ MatrixXd get_output(const std::vector<State> &object_trajectory,
   }
   return output_mat;
 }
+
+void visualize_output_file(std::shared_ptr<WorldTemplate> world, std::string file_name){
+  MatrixXd data = openData(file_name);
+  int n_data = data.rows();
+  int n_pts = 4;
+  std::vector<Vector7d> object_traj;
+  std::vector<VectorXd> mnp_traj;
+  for (int i = 0; i < n_data; ++i){
+    VectorXd mnp_config_world = data.row(i).segment(0, 6 * n_pts);
+    VectorXd mnp_config(6*n_pts);
+    Vector7d object_pose = data.row(i).segment(6 * n_pts, 7);
+    
+    Matrix3d R = quat2SO3(object_pose(6), object_pose(3), object_pose(4), object_pose(5));
+    Matrix3d R_inv = R.transpose();
+    Vector3d t = object_pose.segment(0, 3);
+    for (int j = 0; j < n_pts; ++j){
+      if (std::isnan(mnp_config_world[6 * j])){
+        mnp_config.segment(6 * j, 6) = mnp_config_world.segment(6 * j, 6);
+        continue;
+      }
+      Vector3d pw = mnp_config_world.segment(6 * j, 3);
+      Vector3d nw = mnp_config_world.segment(6 * j + 3, 3);
+      Vector3d p = R_inv*( pw - t);
+      Vector3d n = R_inv * nw;
+      mnp_config.segment(6 * j, 3) = p;
+      mnp_config.segment(6 * j + 3, 3) = n;
+    }
+    object_traj.push_back(object_pose);
+    mnp_traj.push_back(mnp_config);
+  }
+  world->setPlaybackTrajectory(object_traj, mnp_traj);
+}

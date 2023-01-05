@@ -99,7 +99,7 @@ void setup(const std::string &hand_type, const std::string &object_name, std::sh
         double box_lz = 1;
 
         SkeletonPtr env1 =
-            createFixedBox("ground", Vector3d(5, 5, 0.2), Vector3d(0, 0, -1000));
+            createFixedBox("ground", Vector3d(5, 5, 0.2), Vector3d(0, 0, -1000),Vector3d(0.9,0.9,0.9), 0.01);
 
         n_robot_contacts = 4;
         DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, 0.1);
@@ -142,7 +142,7 @@ void setup(const std::string &hand_type, const std::string &object_name, std::sh
     else if (hand_type == "5")
     {
         SkeletonPtr env1 =
-            createFixedBox("ground", Vector3d(5, 5, 0.2), Vector3d(0, 0, -1000));
+            createFixedBox("ground", Vector3d(5, 5, 0.2), Vector3d(0, 0, -1000),Vector3d(0.9,0.9,0.9), 0.01);
         n_robot_contacts = 5;
         DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, 0.1);
 

@@ -73,12 +73,12 @@ void cube(std::shared_ptr<InhandTASK> task)
   std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
 
   SkeletonPtr object =
-      createFreeBox("box_object", Vector3d(box_lx, box_ly, box_lz));
+      createFreeBox("box_object", Vector3d(box_lx, box_ly, box_lz), Vector3d(0.7,0.3,0.3), 0.45);
 
   world->addObject(object);
 
   SkeletonPtr env1 =
-      createFixedBox("palm", Vector3d(3, 3, 0.2), Vector3d(0, 0, -100));
+      createFixedBox("palm", Vector3d(3, 3, 0.2), Vector3d(0, 0, -100),Vector3d(0.9,0.9,0.9), 0.01);
 
   world->addEnvironmentComponent(env1);
 
@@ -87,10 +87,10 @@ void cube(std::shared_ptr<InhandTASK> task)
   double delta_ws_h = 6;
   std::vector<Vector3d> delta_locations;
 
-  delta_locations.push_back(Vector3d(0, 0, 0));
-  delta_locations.push_back(Vector3d(2.165, 3.75, 0));
-  delta_locations.push_back(Vector3d(4.3301, 0, 0));
-  delta_locations.push_back(Vector3d(6.4951, 3.75, 0));
+  delta_locations.push_back(Vector3d(-2.165, 0, 0));
+  delta_locations.push_back(Vector3d(0, 3.75, 0));
+  delta_locations.push_back(Vector3d(-4.3301, 3.75, 0));
+  delta_locations.push_back(Vector3d(-6.4951, 0, 0));
 
   int n_robot_contacts = delta_locations.size();
   double finger_radius = config["finger_radius"].as<double>();
@@ -223,7 +223,7 @@ void mesh(std::shared_ptr<InhandTASK> task)
   world->addObject(object);
 
   SkeletonPtr env1 =
-      createFixedBox("palm", Vector3d(3, 3, 0.2), Vector3d(0, 0, -100));
+      createFixedBox("palm", Vector3d(3, 3, 0.2), Vector3d(0, 0, -100), Vector3d(0.9,0.9,0.9), 0.1);
 
   world->addEnvironmentComponent(env1);
 
@@ -296,7 +296,7 @@ void mesh(std::shared_ptr<InhandTASK> task)
       config["start_pose"]["z"].as<double>() - object_scale / 2;
 
   rrt_options.eps_trans = 0.2;
-  rrt_options.eps_angle = 3.14 * 10 / 180;
+  rrt_options.eps_angle = 3.14 * 20 / 180;
   rrt_options.max_samples = 50;
 
   rrt_options.goal_biased_prob = 0.7;
@@ -357,10 +357,20 @@ int main(int argc, char *argv[])
     mesh(task);
     output_file = "mesh_ouput.csv";
   }
+    std::string output_file_path =
+      std::string(SRC_DIR) + "/data/delta_array/" + output_file;
 
   bool visualize_setup = config["visualize_setup"].as<bool>();
   bool visualize_results = config["visualize_results"].as<bool>();
+  bool visualize_csv = config["visualize_csv"].as<bool>();
+
   int random_seed = config["random_seed"].as<int>();
+
+  if (visualize_csv)
+  {
+    visualize_output_file(task->m_world, output_file_path);
+    task->m_world->startWindow(&argc, argv);
+  }
 
   if (visualize_setup)
   {
@@ -417,8 +427,6 @@ int main(int argc, char *argv[])
 
   VisualizeStateTrajectory(task->m_world, task, object_trajectory, action_trajectory);
 
-  std::string output_file_path =
-      std::string(SRC_DIR) + "/data/delta_array/" + output_file;
   std::remove(output_file_path.c_str());
   MatrixXd output_mat = get_output(object_trajectory, action_trajectory, task);
   saveData(output_file_path, output_mat);
