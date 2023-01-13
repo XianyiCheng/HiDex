@@ -2027,6 +2027,27 @@ double CMGTASK::evaluate_path(const std::vector<State2> &path)
   double y = 10.80772595 * x + -4.59511985;
   double reward = 1.0 / (1.0 + std::exp(y));
 
+  if (this->grasp_measure_charac_length <= 0.0) {
+    return reward;
+  } else {
+    reward *= 0.5;
+
+    double avg_grasp_d = 0.0;
+    for (auto s2 : path) {
+      if (s2.finger_index == -1 || s2.timestep == -1) {
+        continue;
+      }
+      double grasp_d = this->grasp_measure(s2.finger_index, s2.timestep);
+      avg_grasp_d += grasp_d;
+    }
+    double x_grasp = avg_grasp_d / (double(path.size()) - 1);
+
+    double y_grasp = 6.90675 * x_grasp - 6.90675;
+    double reward_grasp = 1.0 / (1.0 + std::exp(y_grasp));
+
+    reward += 0.5 * reward_grasp;
+  }
+
   return reward;
 }
 

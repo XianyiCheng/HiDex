@@ -7,6 +7,12 @@ visualize_csv: true
 
 object_type: "cube"
 
+delta_locations:
+  robot_1: [2.165, 0, 0]
+  robot_2: [0, 3.75, 0]
+  robot_3: [4.3301, 3.75, 0]
+  robot_4: [6.4951, 0, 0]
+
 max_time: 20
 l1_1st_max_iterations: 10
 l1_max_iterations: 1

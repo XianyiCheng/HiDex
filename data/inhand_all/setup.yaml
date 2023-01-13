@@ -1,6 +1,8 @@
 hand_type: "2x2"
-object: "airplanetoy_b"
+finger_radius: 0.2
+object: "banana"
 object_scale: 1
+grasp_measure_scale: -1
 visualize_setup: false
 visualize_result: true
 number_of_experiments: 1

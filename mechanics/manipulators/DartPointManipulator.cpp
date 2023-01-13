@@ -171,6 +171,15 @@ void DartPointManipulator::set_workspace_limit(
   // workspace limits with the format of [x_min, x_max, y_min, y_max, z_min,
   // z_max]
 
+  std::vector<Vector3d> colors;
+  colors.push_back(Vector3d(252.0/256.0, 32.0/256.0, 3.0/256.0)); // red
+  colors.push_back(Vector3d(252.0/256.0, 169.0/256.0, 3.0/256.0)); // orange
+  // colors.push_back(Vector3d(252.0/256.0, 223.0/256.0, 3.0/256.0)); // yellow
+  colors.push_back(Vector3d(132.0/256.0, 252.0/256.0, 3.0/256.0)); // green
+  colors.push_back(Vector3d(3.0/256.0, 252.0/256.0, 207.0/256.0)); // gree-blue
+  colors.push_back(Vector3d(61.0/256.0, 3.0/256.0, 252.0/256.0)); // blue
+  colors.push_back(Vector3d(248.0/256.0, 3.0/256.0, 252.0/256.0)); // purple
+
   this->is_workspace_limit = true;
   this->workspace_limits = workspace_limits;
 
@@ -184,7 +193,7 @@ void DartPointManipulator::set_workspace_limit(
     SkeletonPtr wl_box =
         createFixedBox("ws_" + std::to_string(i), Vector3d(lx, ly, lz),
                        Vector3d(wl[0] + lx / 2, wl[2] + ly / 2, wl[4] + lz / 2),
-                       Vector3d(0.1, 0.8, 0.9), 0.1);
+                       colors[i], 0.1);
     this->addBody(wl_box);
   }
 }

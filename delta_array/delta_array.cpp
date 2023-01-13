@@ -25,8 +25,7 @@ const InhandTASK::State::Action InhandTASK::State::no_action = -1;
 
 bool surface_contact_filter(double box_lx, double box_ly, double box_lz,
                             double x, double y, double z, double nx, double ny,
-                            double nz, double finger_radius)
-{
+                            double nz, double finger_radius) {
   double x_min = -box_lx / 2 + finger_radius;
   double x_max = box_lx / 2 - finger_radius;
   double y_min = -box_ly / 2 + finger_radius;
@@ -35,22 +34,17 @@ bool surface_contact_filter(double box_lx, double box_ly, double box_lz,
   double z_max = box_lz / 2 - finger_radius;
 
   // no contact on the top and bottom
-  if (nz > 0.7 || nz < -0.7)
-  {
+  if (nz > 0.7 || nz < -0.7) {
     return false;
   }
 
-  if (nx > 0.7 || nx < -0.7)
-  {
-    if (y < y_min || y > y_max || z < z_min || z > z_max)
-    {
+  if (nx > 0.7 || nx < -0.7) {
+    if (y < y_min || y > y_max || z < z_min || z > z_max) {
       return false;
     }
   }
-  if (ny > 0.7 || ny < -0.7)
-  {
-    if (x < x_min || x > x_max || z < z_min || z > z_max)
-    {
+  if (ny > 0.7 || ny < -0.7) {
+    if (x < x_min || x > x_max || z < z_min || z > z_max) {
       return false;
     }
 
@@ -58,8 +52,8 @@ bool surface_contact_filter(double box_lx, double box_ly, double box_lz,
   }
 }
 
-void cube(std::shared_ptr<InhandTASK> task)
-{
+void cube(std::shared_ptr<InhandTASK> task,
+          const std::vector<Vector3d> &delta_locations) {
   // create world, create environment, an object sliding on the table
 
   std::string para_path =
@@ -73,24 +67,20 @@ void cube(std::shared_ptr<InhandTASK> task)
   std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
 
   SkeletonPtr object =
-      createFreeBox("box_object", Vector3d(box_lx, box_ly, box_lz), Vector3d(0.7,0.3,0.3), 0.45);
+      createFreeBox("box_object", Vector3d(box_lx, box_ly, box_lz),
+                    Vector3d(0.7, 0.3, 0.3), 0.45);
 
   world->addObject(object);
 
   SkeletonPtr env1 =
-      createFixedBox("palm", Vector3d(3, 3, 0.2), Vector3d(0, 0, -100),Vector3d(0.9,0.9,0.9), 0.01);
+      createFixedBox("palm", Vector3d(3, 3, 0.2), Vector3d(0, 0, -100),
+                     Vector3d(0.9, 0.9, 0.9), 0.01);
 
   world->addEnvironmentComponent(env1);
 
   // delta robot
   double delta_ws_r = 2.5;
   double delta_ws_h = 6;
-  std::vector<Vector3d> delta_locations;
-
-  delta_locations.push_back(Vector3d(-2.165, 0, 0));
-  delta_locations.push_back(Vector3d(0, 3.75, 0));
-  delta_locations.push_back(Vector3d(-4.3301, 3.75, 0));
-  delta_locations.push_back(Vector3d(-6.4951, 0, 0));
 
   int n_robot_contacts = delta_locations.size();
   double finger_radius = config["finger_radius"].as<double>();
@@ -165,14 +155,12 @@ void cube(std::shared_ptr<InhandTASK> task)
                   "/data/delta_array/cube_surface_contacts.csv");
   aria::csv::CsvParser parser(f);
 
-  for (auto &row : parser)
-  {
+  for (auto &row : parser) {
     int n_cols = row.size();
     assert(n_cols == 6);
 
     Vector6d v;
-    for (int j = 0; j < 6; ++j)
-    {
+    for (int j = 0; j < 6; ++j) {
       v(j) = std::stod(row[j]);
     }
 
@@ -184,8 +172,7 @@ void cube(std::shared_ptr<InhandTASK> task)
     Vector3d pos;
     pos << v(0) * box_lx / 2, v(1) * box_ly / 2, v(2) * box_lz / 2;
     if (surface_contact_filter(box_lx, box_ly, box_lz, pos[0], pos[1], pos[2],
-                               -v[3], -v[4], -v[5], finger_radius))
-    {
+                               -v[3], -v[4], -v[5], finger_radius)) {
       ContactPoint p(pos, -v.tail(3));
       surface_pts.push_back(p);
     }
@@ -201,8 +188,8 @@ void cube(std::shared_ptr<InhandTASK> task)
   // VisualizeSG(task->m_world, x_start, x_goal);
 }
 
-void mesh(std::shared_ptr<InhandTASK> task)
-{
+void mesh(std::shared_ptr<InhandTASK> task,
+          const std::vector<Vector3d> &delta_locations) {
   // create world, create environment, an object sliding on the table
 
   std::string para_path =
@@ -223,19 +210,14 @@ void mesh(std::shared_ptr<InhandTASK> task)
   world->addObject(object);
 
   SkeletonPtr env1 =
-      createFixedBox("palm", Vector3d(3, 3, 0.2), Vector3d(0, 0, -100), Vector3d(0.9,0.9,0.9), 0.1);
+      createFixedBox("palm", Vector3d(3, 3, 0.2), Vector3d(0, 0, -100),
+                     Vector3d(0.9, 0.9, 0.9), 0.1);
 
   world->addEnvironmentComponent(env1);
 
   // delta robot
   double delta_ws_r = 2.5;
   double delta_ws_h = 6;
-  std::vector<Vector3d> delta_locations;
-
-  delta_locations.push_back(Vector3d(0, 0, 0));
-  delta_locations.push_back(Vector3d(2.165, 3.75, 0));
-  delta_locations.push_back(Vector3d(4.3301, 0, 0));
-  delta_locations.push_back(Vector3d(6.4951, 3.75, 0));
 
   int n_robot_contacts = delta_locations.size();
   double finger_radius = config["finger_radius"].as<double>();
@@ -310,14 +292,12 @@ void mesh(std::shared_ptr<InhandTASK> task)
                   ".csv");
   aria::csv::CsvParser parser(f);
 
-  for (auto &row : parser)
-  {
+  for (auto &row : parser) {
     int n_cols = row.size();
     assert(n_cols == 6);
 
     Vector6d v;
-    for (int j = 0; j < 6; ++j)
-    {
+    for (int j = 0; j < 6; ++j) {
       v(j) = std::stod(row[j]);
     }
     Vector3d pos;
@@ -337,8 +317,7 @@ void mesh(std::shared_ptr<InhandTASK> task)
   // VisualizeSG(task->m_world, x_start, x_goal);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
 
   std::string para_path =
@@ -347,17 +326,37 @@ int main(int argc, char *argv[])
 
   std::string output_file;
 
-  if (config["object_type"].as<std::string>() == "cube")
+  std::vector<Vector3d> delta_locations;
+
   {
-    cube(task);
-    output_file = "cube_ouput.csv";
+    std::vector<double> loc =
+        config["delta_locations"]["robot_1"].as<std::vector<double>>();
+    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
   }
-  else
   {
-    mesh(task);
+    std::vector<double> loc =
+        config["delta_locations"]["robot_2"].as<std::vector<double>>();
+    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
+  }
+  {
+    std::vector<double> loc =
+        config["delta_locations"]["robot_3"].as<std::vector<double>>();
+    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
+  }
+  {
+    std::vector<double> loc =
+        config["delta_locations"]["robot_4"].as<std::vector<double>>();
+    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
+  }
+
+  if (config["object_type"].as<std::string>() == "cube") {
+    cube(task, delta_locations);
+    output_file = "cube_ouput.csv";
+  } else {
+    mesh(task, delta_locations);
     output_file = "mesh_ouput.csv";
   }
-    std::string output_file_path =
+  std::string output_file_path =
       std::string(SRC_DIR) + "/data/delta_array/" + output_file;
 
   bool visualize_setup = config["visualize_setup"].as<bool>();
@@ -366,14 +365,12 @@ int main(int argc, char *argv[])
 
   int random_seed = config["random_seed"].as<int>();
 
-  if (visualize_csv)
-  {
+  if (visualize_csv) {
     visualize_output_file(task->m_world, output_file_path);
     task->m_world->startWindow(&argc, argv);
   }
 
-  if (visualize_setup)
-  {
+  if (visualize_setup) {
     VisualizeSG(task->m_world, task->start_object_pose, task->goal_object_pose);
     task->m_world->startWindow(&argc, argv);
   }
@@ -410,22 +407,21 @@ int main(int argc, char *argv[])
 
   std::cout << "Best value " << current_node->m_value << std::endl;
 
-  for (auto &action : action_trajectory)
-  {
+  for (auto &action : action_trajectory) {
     std::cout << "Timestep " << action.timestep << std::endl;
     std::cout
         << "Pose "
         << task->saved_object_trajectory[action.timestep].m_pose.transpose()
         << std::endl;
     std::cout << "Fingers from idx " << action.finger_index << ": ";
-    for (int jj : task->get_finger_locations(action.finger_index))
-    {
+    for (int jj : task->get_finger_locations(action.finger_index)) {
       std::cout << jj << " ";
     }
     std::cout << std::endl;
   }
 
-  VisualizeStateTrajectory(task->m_world, task, object_trajectory, action_trajectory);
+  VisualizeStateTrajectory(task->m_world, task, object_trajectory,
+                           action_trajectory);
 
   std::remove(output_file_path.c_str());
   MatrixXd output_mat = get_output(object_trajectory, action_trajectory, task);
@@ -437,8 +433,7 @@ int main(int argc, char *argv[])
   std::cout << "Total shared rrt nodes " << tree.m_task->total_rrt_nodes()
             << std::endl;
 
-  if (visualize_results)
-  {
+  if (visualize_results) {
     task->m_world->startWindow(&argc, argv);
   }
 }
