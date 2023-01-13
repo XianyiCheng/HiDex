@@ -1,11 +1,15 @@
 
-grasp_measure_scale: -1
+grasp_measure_scale: 0.5
+
+use_object_surface_sampling: true
 
 visualization_option: "result"
 
-random_seed: 212512
+run_batch: true
 
-max_time: 10
+random_seed: 1
+
+max_time: 20
 
 l1_1st_max_iterations: 5
 l1_max_iterations: 3
@@ -13,3 +17,11 @@ l2_1st_max_iterations: 20
 l2_max_iterations: 5
 final_l2_1st_max_iterations: 20
 final_l2_max_iterations: 5
+
+if_refine: true
+refine_dist: 0.5
+
+rrt_options:
+  eps_trans: 1.0
+  eps_angle_deg: 50
+  max_samples: 200

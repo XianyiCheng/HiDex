@@ -1,7 +1,11 @@
 
 grasp_measure_scale: 0.25
 
+use_object_surface_sampling: true
+
 visualization_option: "result"
+
+run_batch: false
 
 random_seed: 212512
 

@@ -21,7 +21,8 @@ const CMGTASK::State2::Action CMGTASK::State2::no_action =
     CMGTASK::State2::Action(-1, -1);
 const CMGTASK::State::Action CMGTASK::State::no_action = -1;
 
-void setup(std::shared_ptr<CMGTASK> task) {
+void setup(std::shared_ptr<CMGTASK> task, bool use_object_surface_sampling)
+{
   // Test with two fingers and one finger quasidynamics
 
   double box_length = 2.0;
@@ -93,20 +94,50 @@ void setup(std::shared_ptr<CMGTASK> task) {
 
   // read surface point, add robot contacts
 
-  std::ifstream f(std::string(SRC_DIR) +
-                  "/data/env_pick_card/surface_contacts.csv");
-  aria::csv::CsvParser parser(f);
+  if (!use_object_surface_sampling)
+  {
 
-  for (auto &row : parser) {
-    int n_cols = row.size();
-    assert(n_cols == 6);
+    std::ifstream f(std::string(SRC_DIR) +
+                    "/data/env_pick_card/surface_contacts.csv");
+    aria::csv::CsvParser parser(f);
 
-    Vector6d v;
-    for (int j = 0; j < 6; ++j) {
-      v(j) = std::stod(row[j]);
+    for (auto &row : parser)
+    {
+      int n_cols = row.size();
+      assert(n_cols == 6);
+
+      Vector6d v;
+      for (int j = 0; j < 6; ++j)
+      {
+        v(j) = std::stod(row[j]);
+      }
+      ContactPoint p(v.head(3), v.tail(3));
+      surface_pts.push_back(p);
     }
-    ContactPoint p(v.head(3), v.tail(3));
-    surface_pts.push_back(p);
+  }
+  else
+  {
+    std::ifstream f(std::string(SRC_DIR) +
+                    "/data/box_halflength_1.csv");
+    aria::csv::CsvParser parser(f);
+
+    for (auto &row : parser)
+    {
+      int n_cols = row.size();
+      assert(n_cols == 6);
+
+      Vector6d v;
+      for (int j = 0; j < 6; ++j)
+      {
+        v(j) = std::stod(row[j]);
+      }
+      if (abs(v[5]) < 0.8)
+      {
+        continue;
+      }
+      ContactPoint p(Vector3d(v[0] * box_length / 2, v[1] * box_length / 2, v[2] * box_height / 2), -v.tail(3));
+      surface_pts.push_back(p);
+    }
   }
 
   // pass the world and task parameters to the task through task->initialize
@@ -115,7 +146,8 @@ void setup(std::shared_ptr<CMGTASK> task) {
                    surface_pts, rrt_options, if_refine, refine_dist);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   std::shared_ptr<CMGTASK> task = std::make_shared<CMGTASK>();
 
   std::string para_path =
@@ -127,15 +159,9 @@ int main(int argc, char *argv[]) {
   double grasp_measure_scale = config["grasp_measure_scale"].as<double>();
   int random_seed = config["random_seed"].as<int>();
 
-  setup(task);
-  task->grasp_measure_charac_length = grasp_measure_scale;
+  bool use_object_surface_sampling = config["use_object_surface_sampling"].as<bool>();
 
-  if (visualization_option == "setup") {
-    VisualizeSG(task->m_world, task->start_object_pose, task->goal_object_pose);
-    task->m_world->startWindow(&argc, argv);
-  }
-
-  CMGTASK::State start_state = task->get_start_state();
+  bool run_batch = config["run_batch"].as<bool>();
 
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2,
                   CMGTASK>::HierarchicalComputeOptions compute_options;
@@ -153,6 +179,53 @@ int main(int argc, char *argv[]) {
 
   compute_options.l1.max_time = config["max_time"].as<double>();
 
+  if (run_batch)
+  {
+    std::vector<VectorXd> results;
+    for (int iter = 0; iter < 10; iter++)
+    {
+      std::srand(iter * 10000 + 254122);
+      setup(task, use_object_surface_sampling);
+      task->grasp_measure_charac_length = grasp_measure_scale;
+      CMGTASK::State start_state = task->get_start_state();
+
+      HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(
+          task, start_state, compute_options);
+
+      HMP::Node<CMGTASK::State> *current_node = tree.search_tree();
+
+      std::vector<CMGTASK::State> object_trajectory;
+      std::vector<CMGTASK::State2> action_trajectory;
+      tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
+
+      std::vector<Vector7d> object_traj;
+      std::vector<VectorXd> mnp_traj;
+      VectorXd result = get_results(&tree, task, object_trajectory, action_trajectory,
+                                    current_node->m_value);
+
+      results.push_back(result);
+      std::cout << "batch results:" << std::endl;
+
+      for (int i = 0; i < results.size(); i++)
+      {
+        std::cout << results[i].transpose() << std::endl;
+      }
+    }
+    return 0;
+  }
+  std::srand(random_seed);
+  setup(task, use_object_surface_sampling);
+
+  task->grasp_measure_charac_length = grasp_measure_scale;
+
+  if (visualization_option == "setup")
+  {
+    VisualizeSG(task->m_world, task->start_object_pose, task->goal_object_pose);
+    task->m_world->startWindow(&argc, argv);
+  }
+
+  CMGTASK::State start_state = task->get_start_state();
+
   HMP::Level1Tree<CMGTASK::State, CMGTASK::State2, CMGTASK> tree(
       task, start_state, compute_options);
 
@@ -168,7 +241,8 @@ int main(int argc, char *argv[]) {
   get_results(&tree, task, object_trajectory, action_trajectory,
               current_node->m_value);
 
-  if (visualization_option == "result") {
+  if (visualization_option == "result")
+  {
     VisualizeStateTraj(task->m_world, task, object_trajectory,
                        action_trajectory);
     task->m_world->startWindow(&argc, argv);

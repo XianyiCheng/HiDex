@@ -96,7 +96,7 @@ VectorXd get_results(Tree *tree, std::shared_ptr<Task> task,
       if (s2.finger_index == -1 || s2.timestep == -1) {
         continue;
       }
-      double grasp_d = task->grasp_measure(s2.finger_index, s2.timestep);
+      double grasp_d = task->grasp_measure_charac_length*task->grasp_measure(s2.finger_index, s2.timestep);
       avg_grasp_d += grasp_d;
     }
     grasp_measure = avg_grasp_d / double(action_trajectory.size() - 1);
