@@ -7,5 +7,6 @@
 // }
 using namespace Eigen;
 void saveData(std::string fileName, MatrixXd  matrix);
+void appendData(std::string fileName, MatrixXd  matrix);
 MatrixXd openData(std::string fileToOpen);
 MatrixXd load_points_from_csv(std::string fileToOpen);

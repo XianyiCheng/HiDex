@@ -1,0 +1,10 @@
+Metadata-Version: 1.2
+Name: leven
+Version: 1.0.4
+Summary: Levenshtein edit distance library
+Home-page: https://github.com/semanticize/leven
+Maintainer: Lars Buitinck
+Maintainer-email: l.j.buitinck@esciencecenter.nl
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN

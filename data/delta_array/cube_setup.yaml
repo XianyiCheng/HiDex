@@ -1,13 +1,13 @@
 box_shape:
-  lx: 4.2
-  ly: 4.2
-  lz: 4.2
+  lx: 8.5
+  ly: 8.5
+  lz: 2
 
 finger_radius: 0.75
 
 start_pose:
-  x: 3.32
-  y: 1.875
+  x: 6.5
+  y: 3.75
   z: 2.5
   qx: 0.0
   qy: 0.0
@@ -15,8 +15,8 @@ start_pose:
   qw: 1.0
 
 goal_pose:
-  x: 3.32
-  y: 1.875
+  x: 6.5
+  y: 3.75
   z: 2.5
   qx: 0.0
   qy: 0.0

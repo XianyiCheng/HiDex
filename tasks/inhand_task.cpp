@@ -1772,7 +1772,7 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
 
   std::vector<InhandTASK::State> path_;
 
-  std::cout << "Search a new path with shared rrt" << std::endl;
+  // std::cout << "Search a new path with shared rrt" << std::endl;
 
   int root_node_idx = shared_rrt->find_node(start_state.m_pose);
 
@@ -1808,7 +1808,7 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
 
   for (int kk = 0; kk < this->search_options.max_samples; kk++) {
 
-    std::cout << "rrt iter: " << kk << std::endl;
+    // std::cout << "rrt iter: " << kk << std::endl;
 
     // bias sample toward the goal
     Vector7d x_rand;
@@ -1831,7 +1831,7 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
         // near_idx = shared_rrt->nearest_neighbor(x_rand);
         near_idx = shared_rrt->nearest_neighbor_subtree(x_rand, root_node_idx,
                                                         subtree, false, true);
-        std::cout << "sampled random state" << std::endl;
+        // std::cout << "sampled random state" << std::endl;
       } else {
         bool if_sampled = false;
         near_idx = shared_rrt->nearest_neighbor_subtree(x_rand, root_node_idx,
@@ -1854,7 +1854,7 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
           continue;
         }
       }
-      std::cout << "sampled idx to extend to goal" << std::endl;
+      // std::cout << "sampled idx to extend to goal" << std::endl;
     } else {
       x_rand = this->goal_object_pose;
       if (if_extend_root_to_goal) {
@@ -1865,7 +1865,7 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
         near_idx = shared_rrt->nearest_neighbor_subtree(x_rand, root_node_idx,
                                                         subtree, true, true);
         shared_rrt->nodes[near_idx].is_extended_to_goal = true;
-        std::cout << "sampled goal state" << std::endl;
+        // std::cout << "sampled goal state" << std::endl;
       }
       if (near_idx < 0) {
         // all the nodes has extended to goal, try random sample again
@@ -1874,9 +1874,9 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
     }
 
     if (near_idx < 0) {
-      std::cout << "There is no unexplored nodes in this subtree. Cannot find "
-                   "a new path. "
-                << std::endl;
+      // std::cout << "There is no unexplored nodes in this subtree. Cannot find "
+      //              "a new path. "
+      //           << std::endl;
       return path_;
     }
 
@@ -1889,7 +1889,7 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
                           this->search_options.eps_trans,
                           this->search_options.eps_angle);
 
-    std::cout << "x_rand " << x_rand.transpose() << std::endl;
+    // std::cout << "x_rand " << x_rand.transpose() << std::endl;
 
     Vector6d v_star =
         compute_rbvel_body(shared_rrt->nodes[near_idx].config, x_rand);
@@ -1921,7 +1921,7 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
 
     for (const auto &cs_mode : extendable_cs_modes) {
 
-      std::cout << "cs mode " << cs_mode.transpose() << std::endl;
+      // std::cout << "cs mode " << cs_mode.transpose() << std::endl;
 
       std::vector<VectorXi> check_modes;
       {
@@ -1971,7 +1971,7 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
 
       for (const auto &mode : mode_to_extend) {
 
-        std::cout << "Extend mode: " << mode.transpose() << std::endl;
+        // std::cout << "Extend mode: " << mode.transpose() << std::endl;
 
         std::vector<Vector7d> path;
 
@@ -1991,9 +1991,9 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
             continue;
           }
 
-          std::cout << "New node idx: " << this->shared_rrt->nodes.size()
-                    << ", Parent: " << near_idx << ", "
-                    << path.back().transpose() << std::endl;
+          // std::cout << "New node idx: " << this->shared_rrt->nodes.size()
+          //           << ", Parent: " << near_idx << ", "
+          //           << path.back().transpose() << std::endl;
 
           ReusableRRT::Edge new_edge(mode, path);
 
@@ -2076,9 +2076,9 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
     path_.push_back(new_state);
   }
 
-  for (auto s : path_) {
-    std::cout << "Pose " << s.m_pose.transpose() << std::endl;
-  }
+  // for (auto s : path_) {
+  //   std::cout << "Pose " << s.m_pose.transpose() << std::endl;
+  // }
 
   return path_;
 }

@@ -12,12 +12,16 @@
 #include "../mechanics/utilities/parser.hpp"
 #include "../mechanics/worlds/DartWorld.h"
 
+#include "../mechanics/utilities/io.h"
+
 #ifndef DART_UTILS
 #define DART_UTILS
 #include "../mechanics/dart_utils/dart_utils.h"
 #endif
 
 #include "visualization.h"
+
+
 
 Vector7d randomize_a_pose_on_palm(const std::vector<ContactPoint> pts) {
   Quaterniond q_rand = generate_unit_quaternion();
@@ -221,6 +225,53 @@ void setup(const std::string &hand_type, double finger_radius,
     SkeletonPtr env1 =
         createFixedBox("palm", Vector3d(3, 3, 0.2), Vector3d(0, 0, -0.1),
                        Vector3d(161.0 / 256.0, 159.0 / 256.0, 204 / 256.0));
+    // SkeletonPtr env1 =
+    //     createFixedBox("palm", Vector3d(3, 3, 0.2), Vector3d(0, 0, -1000),
+    //                    Vector3d(161.0 / 256.0, 159.0 / 256.0, 204 / 256.0));
+
+    world->addEnvironmentComponent(env1);
+
+    n_robot_contacts = 3;
+    DartPointManipulator *rpt =
+        new DartPointManipulator(n_robot_contacts, finger_radius);
+
+    double a = 0.8;
+    double h = 2;
+    std::vector<Vector6d> workspace_limits;
+
+    Vector3d p1(0, 1, 0);
+    Vector3d p2(1.73 / 2, -0.5, 0);
+    Vector3d p3(-1.73 / 2, -0.5, 0);
+
+    // [x_min, x_max, y_min, y_max, z_min, z_max]
+
+    Vector6d wl1;
+    wl1 << p1[0] - a, p1[0] + a, p1[1] - a, p1[1] + a, p1[2], p1[2] + h;
+    workspace_limits.push_back(wl1);
+
+    Vector6d wl2;
+    wl2 << p2[0] - a, p2[0] + a, p2[1] - a, p2[1] + a, p2[2], p2[2] + h;
+    workspace_limits.push_back(wl2);
+
+    Vector6d wl3;
+    wl3 << p3[0] - a, p3[0] + a, p3[1] - a, p3[1] + a, p3[2], p3[2] + h;
+    workspace_limits.push_back(wl3);
+
+    rpt->set_workspace_limit(workspace_limits);
+    rpt->is_patch_contact = true;
+    world->addRobot(rpt);
+    task->if_transition_pruning = true;
+
+    x_start = randomize_a_pose_on_palm(surface_pts);
+    x_start[2] += 0.1;
+    x_goal = randomize_a_pose_on_palm(surface_pts);
+    x_goal[2] += 0.1;
+  } 
+  else if (hand_type == "3_finger") {
+
+    SkeletonPtr env1 =
+        createFixedBox("palm", Vector3d(3, 3, 0.2), Vector3d(0, 0, -1000),
+                       Vector3d(0.9,0.9,0.9), 0.01);
 
     world->addEnvironmentComponent(env1);
 
@@ -257,7 +308,9 @@ void setup(const std::string &hand_type, double finger_radius,
 
     x_start = randomize_a_pose_on_palm(surface_pts);
     x_goal = randomize_a_pose_on_palm(surface_pts);
-  } else {
+    
+  }
+  else {
     std::cout << "unknown hand type" << std::endl;
     exit(0);
   }
@@ -323,6 +376,8 @@ int main(int argc, char *argv[]) {
   std::string object_name = config["object"].as<std::string>();
   double object_scale = config["object_scale"].as<double>();
 
+  std::string save_path = std::string(SRC_DIR) + "/data/inhand_all/results/" + hand_type + "_" + object_name + ".csv";
+
   double grasp_measure_scale = config["grasp_measure_scale"].as<double>();
 
   bool visualize_setup = config["visualize_setup"].as<bool>();
@@ -341,20 +396,24 @@ int main(int argc, char *argv[]) {
   HMP::Level1Tree<InhandTASK::State, InhandTASK::State2,
                   InhandTASK>::HierarchicalComputeOptions compute_options;
 
-  compute_options.l1_1st.max_iterations = 10;
-  compute_options.l1.max_iterations = 1;
-  compute_options.l2_1st.max_iterations = 5;
-  compute_options.l2.max_iterations = 1;
-  compute_options.final_l2_1st.max_iterations = 10;
-  compute_options.final_l2.max_iterations = 3;
+  compute_options.l1_1st.max_iterations =
+      config["l1_1st_max_iterations"].as<int>();
+  compute_options.l1.max_iterations = config["l1_max_iterations"].as<int>();
+  compute_options.l2_1st.max_iterations =
+      config["l2_1st_max_iterations"].as<int>();
+  compute_options.l2.max_iterations = config["l2_max_iterations"].as<int>();
+  compute_options.final_l2_1st.max_iterations =
+      config["final_l2_1st_max_iterations"].as<int>();
+  compute_options.final_l2.max_iterations =
+      config["final_l2_max_iterations"].as<int>();
 
-  compute_options.l1.max_time = 10;
+  compute_options.l1.max_time = config["max_time"].as<double>();
 
   if (number_of_experiments > 1) {
     std::vector<VectorXd> results;
     for (int i = 0; i < number_of_experiments; ++i) {
 
-      std::srand(10000 * i + 13546);
+      std::srand(std::time(nullptr) + i * 100);
 
       std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
 
@@ -378,10 +437,15 @@ int main(int argc, char *argv[]) {
           get_inhand_result(&tree, task, object_trajectory, action_trajectory,
                             current_node->m_value);
       results.push_back(result);
-    }
-    std::cout << "Results: " << std::endl;
-    for (auto result : results) {
-      std::cout << result.transpose() << std::endl;
+
+      if(config["save_data"].as<bool>()){
+        appendData(save_path, result.transpose());
+      }
+
+      std::cout << "Results: " << std::endl;
+      for (auto result : results) {
+        std::cout << result.transpose() << std::endl;
+      }
     }
     return 0;
   }

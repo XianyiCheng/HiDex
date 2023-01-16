@@ -211,12 +211,12 @@ namespace HMP
       // pass this state path to m_task->saved_object_trajectory
       this->m_task->save_trajectory(state_path);
 
-      std::cout << "Start level 2 search" << std::endl;
+      // std::cout << "Start level 2 search" << std::endl;
 
-      for (auto s : this->m_task->saved_object_trajectory)
-      {
-        std::cout << s.m_pose.transpose() << std::endl;
-      }
+      // for (auto s : this->m_task->saved_object_trajectory)
+      // {
+      //   std::cout << s.m_pose.transpose() << std::endl;
+      // }
 
       // Level2Tree<State2, Task> tree2(this->m_task,
       //                                this->m_task->get_start_state2());
@@ -323,12 +323,12 @@ namespace HMP
       {
 
         int n_depth = 0;
-        std::cout << "Iter " << iter << std::endl;
+        // std::cout << "Iter " << iter << std::endl;
         Node<State> *node = grow_node;
 
         while (!this->is_terminal(node))
         {
-          std::cout << "Depth " << n_depth << std::endl;
+          // std::cout << "Depth " << n_depth << std::endl;
           n_depth++;
           Action action;
           if (node->m_type == "pose")
@@ -438,10 +438,10 @@ namespace HMP
             {
               node = this->next_node(node, action);
 
-              if (this->is_terminal(node))
-              {
-                std::cout << "Got to the end through node selection" << std::endl;
-              }
+              // if (this->is_terminal(node))
+              // {
+              //   std::cout << "Got to the end through node selection" << std::endl;
+              // }
             }
           }
           else
@@ -466,7 +466,7 @@ namespace HMP
           }
         }
 
-        std::cout << "Evaluation: " << reward << std::endl;
+        // std::cout << "Evaluation: " << reward << std::endl;
 
         this->backprop_reward(node, reward);
 

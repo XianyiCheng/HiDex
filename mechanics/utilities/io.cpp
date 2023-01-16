@@ -17,6 +17,21 @@ void saveData(string fileName, MatrixXd  matrix)
     }
 }
 
+void appendData(string fileName, MatrixXd  matrix)
+{
+    //https://eigen.tuxfamily.org/dox/structEigen_1_1IOFormat.html
+    const static IOFormat CSVFormat(FullPrecision, DontAlignCols, ", ", "\n");
+ 
+    ofstream file;
+    file.open (fileName, ios::app);
+    if (file.is_open())
+    {
+        file << "\n";
+        file << matrix.format(CSVFormat);
+        file.close();
+    }
+}
+
 MatrixXd openData(string fileToOpen)
 {
  
