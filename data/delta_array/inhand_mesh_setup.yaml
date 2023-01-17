@@ -23,3 +23,9 @@ goal_pose:
   qw: 0.0
 
 friction_coefficient: 0.5
+
+delta_locations:
+  robot_1: [2.165, 0, 0]
+  robot_2: [10.8252, 0, 0]
+  robot_3: [2.165, 7.5, 0]
+  robot_4: [10.8252, 7.5, 0]

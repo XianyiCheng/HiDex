@@ -23,6 +23,48 @@ const InhandTASK::State2::Action InhandTASK::State2::no_action =
     InhandTASK::State2::Action(-1, -1);
 const InhandTASK::State::Action InhandTASK::State::no_action = -1;
 
+std::vector<Vector3d> read_delta_locations(const YAML::Node &config,
+                                           int n_pts) {
+  std::vector<Vector3d> delta_locations;
+  if (n_pts >= 1) {
+    std::vector<double> loc =
+        config["delta_locations"]["robot_1"].as<std::vector<double>>();
+    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
+  }
+  if (n_pts >= 2) {
+    std::vector<double> loc =
+        config["delta_locations"]["robot_2"].as<std::vector<double>>();
+    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
+  }
+  if (n_pts >= 3) {
+    std::vector<double> loc =
+        config["delta_locations"]["robot_3"].as<std::vector<double>>();
+    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
+  }
+  if (n_pts >= 4) {
+    std::vector<double> loc =
+        config["delta_locations"]["robot_4"].as<std::vector<double>>();
+    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
+  }
+  if (n_pts >= 5) {
+    std::vector<double> loc =
+        config["delta_locations"]["robot_5"].as<std::vector<double>>();
+    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
+  }
+  if (n_pts >= 6) {
+
+    std::cout << "Don't support more than 5 robots" << std::endl;
+    exit(0);
+  }
+  Vector3d center;
+  for (int i = 0; i < n_pts; i++) {
+    center += delta_locations[i];
+  }
+  center /= n_pts;
+  std::cout << "delta center: " << center.transpose() << std::endl;
+  return delta_locations;
+}
+
 bool surface_contact_filter(double box_lx, double box_ly, double box_lz,
                             double x, double y, double z, double nx, double ny,
                             double nz, double finger_radius) {
@@ -82,13 +124,14 @@ bool table_surface_contact_filter(double box_lx, double box_ly, double box_lz,
   return true;
 }
 
-void inhand_cube(std::shared_ptr<InhandTASK> task,
-                 const std::vector<Vector3d> &delta_locations) {
+void inhand_cube(std::shared_ptr<InhandTASK> task) {
   // create world, create environment, an object sliding on the table
 
   std::string para_path =
-      std::string(SRC_DIR) + "/data/delta_array/cube_setup.yaml";
+      std::string(SRC_DIR) + "/data/delta_array/inhand_cube_setup.yaml";
   YAML::Node config = YAML::LoadFile(para_path);
+
+  std::vector<Vector3d> delta_locations = read_delta_locations(config, 5);
 
   double box_lx = config["box_shape"]["lx"].as<double>();
   double box_ly = config["box_shape"]["ly"].as<double>();
@@ -194,11 +237,6 @@ void inhand_cube(std::shared_ptr<InhandTASK> task,
       v(j) = std::stod(row[j]);
     }
 
-    // only use contacts have normals in y direction
-    // if ((v[4] > -0.8) && (v[4] < 0.8))
-    // {
-    //     continue;
-    // }
     Vector3d pos;
     pos << v(0) * box_lx / 2, v(1) * box_ly / 2, v(2) * box_lz / 2;
     if (surface_contact_filter(box_lx, box_ly, box_lz, pos[0], pos[1], pos[2],
@@ -214,23 +252,25 @@ void inhand_cube(std::shared_ptr<InhandTASK> task,
                    wa, wt, charac_len, mu_env, mu_mnp, f_g, world,
                    n_robot_contacts, surface_pts, rrt_options, is_refine,
                    refine_dist);
-
+  task->grasp_measure_charac_length = config["grasp_measure_charac_length"]
+                                          .as<double>();
+  // task->grasp_measure_charac_length = -1.0;
   // VisualizeSG(task->m_world, x_start, x_goal);
 }
 
-void table_cube(std::shared_ptr<InhandTASK> task,
-                const std::vector<Vector3d> &delta_locations) {
+void table_cube(std::shared_ptr<InhandTASK> task) {
   // create world, create environment, an object sliding on the table
 
+  std::string para_path =
+      std::string(SRC_DIR) + "/data/delta_array/table_cube_setup.yaml";
+  YAML::Node config = YAML::LoadFile(para_path);
+
+  std::vector<Vector3d> delta_locations = read_delta_locations(config, 5);
   Vector3d center;
   for (auto &p : delta_locations) {
     center += p;
   }
   center /= double(delta_locations.size());
-
-  std::string para_path =
-      std::string(SRC_DIR) + "/data/delta_array/table_cube_setup.yaml";
-  YAML::Node config = YAML::LoadFile(para_path);
 
   double box_lx = config["box_shape"]["lx"].as<double>();
   double box_ly = config["box_shape"]["ly"].as<double>();
@@ -342,7 +382,7 @@ void table_cube(std::shared_ptr<InhandTASK> task,
     if (table_surface_contact_filter(box_lx, box_ly, box_lz, pos[0], pos[1],
                                      pos[2], -v[3], -v[4], -v[5],
                                      finger_radius)) {
-      if (-v[5] < -0.7){
+      if (-v[5] < -0.7) {
         continue;
       }
       ContactPoint p(pos, -v.tail(3));
@@ -357,16 +397,17 @@ void table_cube(std::shared_ptr<InhandTASK> task,
                    n_robot_contacts, surface_pts, rrt_options, is_refine,
                    refine_dist);
 
-  // task->grasp_measure_charac_length = box_lx;
+  task->grasp_measure_charac_length = -1;
 }
 
-void inhand_mesh(std::shared_ptr<InhandTASK> task,
-                 const std::vector<Vector3d> &delta_locations) {
+void inhand_mesh(std::shared_ptr<InhandTASK> task) {
   // create world, create environment, an object sliding on the table
 
   std::string para_path =
       std::string(SRC_DIR) + "/data/delta_array/mesh_setup.yaml";
   YAML::Node config = YAML::LoadFile(para_path);
+
+  std::vector<Vector3d> delta_locations = read_delta_locations(config, 4);
 
   std::string object_name = config["object"].as<std::string>();
   double object_scale = config["object_scale"].as<double>();
@@ -489,19 +530,20 @@ void inhand_mesh(std::shared_ptr<InhandTASK> task,
   // VisualizeSG(task->m_world, x_start, x_goal);
 }
 
-void planar_manipulation(std::shared_ptr<InhandTASK> task,
-                const std::vector<Vector3d> &delta_locations) {
+void planar_manipulation(std::shared_ptr<InhandTASK> task) {
   // create world, create environment, an object sliding on the table
+
+  std::string para_path =
+      std::string(SRC_DIR) + "/data/delta_array/planar_manipulation_setup.yaml";
+  YAML::Node config = YAML::LoadFile(para_path);
+
+  std::vector<Vector3d> delta_locations = read_delta_locations(config, 4);
 
   Vector3d center;
   for (auto &p : delta_locations) {
     center += p;
   }
   center /= double(delta_locations.size());
-
-  std::string para_path =
-      std::string(SRC_DIR) + "/data/delta_array/planar_manipulation_setup.yaml";
-  YAML::Node config = YAML::LoadFile(para_path);
 
   double box_lx = config["box_shape"]["lx"].as<double>();
   double box_ly = config["box_shape"]["ly"].as<double>();
@@ -515,10 +557,9 @@ void planar_manipulation(std::shared_ptr<InhandTASK> task,
 
   world->addObject(object);
 
-  SkeletonPtr env1 = createFixedBox(
-      "palm", Vector3d(50, 50, 0.2),
-      Vector3d(center[0], center[1], -0.1),
-      Vector3d(0.9, 0.9, 0.6), 0.6);
+  SkeletonPtr env1 = createFixedBox("palm", Vector3d(50, 50, 0.2),
+                                    Vector3d(center[0], center[1], -0.1),
+                                    Vector3d(0.9, 0.9, 0.6), 0.6);
 
   world->addEnvironmentComponent(env1);
 
@@ -610,9 +651,8 @@ void planar_manipulation(std::shared_ptr<InhandTASK> task,
 
     Vector3d pos;
     pos << v(0) * box_lx / 2, v(1) * box_ly / 2, v(2) * box_lz / 2;
-    if (surface_contact_filter(box_lx, box_ly, box_lz, pos[0], pos[1],
-                                     pos[2], -v[3], -v[4], -v[5],
-                                     finger_radius)) {
+    if (surface_contact_filter(box_lx, box_ly, box_lz, pos[0], pos[1], pos[2],
+                               -v[3], -v[4], -v[5], finger_radius)) {
       ContactPoint p(pos, -v.tail(3));
       surface_pts.push_back(p);
     }
@@ -625,7 +665,6 @@ void planar_manipulation(std::shared_ptr<InhandTASK> task,
                    refine_dist);
 }
 
-
 int main(int argc, char *argv[]) {
   std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
 
@@ -635,52 +674,18 @@ int main(int argc, char *argv[]) {
 
   std::string output_file;
 
-  std::vector<Vector3d> delta_locations;
-
-  {
-    std::vector<double> loc =
-        config["delta_locations"]["robot_1"].as<std::vector<double>>();
-    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
-  }
-  {
-    std::vector<double> loc =
-        config["delta_locations"]["robot_2"].as<std::vector<double>>();
-    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
-  }
-  {
-    std::vector<double> loc =
-        config["delta_locations"]["robot_3"].as<std::vector<double>>();
-    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
-  }
-  {
-    std::vector<double> loc =
-        config["delta_locations"]["robot_4"].as<std::vector<double>>();
-    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
-  }
-
-  Vector3d center;
-  for (auto &p : delta_locations) {
-    center += p;
-  }
-  center /= double(delta_locations.size());
-  std::cout << "delta center: " << center.transpose() << std::endl;
-
   std::string task_name = config["task"].as<std::string>();
   output_file = task_name + "_ouput.csv";
 
   if (task_name == "inhand_cube") {
-    inhand_cube(task, delta_locations);
+    inhand_cube(task);
   } else if (task_name == "inhand_mesh") {
-    inhand_mesh(task, delta_locations);
+    inhand_mesh(task);
   } else if (task_name == "table_cube") {
-    std::vector<double> loc =
-        config["delta_locations"]["robot_5"].as<std::vector<double>>();
-    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
-    table_cube(task, delta_locations);
-  } else if (task_name == "planar_manipulation"){
-    planar_manipulation(task, delta_locations);
-  }
-  else {
+    table_cube(task);
+  } else if (task_name == "planar_manipulation") {
+    planar_manipulation(task);
+  } else {
     std::cout << "Invalid task name" << std::endl;
     return 0;
   }
