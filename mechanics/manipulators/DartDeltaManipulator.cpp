@@ -265,7 +265,7 @@ bool DartDeltaManipulator::ifIKsolution(const VectorXd &mnp_config,
             }
             Vector3d pos2 = Vector3d(mnp_config[6 * j], mnp_config[6 * j + 1], mnp_config[6 * j + 2]);
             // in cm
-            if ((pos1 - pos2).norm() < this->fingertip_radius*2.5){
+            if ((pos1 - pos2).norm() < this->fingertip_radius*3){
                 return false;
             }
         }

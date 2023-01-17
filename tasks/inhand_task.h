@@ -453,6 +453,8 @@ public:
 
   bool if_transition_pruning = false;
 
+  bool if_goal_finger = false;
+
 private:
   bool m_initialized = false;
 
@@ -481,7 +483,7 @@ private:
   bool if_refine = false;
   bool refine_dist = 0.0;
 
-  bool if_goal_finger = false;
+  
   double goal_finger_distance_thr = 1.0;
   std::vector<Vector3d> goal_finger_locations;
 };

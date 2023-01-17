@@ -1,7 +1,7 @@
 box_shape:
-  lx: 8.5
-  ly: 8.5
-  lz: 2
+  lx: 10
+  ly: 10
+  lz: 3
 
 finger_radius: 0.75
 
@@ -20,8 +20,8 @@ goal_pose:
   z: 2.5
   qx: 0.0
   qy: 0.0
-  qz: -1.0
-  qw: 0.0
+  qz: 0.7071
+  qw: 0.7071
 
 friction_coefficient: 0.5 
 

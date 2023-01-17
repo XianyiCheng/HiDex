@@ -1,15 +1,15 @@
-hand_type: "3_finger"
-finger_radius: 0.1
+hand_type: "5"
+finger_radius: 0.001
 object: "cylindar_l_2_r_1"
-object_scale: 1
+object_scale: 0.001
 
 grasp_measure_scale: -1
-visualize_setup: false
+visualize_setup: true
 visualize_result: false
 
 save_data: true
 
-number_of_experiments: 30
+number_of_experiments: 1
 start_position:
   x: 0.0
   y: 0.0

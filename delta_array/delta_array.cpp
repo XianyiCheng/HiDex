@@ -47,13 +47,43 @@ bool surface_contact_filter(double box_lx, double box_ly, double box_lz,
     if (x < x_min || x > x_max || z < z_min || z > z_max) {
       return false;
     }
-
-    return true;
   }
+  return true;
 }
 
-void cube(std::shared_ptr<InhandTASK> task,
-          const std::vector<Vector3d> &delta_locations) {
+bool table_surface_contact_filter(double box_lx, double box_ly, double box_lz,
+                                  double x, double y, double z, double nx,
+                                  double ny, double nz, double finger_radius) {
+  double x_min = -box_lx / 2 + finger_radius;
+  double x_max = box_lx / 2 - finger_radius;
+  double y_min = -box_ly / 2 + finger_radius;
+  double y_max = box_ly / 2 - finger_radius;
+  double z_min = -box_lz / 2 + finger_radius;
+  double z_max = box_lz / 2 - finger_radius;
+
+  if (nz > 0.7 || nz < -0.7) {
+    if (x < x_min || x > x_max || y < y_min || y > y_max) {
+      return false;
+    }
+  }
+
+  if (nx > 0.7 || nx < -0.7) {
+    if (y < y_min || y > y_max || z < z_min || z > z_max) {
+      return false;
+    }
+  }
+  if (ny > 0.7 || ny < -0.7) {
+    // return false;
+    if (x < x_min || x > x_max || z < z_min || z > z_max) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void inhand_cube(std::shared_ptr<InhandTASK> task,
+                 const std::vector<Vector3d> &delta_locations) {
   // create world, create environment, an object sliding on the table
 
   std::string para_path =
@@ -172,7 +202,7 @@ void cube(std::shared_ptr<InhandTASK> task,
     Vector3d pos;
     pos << v(0) * box_lx / 2, v(1) * box_ly / 2, v(2) * box_lz / 2;
     if (surface_contact_filter(box_lx, box_ly, box_lz, pos[0], pos[1], pos[2],
-                               -v[3], -v[4], -v[5], finger_radius)) {
+                               -v[3], -v[4], -v[5], finger_radius / 2)) {
       ContactPoint p(pos, -v.tail(3));
       surface_pts.push_back(p);
     }
@@ -188,8 +218,150 @@ void cube(std::shared_ptr<InhandTASK> task,
   // VisualizeSG(task->m_world, x_start, x_goal);
 }
 
-void mesh(std::shared_ptr<InhandTASK> task,
-          const std::vector<Vector3d> &delta_locations) {
+void table_cube(std::shared_ptr<InhandTASK> task,
+                const std::vector<Vector3d> &delta_locations) {
+  // create world, create environment, an object sliding on the table
+
+  Vector3d center;
+  for (auto &p : delta_locations) {
+    center += p;
+  }
+  center /= double(delta_locations.size());
+
+  std::string para_path =
+      std::string(SRC_DIR) + "/data/delta_array/table_cube_setup.yaml";
+  YAML::Node config = YAML::LoadFile(para_path);
+
+  double box_lx = config["box_shape"]["lx"].as<double>();
+  double box_ly = config["box_shape"]["ly"].as<double>();
+  double box_lz = config["box_shape"]["lz"].as<double>();
+
+  std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
+
+  SkeletonPtr object =
+      createFreeBox("box_object", Vector3d(box_lx, box_ly, box_lz),
+                    Vector3d(0.7, 0.3, 0.3), 0.45);
+
+  world->addObject(object);
+
+  SkeletonPtr env1 = createFixedBox(
+      "palm", Vector3d(50, 50, 0.2),
+      Vector3d(center[0], center[1], config["table_height"].as<double>() - 0.1),
+      Vector3d(0.9, 0.9, 0.6), 0.6);
+
+  world->addEnvironmentComponent(env1);
+
+  // delta robot
+  double delta_ws_r = 2.5;
+  double delta_ws_h = 6;
+
+  int n_robot_contacts = delta_locations.size();
+  double finger_radius = config["finger_radius"].as<double>();
+  DartDeltaManipulator *rpt = new DartDeltaManipulator(
+      n_robot_contacts, finger_radius, delta_ws_r, delta_ws_h, delta_locations);
+
+  rpt->is_patch_contact = true;
+  world->addRobot(rpt);
+
+  // set the task parameters, start, goal, object inertial, etc....
+
+  Vector7d x_start;
+  Vector7d x_goal;
+  x_start << config["start_pose"]["x"].as<double>(),
+      config["start_pose"]["y"].as<double>(),
+      config["start_pose"]["z"].as<double>(),
+      config["start_pose"]["qx"].as<double>(),
+      config["start_pose"]["qy"].as<double>(),
+      config["start_pose"]["qz"].as<double>(),
+      config["start_pose"]["qw"].as<double>();
+  x_goal << config["goal_pose"]["x"].as<double>(),
+      config["goal_pose"]["y"].as<double>(),
+      config["goal_pose"]["z"].as<double>(),
+      config["goal_pose"]["qx"].as<double>(),
+      config["goal_pose"]["qy"].as<double>(),
+      config["goal_pose"]["qz"].as<double>(),
+      config["goal_pose"]["qw"].as<double>();
+
+  long int start_finger_idx = -1;
+  long int goal_finger_idx = -1;
+
+  double goal_thr = 3.14 * 10 / 180;
+
+  double wa = 1;
+  double wt = 1;
+
+  double mu_env = 0.1;
+  double mu_mnp = config["friction_coefficient"].as<double>();
+
+  double charac_len = 1;
+
+  Vector6d f_g;
+  f_g << 0, 0, -0.1, 0, 0, 0;
+
+  Matrix6d oi;
+  oi << 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1.0 / 6,
+      0, 0, 0, 0, 0, 0, 1.0 / 6, 0, 0, 0, 0, 0, 0, 1.0 / 6;
+
+  // search options
+
+  InhandTASK::SearchOptions rrt_options;
+
+  rrt_options.x_ub << config["start_pose"]["x"].as<double>() + box_lx / 2,
+      config["start_pose"]["y"].as<double>() + box_ly / 2,
+      config["start_pose"]["z"].as<double>() + box_lz / 2;
+  rrt_options.x_lb << config["start_pose"]["x"].as<double>() - box_lx / 2,
+      config["start_pose"]["y"].as<double>() - box_ly / 2,
+      config["start_pose"]["z"].as<double>() - box_lz / 2;
+
+  rrt_options.eps_trans = 0.5;
+  rrt_options.eps_angle = 3.14 * 50 / 180;
+  rrt_options.max_samples = 120;
+
+  rrt_options.goal_biased_prob = 0.7;
+
+  bool is_refine = false;
+  double refine_dist = 0.1;
+
+  // read surface point, add robot contacts
+  std::vector<ContactPoint> surface_pts;
+  std::ifstream f(std::string(SRC_DIR) +
+                  "/data/delta_array/cube_surface_contacts.csv");
+  aria::csv::CsvParser parser(f);
+
+  for (auto &row : parser) {
+    int n_cols = row.size();
+    assert(n_cols == 6);
+
+    Vector6d v;
+    for (int j = 0; j < 6; ++j) {
+      v(j) = std::stod(row[j]);
+    }
+
+    Vector3d pos;
+    pos << v(0) * box_lx / 2, v(1) * box_ly / 2, v(2) * box_lz / 2;
+    if (table_surface_contact_filter(box_lx, box_ly, box_lz, pos[0], pos[1],
+                                     pos[2], -v[3], -v[4], -v[5],
+                                     finger_radius)) {
+      if (-v[5] < -0.7){
+        continue;
+      }
+      ContactPoint p(pos, -v.tail(3));
+      surface_pts.push_back(p);
+    }
+  }
+  std::cout << "surface pts: " << surface_pts.size() << std::endl;
+  // pass the world and task parameters to the task through task->initialize
+
+  task->initialize(x_start, x_goal, start_finger_idx, goal_finger_idx, goal_thr,
+                   wa, wt, charac_len, mu_env, mu_mnp, f_g, world,
+                   n_robot_contacts, surface_pts, rrt_options, is_refine,
+                   refine_dist);
+
+  // task->grasp_measure_charac_length = box_lx;
+}
+
+void inhand_mesh(std::shared_ptr<InhandTASK> task,
+                 const std::vector<Vector3d> &delta_locations) {
   // create world, create environment, an object sliding on the table
 
   std::string para_path =
@@ -317,6 +489,143 @@ void mesh(std::shared_ptr<InhandTASK> task,
   // VisualizeSG(task->m_world, x_start, x_goal);
 }
 
+void planar_manipulation(std::shared_ptr<InhandTASK> task,
+                const std::vector<Vector3d> &delta_locations) {
+  // create world, create environment, an object sliding on the table
+
+  Vector3d center;
+  for (auto &p : delta_locations) {
+    center += p;
+  }
+  center /= double(delta_locations.size());
+
+  std::string para_path =
+      std::string(SRC_DIR) + "/data/delta_array/planar_manipulation_setup.yaml";
+  YAML::Node config = YAML::LoadFile(para_path);
+
+  double box_lx = config["box_shape"]["lx"].as<double>();
+  double box_ly = config["box_shape"]["ly"].as<double>();
+  double box_lz = config["box_shape"]["lz"].as<double>();
+
+  std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
+
+  SkeletonPtr object =
+      createFreeBox("box_object", Vector3d(box_lx, box_ly, box_lz),
+                    Vector3d(0.7, 0.3, 0.3), 0.45);
+
+  world->addObject(object);
+
+  SkeletonPtr env1 = createFixedBox(
+      "palm", Vector3d(50, 50, 0.2),
+      Vector3d(center[0], center[1], -0.1),
+      Vector3d(0.9, 0.9, 0.6), 0.6);
+
+  world->addEnvironmentComponent(env1);
+
+  // delta robot
+  double delta_ws_r = 2.5;
+  double delta_ws_h = 6;
+
+  int n_robot_contacts = delta_locations.size();
+  double finger_radius = config["finger_radius"].as<double>();
+  DartDeltaManipulator *rpt = new DartDeltaManipulator(
+      n_robot_contacts, finger_radius, delta_ws_r, delta_ws_h, delta_locations);
+
+  rpt->is_patch_contact = true;
+  world->addRobot(rpt);
+
+  // set the task parameters, start, goal, object inertial, etc....
+
+  Vector7d x_start;
+  Vector7d x_goal;
+  x_start << config["start_pose"]["x"].as<double>(),
+      config["start_pose"]["y"].as<double>(),
+      config["start_pose"]["z"].as<double>(),
+      config["start_pose"]["qx"].as<double>(),
+      config["start_pose"]["qy"].as<double>(),
+      config["start_pose"]["qz"].as<double>(),
+      config["start_pose"]["qw"].as<double>();
+  x_goal << config["goal_pose"]["x"].as<double>(),
+      config["goal_pose"]["y"].as<double>(),
+      config["goal_pose"]["z"].as<double>(),
+      config["goal_pose"]["qx"].as<double>(),
+      config["goal_pose"]["qy"].as<double>(),
+      config["goal_pose"]["qz"].as<double>(),
+      config["goal_pose"]["qw"].as<double>();
+
+  long int start_finger_idx = -1;
+  long int goal_finger_idx = -1;
+
+  double goal_thr = 3.14 * 10 / 180;
+
+  double wa = 1;
+  double wt = 1;
+
+  double mu_env = 0.2;
+  double mu_mnp = config["friction_coefficient"].as<double>();
+
+  double charac_len = 1;
+
+  Vector6d f_g;
+  f_g << 0, 0, -0.1, 0, 0, 0;
+
+  Matrix6d oi;
+  oi << 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1.0 / 6,
+      0, 0, 0, 0, 0, 0, 1.0 / 6, 0, 0, 0, 0, 0, 0, 1.0 / 6;
+
+  // search options
+
+  InhandTASK::SearchOptions rrt_options;
+
+  rrt_options.x_ub << config["start_pose"]["x"].as<double>() + box_lx / 2,
+      config["start_pose"]["y"].as<double>() + box_ly / 2,
+      config["start_pose"]["z"].as<double>() + box_lz / 2;
+  rrt_options.x_lb << config["start_pose"]["x"].as<double>() - box_lx / 2,
+      config["start_pose"]["y"].as<double>() - box_ly / 2,
+      config["start_pose"]["z"].as<double>() - box_lz / 2;
+
+  rrt_options.eps_trans = 0.5;
+  rrt_options.eps_angle = 3.14 * 50 / 180;
+  rrt_options.max_samples = 120;
+
+  rrt_options.goal_biased_prob = 0.7;
+
+  bool is_refine = false;
+  double refine_dist = 0.1;
+
+  // read surface point, add robot contacts
+  std::vector<ContactPoint> surface_pts;
+  std::ifstream f(std::string(SRC_DIR) +
+                  "/data/delta_array/cube_surface_contacts.csv");
+  aria::csv::CsvParser parser(f);
+
+  for (auto &row : parser) {
+    int n_cols = row.size();
+    assert(n_cols == 6);
+
+    Vector6d v;
+    for (int j = 0; j < 6; ++j) {
+      v(j) = std::stod(row[j]);
+    }
+
+    Vector3d pos;
+    pos << v(0) * box_lx / 2, v(1) * box_ly / 2, v(2) * box_lz / 2;
+    if (surface_contact_filter(box_lx, box_ly, box_lz, pos[0], pos[1],
+                                     pos[2], -v[3], -v[4], -v[5],
+                                     finger_radius)) {
+      ContactPoint p(pos, -v.tail(3));
+      surface_pts.push_back(p);
+    }
+  }
+  std::cout << "surface pts: " << surface_pts.size() << std::endl;
+
+  task->initialize(x_start, x_goal, start_finger_idx, goal_finger_idx, goal_thr,
+                   wa, wt, charac_len, mu_env, mu_mnp, f_g, world,
+                   n_robot_contacts, surface_pts, rrt_options, is_refine,
+                   refine_dist);
+}
+
+
 int main(int argc, char *argv[]) {
   std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
 
@@ -349,30 +658,51 @@ int main(int argc, char *argv[]) {
     delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
   }
 
-  if (config["object_type"].as<std::string>() == "cube") {
-    cube(task, delta_locations);
-    output_file = "cube_ouput.csv";
-  } else {
-    mesh(task, delta_locations);
-    output_file = "mesh_ouput.csv";
+  Vector3d center;
+  for (auto &p : delta_locations) {
+    center += p;
   }
-  std::string output_file_path =
-      std::string(SRC_DIR) + "/data/delta_array/" + output_file;
+  center /= double(delta_locations.size());
+  std::cout << "delta center: " << center.transpose() << std::endl;
 
-  bool visualize_setup = config["visualize_setup"].as<bool>();
-  bool visualize_results = config["visualize_results"].as<bool>();
-  bool visualize_csv = config["visualize_csv"].as<bool>();
+  std::string task_name = config["task"].as<std::string>();
+  output_file = task_name + "_ouput.csv";
+
+  if (task_name == "inhand_cube") {
+    inhand_cube(task, delta_locations);
+  } else if (task_name == "inhand_mesh") {
+    inhand_mesh(task, delta_locations);
+  } else if (task_name == "table_cube") {
+    std::vector<double> loc =
+        config["delta_locations"]["robot_5"].as<std::vector<double>>();
+    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
+    table_cube(task, delta_locations);
+  } else if (task_name == "planar_manipulation"){
+    planar_manipulation(task, delta_locations);
+  }
+  else {
+    std::cout << "Invalid task name" << std::endl;
+    return 0;
+  }
+  // change the above code using case statement
+
+  std::string output_file_path =
+      std::string(SRC_DIR) + "/data/delta_array/plan_results/" + output_file;
+
+  std::string visualize_option = config["visualize_option"].as<std::string>();
 
   int random_seed = config["random_seed"].as<int>();
 
-  if (visualize_csv) {
+  if (visualize_option == "csv") {
     visualize_output_file(task->m_world, output_file_path);
     task->m_world->startWindow(&argc, argv);
+    return 0;
   }
 
-  if (visualize_setup) {
+  if (visualize_option == "setup") {
     VisualizeSG(task->m_world, task->start_object_pose, task->goal_object_pose);
     task->m_world->startWindow(&argc, argv);
+    return 0;
   }
 
   InhandTASK::State start_state = task->get_start_state();
@@ -433,7 +763,7 @@ int main(int argc, char *argv[]) {
   std::cout << "Total shared rrt nodes " << tree.m_task->total_rrt_nodes()
             << std::endl;
 
-  if (visualize_results) {
+  if (visualize_option == "results") {
     task->m_world->startWindow(&argc, argv);
   }
 }

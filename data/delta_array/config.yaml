@@ -1,22 +1,21 @@
 random_seed: 122
 
-visualize_setup: true
-visualize_results: true
+# {"csv", "setup", "results", "none"}
+visualize_option: "csv"
 
-visualize_csv: true
-
-object_type: "cube"
+task: "table_cube"
 
 delta_locations:
   robot_1: [2.165, 0, 0]
   robot_2: [10.8252, 0, 0]
   robot_3: [2.165, 7.5, 0]
   robot_4: [10.8252, 7.5, 0]
+  robot_5: [8.6602, 3.75, 0]
 
 max_time: 20
 l1_1st_max_iterations: 10
 l1_max_iterations: 1
 l2_1st_max_iterations: 10
 l2_max_iterations: 2
-final_l2_1st_max_iterations: 30
-final_l2_max_iterations: 5
+final_l2_1st_max_iterations: 50
+final_l2_max_iterations: 10

@@ -47,3 +47,5 @@ _deps
 
 [Bb][Uu][Ii][Ll][Dd]/
 .vscode/settings.json
+
+python/pymcts

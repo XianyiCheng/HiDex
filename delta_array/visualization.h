@@ -225,7 +225,7 @@ MatrixXd get_output(const std::vector<State> &object_trajectory,
 void visualize_output_file(std::shared_ptr<WorldTemplate> world, std::string file_name){
   MatrixXd data = openData(file_name);
   int n_data = data.rows();
-  int n_pts = 4;
+  int n_pts = (n_data - 7) / 6;
   std::vector<Vector7d> object_traj;
   std::vector<VectorXd> mnp_traj;
   for (int i = 0; i < n_data; ++i){

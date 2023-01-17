@@ -53,9 +53,12 @@ public:
   DartWorldWindow(
       const WorldPtr& world)
   {
-    mBackground[0] = 0.7;
-    mBackground[1] = 0.7;
-    mBackground[2] = 0.8;
+    // mBackground[0] = 0.7;
+    // mBackground[1] = 0.7;
+    // mBackground[2] = 0.8;
+    mBackground[0] = 1;
+    mBackground[1] = 1;
+    mBackground[2] = 1;    
     mBackground[3] = 1;
     setWorld(world);
   }

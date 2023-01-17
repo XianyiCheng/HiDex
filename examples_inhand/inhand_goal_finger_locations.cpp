@@ -12,6 +12,8 @@
 #include "../mechanics/utilities/parser.hpp"
 #include "../mechanics/worlds/DartWorld.h"
 
+#include "../mechanics/utilities/io.h"
+
 #ifndef DART_UTILS
 #define DART_UTILS
 #include "../mechanics/dart_utils/dart_utils.h"
@@ -48,102 +50,46 @@ Vector7d randomize_a_pose(double start_x, double start_y, double start_z)
     return x;
 }
 
-
-std::vector<Vector3d> get_finger_locations(YAML::Node & config, double object_scale)
+std::vector<Vector3d> sample_goal_finger_locations(std::shared_ptr<InhandTASK> task, const Vector7d &x)
 {
-    
-    std::vector<Vector3d> goal_finger_locations;
-    {
-        
-        double x = object_scale * config["goal_finger_locations"]["finger_1"]["x"].as<double>();
-        double y = object_scale * config["goal_finger_locations"]["finger_1"]["y"].as<double>();
-        double z = object_scale * config["goal_finger_locations"]["finger_1"]["z"].as<double>();
-        goal_finger_locations.push_back(Vector3d(x, y, z));
-    }
-    {
-        
-        double x = object_scale * config["goal_finger_locations"]["finger_2"]["x"].as<double>();
-        double y = object_scale * config["goal_finger_locations"]["finger_2"]["y"].as<double>();
-        double z = object_scale * config["goal_finger_locations"]["finger_2"]["z"].as<double>();
-        goal_finger_locations.push_back(Vector3d(x, y, z));
-    }
-    {
-        
-        double x = object_scale * config["goal_finger_locations"]["finger_3"]["x"].as<double>();
-        double y = object_scale * config["goal_finger_locations"]["finger_3"]["y"].as<double>();
-        double z = object_scale * config["goal_finger_locations"]["finger_3"]["z"].as<double>();
-        goal_finger_locations.push_back(Vector3d(x, y, z));
-    }
-    {
-        
-        double x = object_scale * config["goal_finger_locations"]["finger_4"]["x"].as<double>();
-        double y = object_scale * config["goal_finger_locations"]["finger_4"]["y"].as<double>();
-        double z = object_scale * config["goal_finger_locations"]["finger_4"]["z"].as<double>();
-        goal_finger_locations.push_back(Vector3d(x, y, z));
-    }
-    {
-        
-        double x = object_scale * config["goal_finger_locations"]["finger_5"]["x"].as<double>();
-        double y = object_scale * config["goal_finger_locations"]["finger_5"]["y"].as<double>();
-        double z = object_scale * config["goal_finger_locations"]["finger_5"]["z"].as<double>();
-        goal_finger_locations.push_back(Vector3d(x, y, z));
-    }
-    return goal_finger_locations;
+    // print sampled index
+    //
+    std::vector<Vector3d> sampled_finger_locations;
+    std::vector<ContactPoint> object_surface_world;
+    Eigen::Matrix3d R;
+    R = quat2SO3(x(6), x(3), x(4), x(5));
+    Eigen::Vector3d p;
+    p = x.head(3);
 
+    for (auto pt : task->object_surface_pts)
+    {
+        ContactPoint pt_w;
+        pt_w.p = R * pt.p + p;
+        pt_w.n = R * pt.n;
+        object_surface_world.push_back(pt_w);
+    }
+    std::cout << "sampled finger locations: " << std::endl;
+
+    for (int k = 0; k < task->number_of_robot_contacts; ++k)
+    {
+        std::vector<int> pws;
+        task->m_world->getRobot()->points_in_workspace(k, object_surface_world,
+                                                       &pws);
+
+        // sample an int in pws
+        if (pws.size() == 0)
+        {
+            sampled_finger_locations.push_back(Vector3d::Zero());
+            continue;
+        }
+        int random_idx = randi(pws.size());
+        std::cout << pws[random_idx] << " " << std::endl;
+        sampled_finger_locations.push_back(task->object_surface_pts[pws[random_idx]].p);
+    }
+
+    return sampled_finger_locations;
 }
 
-std::vector<Vector3d> get_finger_locations_by_indices(YAML::Node & config, const std::vector<ContactPoint> & object_surface_pt)
-{
-    
-    std::vector<Vector3d> goal_finger_locations;
-    {
-        int idx = config["goal_finger_locations"]["finger_1_idx"].as<int>();
-        if (idx == -1){
-            goal_finger_locations.push_back(Vector3d::Zero());
-        }
-        else{
-            goal_finger_locations.push_back(object_surface_pt[idx].p);
-        }
-    }
-    {
-        int idx = config["goal_finger_locations"]["finger_2_idx"].as<int>();
-                if (idx == -1){
-            goal_finger_locations.push_back(Vector3d::Zero());
-        }
-        else{
-            goal_finger_locations.push_back(object_surface_pt[idx].p);
-        }
-    }
-    {
-        int idx = config["goal_finger_locations"]["finger_3_idx"].as<int>();
-                if (idx == -1){
-            goal_finger_locations.push_back(Vector3d::Zero());
-        }
-        else{
-            goal_finger_locations.push_back(object_surface_pt[idx].p);
-        }
-    }
-    {
-        int idx = config["goal_finger_locations"]["finger_4_idx"].as<int>();
-                if (idx == -1){
-            goal_finger_locations.push_back(Vector3d::Zero());
-        }
-        else{
-            goal_finger_locations.push_back(object_surface_pt[idx].p);
-        }
-    }
-    {
-        int idx = config["goal_finger_locations"]["finger_5_idx"].as<int>();
-                if (idx == -1){
-            goal_finger_locations.push_back(Vector3d::Zero());
-        }
-        else{
-            goal_finger_locations.push_back(object_surface_pt[idx].p);
-        }
-    }
-    return goal_finger_locations;
-
-}
 // This script is used to setup planning inhand manipulation experiments with different objects and different hand configs.
 
 const InhandTASK::State2::Action InhandTASK::State2::no_action = InhandTASK::State2::Action(-1, -1);
@@ -151,7 +97,6 @@ const InhandTASK::State::Action InhandTASK::State::no_action = -1;
 
 void setup(const std::string &object_name, std::shared_ptr<InhandTASK> task,
            double start_x, double start_y, double start_z,
-           double goal_qx, double goal_qy, double goal_qz, double goal_qw,
            double scale)
 {
     // hammer to two inhand locations (vertical and horizontal)
@@ -196,7 +141,7 @@ void setup(const std::string &object_name, std::shared_ptr<InhandTASK> task,
     // hand_type == "5"
     {
         SkeletonPtr env1 =
-            createFixedBox("ground", Vector3d(5, 5, 0.2), Vector3d(0, 0, -1000), Vector3d(0.9,0.9,0.9), 0.01);
+            createFixedBox("ground", Vector3d(5, 5, 0.2), Vector3d(0, 0, -1000), Vector3d(0.9, 0.9, 0.9), 0.01);
         n_robot_contacts = 5;
         DartPointManipulator *rpt = new DartPointManipulator(n_robot_contacts, 0.1);
 
@@ -247,7 +192,7 @@ void setup(const std::string &object_name, std::shared_ptr<InhandTASK> task,
         world->addRobot(rpt);
 
         x_start = randomize_a_pose(start_x, start_y, start_z);
-        x_goal << start_x, start_y, start_z, goal_qx, goal_qy, goal_qz, goal_qw;
+        x_goal = randomize_a_pose(start_x, start_y, start_z);
     }
 
     // set the task parameters, start, goal, object inertial, etc....
@@ -316,14 +261,15 @@ int main(int argc, char *argv[])
     double start_y = config["start_position"]["y"].as<double>();
     double start_z = config["start_position"]["z"].as<double>();
 
-    double goal_qx = config["goal_orientation"]["qx"].as<double>();
-    double goal_qy = config["goal_orientation"]["qy"].as<double>();
-    double goal_qz = config["goal_orientation"]["qz"].as<double>();
-    double goal_qw = config["goal_orientation"]["qw"].as<double>();
-
     int random_seed = config["random_seed"].as<int>();
 
     double goal_finger_distance_thr = config["goal_finger_distance_threshold"].as<double>();
+
+    int number_of_runs = config["number_of_runs"].as<int>();
+
+    std::string save_header = std::string(SRC_DIR) + "/data/inhand_goal_finger_locations/results/" + "5finger_" + object_name;
+    std::string save_path = save_header + ".csv";
+    std::string save_path_no_finger = save_header + "_no_goal_finger.csv";
 
     HMP::Level1Tree<InhandTASK::State, InhandTASK::State2,
                     InhandTASK>::HierarchicalComputeOptions compute_options;
@@ -337,19 +283,92 @@ int main(int argc, char *argv[])
 
     compute_options.l1.max_time = 30;
 
-    std::srand(random_seed);
+    for (int iter_run = 0; iter_run < number_of_runs; iter_run++)
+    {
+        std::srand(std::time(nullptr) + 100 * iter_run);
+
+        // no goal finger locations
+        {
+            std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
+
+            setup(object_name, task,
+                  start_x, start_y, start_z,
+                  object_scale);
+
+            std::vector<Vector3d> goal_finger_locations = sample_goal_finger_locations(task, task->goal_object_pose);
+            task->set_goal_finger_locations(goal_finger_locations, goal_finger_distance_thr);
+            task->if_goal_finger = false;
+
+            InhandTASK::State start_state = task->get_start_state();
+
+            HMP::Level1Tree<InhandTASK::State, InhandTASK::State2, InhandTASK> tree(
+                task, start_state, compute_options);
+
+            tree.ita = 0.2;
+
+            HMP::Node<InhandTASK::State> *current_node = tree.search_tree();
+
+            std::vector<InhandTASK::State> object_trajectory;
+            std::vector<InhandTASK::State2> action_trajectory;
+            tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
+
+            double total_distance = task->get_finger_distance(action_trajectory.back().finger_index);
+
+            VectorXd result(12);
+            result.head(11) = get_inhand_result(&tree, task, object_trajectory, action_trajectory, current_node->m_value);
+            result[11] = total_distance / double(task->number_of_robot_contacts);
+            appendData(save_path_no_finger, result.transpose());
+        }
+
+        {
+            std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
+
+            setup(object_name, task,
+                  start_x, start_y, start_z,
+                  object_scale);
+
+            std::vector<Vector3d> goal_finger_locations = sample_goal_finger_locations(task, task->goal_object_pose);
+            task->set_goal_finger_locations(goal_finger_locations, goal_finger_distance_thr);
+
+            InhandTASK::State start_state = task->get_start_state();
+
+            HMP::Level1Tree<InhandTASK::State, InhandTASK::State2, InhandTASK> tree(
+                task, start_state, compute_options);
+
+            tree.ita = 0.2;
+
+            HMP::Node<InhandTASK::State> *current_node = tree.search_tree();
+
+            std::vector<InhandTASK::State> object_trajectory;
+            std::vector<InhandTASK::State2> action_trajectory;
+            tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
+
+            double total_distance = task->get_finger_distance(action_trajectory.back().finger_index);
+
+            VectorXd result(12);
+            result.head(11) = get_inhand_result(&tree, task, object_trajectory, action_trajectory, current_node->m_value);
+            result[11] = total_distance / double(task->number_of_robot_contacts);
+            appendData(save_path, result.transpose());
+        }
+        return 0;
+    }
 
     std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
 
     setup(object_name, task,
           start_x, start_y, start_z,
-          goal_qx, goal_qy, goal_qz, goal_qw,
           object_scale);
-    
-        // goal finger locations in the object frame
+
+    // goal finger locations in the object frame
     // std::vector<Vector3d> goal_finger_locations = get_finger_locations(config, object_scale);
-    std::vector<Vector3d> goal_finger_locations = get_finger_locations_by_indices(config, task->object_surface_pts);
+    // std::vector<Vector3d> goal_finger_locations = get_finger_locations_by_indices(config, task->object_surface_pts);
+    std::vector<Vector3d> goal_finger_locations = sample_goal_finger_locations(task, task->goal_object_pose);
     task->set_goal_finger_locations(goal_finger_locations, goal_finger_distance_thr);
+
+    if (!config["is_goal_finger"].as<bool>())
+    {
+        task->if_goal_finger = false;
+    }
 
     if (visualize_setup)
     {
@@ -390,19 +409,22 @@ int main(int argc, char *argv[])
         std::cout << std::endl;
     }
 
-    double total_distance = 0;
     std::cout << "Finger locations: " << std::endl;
     for (int fidx : task->get_finger_locations(action_trajectory.back().finger_index))
     {
-        if (fidx == -1){
+        if (fidx == -1)
+        {
             std::cout << "No finger" << std::endl;
             continue;
         }
         std::cout << task->object_surface_pts[fidx].p.transpose() << std::endl;
     }
-    std::cout << "Total distance: " << task->get_finger_distance(action_trajectory.back().finger_index) << std::endl;
 
-    output_results(&tree, task, object_trajectory, action_trajectory, current_node->m_value);
+    double total_distance = task->get_finger_distance(action_trajectory.back().finger_index);
+    std::cout << "Total distance: " << total_distance << std::endl;
+    std::cout << "Average distance: " << total_distance / double(task->number_of_robot_contacts) << std::endl;
+
+    get_inhand_result(&tree, task, object_trajectory, action_trajectory, current_node->m_value);
 
     if (visualize_result)
     {
