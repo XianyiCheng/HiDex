@@ -57,6 +57,7 @@ std::vector<Vector3d> read_delta_locations(const YAML::Node &config,
     exit(0);
   }
   Vector3d center;
+  center.setZero();
   for (int i = 0; i < n_pts; i++) {
     center += delta_locations[i];
   }
@@ -265,8 +266,11 @@ void table_cube(std::shared_ptr<InhandTASK> task) {
       std::string(SRC_DIR) + "/data/delta_array/table_cube_setup.yaml";
   YAML::Node config = YAML::LoadFile(para_path);
 
-  std::vector<Vector3d> delta_locations = read_delta_locations(config, 5);
+  int n_robot_contacts = config["n_robot_contacts"].as<int>();
+
+  std::vector<Vector3d> delta_locations = read_delta_locations(config, n_robot_contacts);
   Vector3d center;
+  center.setZero();
   for (auto &p : delta_locations) {
     center += p;
   }
@@ -293,9 +297,9 @@ void table_cube(std::shared_ptr<InhandTASK> task) {
 
   // delta robot
   double delta_ws_r = 2.5;
-  double delta_ws_h = 6;
+  double delta_ws_h = 10;
 
-  int n_robot_contacts = delta_locations.size();
+  // int n_robot_contacts = delta_locations.size();
   double finger_radius = config["finger_radius"].as<double>();
   DartDeltaManipulator *rpt = new DartDeltaManipulator(
       n_robot_contacts, finger_radius, delta_ws_r, delta_ws_h, delta_locations);
@@ -355,7 +359,7 @@ void table_cube(std::shared_ptr<InhandTASK> task) {
 
   rrt_options.eps_trans = 0.5;
   rrt_options.eps_angle = 3.14 * 50 / 180;
-  rrt_options.max_samples = 120;
+  rrt_options.max_samples = 30;
 
   rrt_options.goal_biased_prob = 0.7;
 
@@ -382,9 +386,9 @@ void table_cube(std::shared_ptr<InhandTASK> task) {
     if (table_surface_contact_filter(box_lx, box_ly, box_lz, pos[0], pos[1],
                                      pos[2], -v[3], -v[4], -v[5],
                                      finger_radius)) {
-      if (-v[5] < -0.7) {
-        continue;
-      }
+    //   if (-v[5] < -0.7) {
+    //     continue;
+    //   }
       ContactPoint p(pos, -v.tail(3));
       surface_pts.push_back(p);
     }
@@ -540,6 +544,7 @@ void planar_manipulation(std::shared_ptr<InhandTASK> task) {
   std::vector<Vector3d> delta_locations = read_delta_locations(config, 4);
 
   Vector3d center;
+  center.setZero();
   for (auto &p : delta_locations) {
     center += p;
   }
@@ -663,6 +668,8 @@ void planar_manipulation(std::shared_ptr<InhandTASK> task) {
                    wa, wt, charac_len, mu_env, mu_mnp, f_g, world,
                    n_robot_contacts, surface_pts, rrt_options, is_refine,
                    refine_dist);
+  task->grasp_measure_charac_length = config["grasp_measure_charac_length"]
+                                          .as<double>();
 }
 
 int main(int argc, char *argv[]) {

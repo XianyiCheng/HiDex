@@ -196,6 +196,9 @@ MatrixXd get_output(const std::vector<State> &object_trajectory,
       for (int n_pt = 0; n_pt < task->number_of_robot_contacts; ++n_pt) {
         if (std::isnan(mnp_config[6 * n_pt])) {
           mnp_config_world.segment(6 * n_pt, 6) = mnp_config.segment(6 * n_pt, 6);
+          mnp_config_world(6 * n_pt) = -7777;
+          mnp_config_world(6 * n_pt + 1) = -7777;
+          mnp_config_world(6 * n_pt + 2) = -7777;
           continue;
         }
         Vector3d p = mnp_config.segment(6 * n_pt, 3);

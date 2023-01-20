@@ -1,5 +1,6 @@
-object: "mug"
-object_scale: 1.5
+# mug 1.5 hammer 1
+object: "hammer"
+object_scale: 1
 visualize_setup: false
 visualize_result: true
 
@@ -12,6 +13,6 @@ start_position:
   y: 0.0
   z: 0.0
 
-goal_finger_distance_threshold: 2.5
+goal_finger_distance_threshold: 5
 
 number_of_runs: 30

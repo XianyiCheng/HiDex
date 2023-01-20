@@ -8,7 +8,7 @@ table_height: 0.0
 finger_radius: 0.75
 
 start_pose:
-  x: 6.5
+  x: 7.5
   y: 3.75
   z: 2.5
   qx: 0.0
@@ -16,8 +16,16 @@ start_pose:
   qz: 0.0
   qw: 1.0
 
+# goal_pose:
+#   x: 5
+#   y: 3.75
+#   z: 4.5
+#   qx: 0.0
+#   qy: -0.7071
+#   qz: 0
+#   qw: 0.7071
 goal_pose:
-  x: 5
+  x: 7
   y: 3.75
   z: 4.5
   qx: 0.0
@@ -29,9 +37,16 @@ friction_coefficient: 0.5
 
 random_seed: 122
 
+n_robot_contacts: 3
+
+# delta_locations:
+#   robot_1: [2.165, 0, 0]
+#   robot_2: [10.8252, 0, 0]
+#   robot_3: [2.165, 7.5, 0]
+#   robot_4: [10.8252, 7.5, 0]
+#   robot_5: [8.6602, 3.75, 0]
+
 delta_locations:
-  robot_1: [2.165, 0, 0]
-  robot_2: [10.8252, 0, 0]
-  robot_3: [2.165, 7.5, 0]
-  robot_4: [10.8252, 7.5, 0]
-  robot_5: [8.6602, 3.75, 0]
+  robot_1: [10.8252, 0, 0]
+  robot_2: [10.8252, 7.5, 0]
+  robot_3: [8.6602, 3.75, 0]

@@ -3,9 +3,9 @@ grasp_measure_scale: 0.5
 
 use_object_surface_sampling: true
 
-visualization_option: "result"
+visualization_option: "setup"
 
-run_batch: true
+run_batch: false
 
 random_seed: 1
 

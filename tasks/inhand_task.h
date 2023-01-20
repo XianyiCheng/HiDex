@@ -378,7 +378,7 @@ public:
     if (this->if_goal_finger) {
       double d = this->get_finger_distance(finger_idx);
       d = d / double(this->number_of_robot_contacts);
-      double p = 1.0 / (1.0 + std::exp(6.89 * d - 3.16));
+      double p = 1.0 / (1.0 + std::exp(4.48413179 * d - 2.2420659));
       return p;
     } else {
       // use grasp measure
@@ -437,7 +437,7 @@ public:
   //     state.finger_index = action % this->n_finger_combinations;
   // }
 
-  double grasp_measure_charac_length = 1.0;
+  double grasp_measure_charac_length = -1.0;
   std::vector<State> saved_object_trajectory;
   std::vector<ContactPoint> object_surface_pts;
   int number_of_robot_contacts;

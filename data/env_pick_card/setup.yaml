@@ -3,7 +3,7 @@ grasp_measure_scale: 0.25
 
 use_object_surface_sampling: true
 
-visualization_option: "result"
+visualization_option: "setup"
 
 run_batch: false
 

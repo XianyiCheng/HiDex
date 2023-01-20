@@ -1032,10 +1032,11 @@ double InhandTASK::evaluate_path(const std::vector<State2> &path) {
     for (auto state : path) {
       total_finger_distance += get_finger_distance(state.finger_index);
     }
-    total_finger_distance += 3 * get_finger_distance(path.back().finger_index);
-    total_finger_distance /= 3.0 + double(path.size());
+    total_finger_distance += double(path.size()) * get_finger_distance(path.back().finger_index);
+    total_finger_distance /= this->number_of_robot_contacts;
+    total_finger_distance /= 2*double(path.size());
     double reward_finger_distance =
-        1.0 / (1 + std::exp(10 * total_finger_distance - 5));
+        1.0 / (1 + std::exp(3.62 * total_finger_distance - 2.09));
     reward = 0.2 * reward + 0.8 * reward_finger_distance;
   }
 

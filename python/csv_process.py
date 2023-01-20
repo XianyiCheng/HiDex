@@ -20,5 +20,6 @@ for filename in os.listdir(directory):
                 if len(row) == 0:
                     continue
                 # check if the first column starts with 0
-                if not row[0].startswith("0,"):
+                
+                if not row[0]== '0':
                     csv_writer.writerow(row)

@@ -23,10 +23,12 @@ def logistic_function(x, k, b):
 
 # main function
 if __name__ == "__main__":
-    x = np.array([[0.01],[1.0], [2.0]])
-    y = np.array([[1.0],[0.5], [0.999]])
+    x = np.array([[1.0], [0.5], [0.01]])
+    y = np.array([[0.2], [0.5], [0.9]])
     k, b = fit_logistic_function(x, y)
     print("y = 1/(1+exp(k*x+b))")
     print("k = ", k)
     print("b = ", b)
-    print("y = ", logistic_function(np.array(range(0,2,0.1)), k, b))
+    x_test = np.arange(0,2.0,0.1)
+    print("x = ", x_test)
+    print("y = ", logistic_function(x_test, k, b))

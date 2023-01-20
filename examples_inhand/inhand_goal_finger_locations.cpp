@@ -283,73 +283,78 @@ int main(int argc, char *argv[])
 
     compute_options.l1.max_time = 30;
 
-    for (int iter_run = 0; iter_run < number_of_runs; iter_run++)
+    if (number_of_runs > 1)
     {
-        std::srand(std::time(nullptr) + 100 * iter_run);
-
-        // no goal finger locations
+        for (int iter_run = 0; iter_run < number_of_runs; iter_run++)
         {
-            std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
+            std::srand(std::time(nullptr) + 100 * iter_run);
 
-            setup(object_name, task,
-                  start_x, start_y, start_z,
-                  object_scale);
-
-            std::vector<Vector3d> goal_finger_locations = sample_goal_finger_locations(task, task->goal_object_pose);
-            task->set_goal_finger_locations(goal_finger_locations, goal_finger_distance_thr);
-            task->if_goal_finger = false;
-
-            InhandTASK::State start_state = task->get_start_state();
-
-            HMP::Level1Tree<InhandTASK::State, InhandTASK::State2, InhandTASK> tree(
-                task, start_state, compute_options);
-
-            tree.ita = 0.2;
-
-            HMP::Node<InhandTASK::State> *current_node = tree.search_tree();
-
-            std::vector<InhandTASK::State> object_trajectory;
-            std::vector<InhandTASK::State2> action_trajectory;
-            tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
-
-            double total_distance = task->get_finger_distance(action_trajectory.back().finger_index);
-
+            VectorXd result_no(12);
             VectorXd result(12);
-            result.head(11) = get_inhand_result(&tree, task, object_trajectory, action_trajectory, current_node->m_value);
-            result[11] = total_distance / double(task->number_of_robot_contacts);
-            appendData(save_path_no_finger, result.transpose());
-        }
 
-        {
-            std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
+            // no goal finger locations
+            {
+                std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
 
-            setup(object_name, task,
-                  start_x, start_y, start_z,
-                  object_scale);
+                setup(object_name, task,
+                      start_x, start_y, start_z,
+                      object_scale);
 
-            std::vector<Vector3d> goal_finger_locations = sample_goal_finger_locations(task, task->goal_object_pose);
-            task->set_goal_finger_locations(goal_finger_locations, goal_finger_distance_thr);
+                std::vector<Vector3d> goal_finger_locations = sample_goal_finger_locations(task, task->goal_object_pose);
+                task->set_goal_finger_locations(goal_finger_locations, goal_finger_distance_thr);
+                task->if_goal_finger = false;
 
-            InhandTASK::State start_state = task->get_start_state();
+                InhandTASK::State start_state = task->get_start_state();
 
-            HMP::Level1Tree<InhandTASK::State, InhandTASK::State2, InhandTASK> tree(
-                task, start_state, compute_options);
+                HMP::Level1Tree<InhandTASK::State, InhandTASK::State2, InhandTASK> tree(
+                    task, start_state, compute_options);
 
-            tree.ita = 0.2;
+                tree.ita = 0.2;
 
-            HMP::Node<InhandTASK::State> *current_node = tree.search_tree();
+                HMP::Node<InhandTASK::State> *current_node = tree.search_tree();
 
-            std::vector<InhandTASK::State> object_trajectory;
-            std::vector<InhandTASK::State2> action_trajectory;
-            tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
+                std::vector<InhandTASK::State> object_trajectory;
+                std::vector<InhandTASK::State2> action_trajectory;
+                tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
 
-            double total_distance = task->get_finger_distance(action_trajectory.back().finger_index);
+                double total_distance = task->get_finger_distance(action_trajectory.back().finger_index);
 
-            VectorXd result(12);
-            result.head(11) = get_inhand_result(&tree, task, object_trajectory, action_trajectory, current_node->m_value);
-            result[11] = total_distance / double(task->number_of_robot_contacts);
+                result_no.head(11) = get_inhand_result(&tree, task, object_trajectory, action_trajectory, current_node->m_value);
+                result_no[11] = total_distance / double(task->number_of_robot_contacts);
+            }
+
+            {
+                std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
+
+                setup(object_name, task,
+                      start_x, start_y, start_z,
+                      object_scale);
+
+                std::vector<Vector3d> goal_finger_locations = sample_goal_finger_locations(task, task->goal_object_pose);
+                task->set_goal_finger_locations(goal_finger_locations, goal_finger_distance_thr);
+
+                InhandTASK::State start_state = task->get_start_state();
+
+                HMP::Level1Tree<InhandTASK::State, InhandTASK::State2, InhandTASK> tree(
+                    task, start_state, compute_options);
+
+                tree.ita = 0.2;
+
+                HMP::Node<InhandTASK::State> *current_node = tree.search_tree();
+
+                std::vector<InhandTASK::State> object_trajectory;
+                std::vector<InhandTASK::State2> action_trajectory;
+                tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
+
+                double total_distance = task->get_finger_distance(action_trajectory.back().finger_index);
+
+                result.head(11) = get_inhand_result(&tree, task, object_trajectory, action_trajectory, current_node->m_value);
+                result[11] = total_distance / double(task->number_of_robot_contacts);
+            }
+            appendData(save_path_no_finger, result_no.transpose());
             appendData(save_path, result.transpose());
         }
+
         return 0;
     }
 
