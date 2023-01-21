@@ -1,16 +1,16 @@
-random_seed: 122
+random_seed: 0
 
 # visualization options: {"csv", "setup", "results", "none"}
 # "csv": show the trajecotry in the result csv file
 # "results": plan a trajectory, saved in csv, and show the results
 # "setup": show the task setup
 # "none": plan a trajectory, saved in csv, no visualization
-visualize_option: "results"
+visualize_option: "csv"
 
 # tasks: "table_cube", "planar_manipulation", "inhand_cube", (not setup well: "inhand_mesh")
 # task: "planar_manipulation"
 
-max_time: 45
+max_time: 5
 l1_1st_max_iterations: 10
 l1_max_iterations: 1
 l2_1st_max_iterations: 10

@@ -38,5 +38,5 @@ rrt_options:
   eps_trans: 0.05
   eps_angle_deg: 50
   max_samples: 50
-  goal_biased_prob: 0.7
+  goal_biased_prob: 0.9
   goal_thr: 0.174
