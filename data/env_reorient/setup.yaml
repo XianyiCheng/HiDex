@@ -3,7 +3,7 @@ grasp_measure_scale: 0.5
 
 use_object_surface_sampling: true
 
-visualization_option: "setup"
+visualization_option: "result"
 
 run_batch: false
 
@@ -25,3 +25,6 @@ rrt_options:
   eps_trans: 1.0
   eps_angle_deg: 50
   max_samples: 200
+
+if_quasidynamic: false
+number_of_robot_contacts: 2

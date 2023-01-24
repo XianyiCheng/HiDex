@@ -202,14 +202,15 @@ public:
 
     int n_env_changes = this->number_environment_contact_changes(path);
     double x_env_changes = double(n_env_changes);
-    double y_env_changes = 1.31*x_env_changes - 4.41;
+    double y_env_changes = 1.31 * x_env_changes - 4.41;
 
     double r_dist = 1.0 / (1.0 + std::exp(y_dist));
     double r_path = 1.0 / (1.0 + std::exp(y_path));
     double r_finger = 1.0 / (1.0 + std::exp(y_finger));
     double r_env_changes = 1.0 / (1.0 + std::exp(y_env_changes));
 
-    double reward = 0.3 * r_dist + 0.3 * r_path + 0.1 * r_finger + 0.3*r_env_changes;
+    double reward =
+        0.3 * r_dist + 0.3 * r_path + 0.1 * r_finger + 0.3 * r_env_changes;
 
     return reward;
   }
@@ -444,6 +445,25 @@ private:
 };
 
 bool isQuasistatic(const std::vector<ContactPoint> &mnps,
-                   const std::vector<ContactPoint> &envs, const Vector6d &v,
+                   const std::vector<ContactPoint> &envs,
+                   const VectorXi &ref_cs_mode, const Vector6d &v,
                    const Vector6d &f_ext_w, const Vector7d object_pose,
                    double mu_env, double mu_mnp, ContactConstraints *cons);
+
+bool isQuasistatic(const std::vector<ContactPoint> &mnps,
+                   const std::vector<ContactPoint> &envs,
+                   const VectorXi &env_mode, const Vector6d &f_ext_w,
+                   const Vector7d object_pose, double mu_env, double mu_mnp,
+                   ContactConstraints *cons);
+
+bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
+                    const std::vector<ContactPoint> &envs,
+                    const VectorXi &env_mode, const Vector6d &f_ext_w,
+                    const Matrix6d &object_inertia, const Vector7d object_pose,
+                    double mu_env, double mu_mnp, double wa, double wt,
+                    double h_time, ContactConstraints *cons, double thr = 0.5);
+
+Vector6d EnvironmentConstrainedVelocity(const Vector6d &v_goal,
+                                        const std::vector<ContactPoint> &envs,
+                                        const VectorXi &env_mode,
+                                        ContactConstraints &cons);

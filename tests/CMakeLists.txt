@@ -58,3 +58,6 @@ target_link_libraries(test_action_idx PRIVATE mcts-mechanics)
 add_executable(test_time test_time.cpp)
 
 add_executable(test_discrete_sample test_discrete_sample.cpp)
+
+add_executable(test_quasidynamic test_quasidynamic.cpp ../tasks/cmg_task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
+target_link_libraries(test_quasidynamic PRIVATE mcts-mechanics ${dart_libs})

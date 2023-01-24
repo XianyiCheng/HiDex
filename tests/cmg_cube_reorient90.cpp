@@ -49,8 +49,8 @@ void pivoting(std::shared_ptr<CMGTASK> task) {
 
   double goal_thr = box_length * 3.14 * 30 / 180;
 
-  double wa = 0.3;
-  double wt = 10;
+  double wa = 1;
+  double wt = 1;
 
   double mu_env = 0.3;
   double mu_mnp = 0.8;
@@ -100,9 +100,10 @@ void pivoting(std::shared_ptr<CMGTASK> task) {
   }
     // pass the world and task parameters to the task through task->initialize
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
-                   mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASISTATIC,
+                   mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASIDYNAMIC,
                    surface_pts,
                    rrt_options);
+  
 
 }
 

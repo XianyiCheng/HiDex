@@ -36,7 +36,7 @@ void setup(std::shared_ptr<CMGTASK> task, const YAML::Node &config) {
   world->addObject(object);
   world->addEnvironmentComponent(env1);
 
-  int n_robot_contacts = 2;
+  int n_robot_contacts = config["number_of_robot_contacts"].as<int>();
   DartPointManipulator *rpt =
       new DartPointManipulator(n_robot_contacts, box_length * 0.2);
   world->addRobot(rpt);
@@ -49,7 +49,7 @@ void setup(std::shared_ptr<CMGTASK> task, const YAML::Node &config) {
 
   // goal: rotate around y axis for 90 degrees
   x_goal << box_length / 2, 0, box_length / 2 * 0.9999, 0, 0.7071, 0, 0.7071;
-  x_goal << box_length / 2, 0, box_length / 2 * 0.9999, 0, -1, 0, 0;
+  // x_goal << box_length / 2, 0, box_length / 2 * 0.9999, 0, -1, 0, 0;
 
   double goal_thr = box_length * 3.14 * 5 / 180;
 
@@ -129,9 +129,13 @@ void setup(std::shared_ptr<CMGTASK> task, const YAML::Node &config) {
     }
   }
 
+  int dynamic_type = CMG_QUASISTATIC;
+  if (config["if_quasidynamic"].as<bool>()) {
+    dynamic_type = CMG_QUASIDYNAMIC;
+  }
   // pass the world and task parameters to the task through task->initialize
   task->initialize(x_start, x_goal, goal_thr, wa, wt, charac_len, mu_env,
-                   mu_mnp, oi, f_g, world, n_robot_contacts, CMG_QUASISTATIC,
+                   mu_mnp, oi, f_g, world, n_robot_contacts, dynamic_type,
                    surface_pts, rrt_options, if_refine, refine_dist);
 }
 
