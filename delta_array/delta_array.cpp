@@ -569,8 +569,9 @@ void planar_manipulation(std::shared_ptr<InhandTASK> task) {
   world->addEnvironmentComponent(env1);
 
   // delta robot
-  double delta_ws_r = 2.5;
-  double delta_ws_h = 6;
+
+  double delta_ws_r = config["delta_ws_r"].as<double>();
+  double delta_ws_h = config["delta_ws_h"].as<double>();
 
   int n_robot_contacts = delta_locations.size();
   double finger_radius = config["finger_radius"].as<double>();
@@ -602,7 +603,7 @@ void planar_manipulation(std::shared_ptr<InhandTASK> task) {
   long int start_finger_idx = -1;
   long int goal_finger_idx = -1;
 
-  double goal_thr = 3.14 * 10 / 180;
+  double goal_thr = config["rrt_options"]["goal_thr"].as<double>();
 
   double wa = 1;
   double wt = 1;
@@ -630,14 +631,16 @@ void planar_manipulation(std::shared_ptr<InhandTASK> task) {
       config["start_pose"]["y"].as<double>() - box_ly / 2,
       config["start_pose"]["z"].as<double>() - box_lz / 2;
 
-  rrt_options.eps_trans = 0.5;
-  rrt_options.eps_angle = 3.14 * 50 / 180;
-  rrt_options.max_samples = 120;
+  rrt_options.eps_trans = config["rrt_options"]["eps_trans"].as<double>();
+  rrt_options.eps_angle =
+      (3.14 / 180.0) * config["rrt_options"]["eps_angle_deg"].as<double>();
+  rrt_options.max_samples = config["rrt_options"]["max_samples"].as<int>();
 
-  rrt_options.goal_biased_prob = 0.7;
+  rrt_options.goal_biased_prob =
+      config["rrt_options"]["goal_biased_prob"].as<double>();
 
-  bool is_refine = false;
-  double refine_dist = 0.1;
+  bool is_refine = config["is_refine"].as<bool>();
+  double refine_dist = config["refine_dist"].as<double>();
 
   // read surface point, add robot contacts
   std::vector<ContactPoint> surface_pts;

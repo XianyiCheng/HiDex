@@ -84,9 +84,6 @@ MatrixXd get_ddhand_output(const std::vector<State> &object_trajectory,
         if (std::isnan(mnp_config[6 * n_pt])) {
           mnp_config_world.segment(6 * n_pt, 6) =
               mnp_config.segment(6 * n_pt, 6);
-          mnp_config_world(6 * n_pt) = -7777;
-          mnp_config_world(6 * n_pt + 1) = -7777;
-          mnp_config_world(6 * n_pt + 2) = -7777;
           continue;
         }
         Vector3d p = mnp_config.segment(6 * n_pt, 3);
