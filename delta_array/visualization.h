@@ -1,10 +1,13 @@
 void VisualizeSG(std::shared_ptr<WorldTemplate> world, Vector7d start_pose,
-                 Vector7d goal_pose) {
+                 Vector7d goal_pose)
+{
   std::vector<Vector7d> traj;
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 100; i++)
+  {
     traj.push_back(start_pose);
   }
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 100; i++)
+  {
     traj.push_back(goal_pose);
   }
   world->setObjectTrajectory(traj);
@@ -12,23 +15,25 @@ void VisualizeSG(std::shared_ptr<WorldTemplate> world, Vector7d start_pose,
 
 void VisualizeTraj(std::shared_ptr<WorldTemplate> world,
                    const std::vector<Vector7d> &object_traj,
-                   const std::vector<VectorXd> &mnp_traj) {
+                   const std::vector<VectorXd> &mnp_traj)
+{
   world->setPlaybackTrajectory(object_traj, mnp_traj);
 }
 
 template <class State, class State2, class Task>
 void VisualizeStateTrajectory(std::shared_ptr<WorldTemplate> world,
-                      std::shared_ptr<Task> task,
-                      const std::vector<State> &object_traj,
-                      const std::vector<State2> &mnp_traj)
+                              std::shared_ptr<Task> task,
+                              const std::vector<State> &object_traj,
+                              const std::vector<State2> &mnp_traj)
 {
   std::vector<Vector7d> object_traj_vec;
   std::vector<VectorXd> mnp_traj_vec;
 
-  for (int kk = 0; kk < 5; kk++) {
+  for (int kk = 0; kk < 5; kk++)
+  {
     object_traj_vec.push_back(object_traj[0].m_pose);
     mnp_traj_vec.push_back(
-          task->get_robot_config_from_action_idx(mnp_traj[1].finger_index));
+        task->get_robot_config_from_action_idx(mnp_traj[1].finger_index));
   }
 
   for (int i = 0; i < object_traj.size(); i++)
@@ -54,7 +59,8 @@ template <class Tree, class State, class State2, class Task>
 void output_results(Tree *tree, std::shared_ptr<Task> task,
                     const std::vector<State> &object_trajectory,
                     const std::vector<State2> &action_trajectory,
-                    double final_value) {
+                    double final_value)
+{
 
   std::cout << "Solution found time"
             << "\t"
@@ -100,7 +106,8 @@ template <class Tree, class State, class State2, class Task>
 VectorXd get_inhand_result(Tree *tree, std::shared_ptr<Task> task,
                            const std::vector<State> &object_trajectory,
                            const std::vector<State2> &action_trajectory,
-                           double final_value) {
+                           double final_value)
+{
 
   std::cout << "Solution found time"
             << "\t"
@@ -151,16 +158,40 @@ VectorXd get_inhand_result(Tree *tree, std::shared_ptr<Task> task,
 template <class State, class State2, class Task>
 MatrixXd get_output(const std::vector<State> &object_trajectory,
                     const std::vector<State2> &action_trajectory,
-                    std::shared_ptr<Task> task, double outward_radius = 0.0) {
+                    std::shared_ptr<Task> task, double outward_radius,
+                    const std::vector<Vector3d> &delta_locations)
+{
   std::vector<VectorXd> output;
   int t_span = 5;
 
-  for (int i = 1; i < action_trajectory.size(); ++i) {
+  // first 5 rows are the calibration
+  {
+    VectorXd output_row(6 * task->number_of_robot_contacts + 7);
+    VectorXd mnp_config_world(task->number_of_robot_contacts * 6);
+    for (int k = 0; k < task->number_of_robot_contacts; ++k)
+    {
+      mnp_config_world.segment(6 * k, 3) =
+          delta_locations[k];
+    }
+    output_row.segment(0, 6 * task->number_of_robot_contacts) =
+        mnp_config_world;
+    output_row.segment(6 * task->number_of_robot_contacts, 7) = task->start_object_pose;
+    for (int k = 0; k < t_span; ++k)
+    {
+      output.push_back(output_row);
+    }
+  }
+
+  for (int i = 1; i < action_trajectory.size(); ++i)
+  {
     int t = action_trajectory[i].timestep;
     int t_next;
-    if (i == action_trajectory.size() - 1) {
+    if (i == action_trajectory.size() - 1)
+    {
       t_next = object_trajectory.size() - 1;
-    } else {
+    }
+    else
+    {
       t_next = action_trajectory[i + 1].timestep;
     }
 
@@ -169,19 +200,24 @@ MatrixXd get_output(const std::vector<State> &object_trajectory,
 
     // get the array of object pose
     std::vector<Vector7d> object_poses;
-    if (t_next <= t) {
-      for (int kk = 0; kk < t_span; ++kk) {
+    if (t_next <= t)
+    {
+      for (int kk = 0; kk < t_span; ++kk)
+      {
         object_poses.push_back(object_trajectory[t].m_pose);
       }
-    } else {
+    }
+    else
+    {
       std::vector<Vector7d> object_poses_all;
       // object_poses_all.push_back(object_trajectory[t].m_pose);
-      for (int kk = t+1; kk <= t_next; ++kk) {
+      for (int kk = t + 1; kk <= t_next; ++kk)
+      {
         object_poses_all.insert(object_poses_all.end(),
                                 object_trajectory[kk].m_path.begin(),
                                 object_trajectory[kk].m_path.end());
       }
-      int n_span = std::max(int(object_poses_all.size())- 2, 0) / 3;
+      int n_span = std::max(int(object_poses_all.size()) - 2, 0) / 3;
       object_poses.push_back(object_poses_all[0]);
       object_poses.push_back(object_poses_all[n_span]);
       object_poses.push_back(object_poses_all[2 * n_span]);
@@ -191,10 +227,13 @@ MatrixXd get_output(const std::vector<State> &object_trajectory,
 
     // for each object pose, get the array of mnp config
 
-    for (auto x : object_poses) {
+    for (auto x : object_poses)
+    {
       VectorXd mnp_config_world(6 * task->number_of_robot_contacts);
-      for (int n_pt = 0; n_pt < task->number_of_robot_contacts; ++n_pt) {
-        if (std::isnan(mnp_config[6 * n_pt])) {
+      for (int n_pt = 0; n_pt < task->number_of_robot_contacts; ++n_pt)
+      {
+        if (std::isnan(mnp_config[6 * n_pt]))
+        {
           mnp_config_world.segment(6 * n_pt, 6) = mnp_config.segment(6 * n_pt, 6);
           mnp_config_world(6 * n_pt) = -7777;
           mnp_config_world(6 * n_pt + 1) = -7777;
@@ -220,34 +259,39 @@ MatrixXd get_output(const std::vector<State> &object_trajectory,
   }
 
   MatrixXd output_mat(output.size(), 6 * task->number_of_robot_contacts + 7);
-  for (int i = 0; i < output.size(); ++i) {
+  for (int i = 0; i < output.size(); ++i)
+  {
     output_mat.row(i) = output[i];
   }
   return output_mat;
 }
 
-void visualize_output_file(std::shared_ptr<WorldTemplate> world, std::string file_name){
+void visualize_output_file(std::shared_ptr<WorldTemplate> world, std::string file_name)
+{
   MatrixXd data = openData(file_name);
   int n_data = data.rows();
   int n_pts = (data.cols() - 7) / 6;
   std::vector<Vector7d> object_traj;
   std::vector<VectorXd> mnp_traj;
-  for (int i = 0; i < n_data; ++i){
+  for (int i = 0; i < n_data; ++i)
+  {
     VectorXd mnp_config_world = data.row(i).segment(0, 6 * n_pts);
-    VectorXd mnp_config(6*n_pts);
+    VectorXd mnp_config(6 * n_pts);
     Vector7d object_pose = data.row(i).segment(6 * n_pts, 7);
-    
+
     Matrix3d R = quat2SO3(object_pose(6), object_pose(3), object_pose(4), object_pose(5));
     Matrix3d R_inv = R.transpose();
     Vector3d t = object_pose.segment(0, 3);
-    for (int j = 0; j < n_pts; ++j){
-      if (std::isnan(mnp_config_world[6 * j])){
+    for (int j = 0; j < n_pts; ++j)
+    {
+      if (std::isnan(mnp_config_world[6 * j]))
+      {
         mnp_config.segment(6 * j, 6) = mnp_config_world.segment(6 * j, 6);
         continue;
       }
       Vector3d pw = mnp_config_world.segment(6 * j, 3);
       Vector3d nw = mnp_config_world.segment(6 * j + 3, 3);
-      Vector3d p = R_inv*( pw - t);
+      Vector3d p = R_inv * (pw - t);
       Vector3d n = R_inv * nw;
       mnp_config.segment(6 * j, 3) = p;
       mnp_config.segment(6 * j + 3, 3) = n;

@@ -770,7 +770,11 @@ int main(int argc, char *argv[]) {
 
   std::remove(output_file_path.c_str());
   double outward_radius = config["outward_radius"].as<double>();
-  MatrixXd output_mat = get_output(object_trajectory, action_trajectory, task, outward_radius);
+
+   std::string task_para_path =
+      std::string(SRC_DIR) + "/data/delta_array/"+task_name+"_setup.yaml";
+  YAML::Node task_config = YAML::LoadFile(task_para_path);
+  MatrixXd output_mat = get_output(object_trajectory, action_trajectory, task, outward_radius, read_delta_locations(task_config, task->number_of_robot_contacts));
   saveData(output_file_path, output_mat);
 
   std::cout << "Total level 1 tree nodes " << tree.count_total_nodes()
