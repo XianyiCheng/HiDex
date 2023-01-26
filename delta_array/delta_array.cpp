@@ -769,7 +769,8 @@ int main(int argc, char *argv[]) {
                            action_trajectory);
 
   std::remove(output_file_path.c_str());
-  MatrixXd output_mat = get_output(object_trajectory, action_trajectory, task);
+  double outward_radius = config["outward_radius"].as<double>();
+  MatrixXd output_mat = get_output(object_trajectory, action_trajectory, task, outward_radius);
   saveData(output_file_path, output_mat);
 
   std::cout << "Total level 1 tree nodes " << tree.count_total_nodes()

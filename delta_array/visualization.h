@@ -151,7 +151,7 @@ VectorXd get_inhand_result(Tree *tree, std::shared_ptr<Task> task,
 template <class State, class State2, class Task>
 MatrixXd get_output(const std::vector<State> &object_trajectory,
                     const std::vector<State2> &action_trajectory,
-                    std::shared_ptr<Task> task) {
+                    std::shared_ptr<Task> task, double outward_radius = 0.0) {
   std::vector<VectorXd> output;
   int t_span = 5;
 
@@ -203,6 +203,7 @@ MatrixXd get_output(const std::vector<State> &object_trajectory,
         }
         Vector3d p = mnp_config.segment(6 * n_pt, 3);
         Vector3d n = mnp_config.segment(6 * n_pt + 3, 3);
+        p = p - outward_radius * n;
         Eigen::Matrix3d R;
         R = quat2SO3(x(6), x(3), x(4), x(5));
         Vector3d p_world = R * p + x.segment(0, 3);
