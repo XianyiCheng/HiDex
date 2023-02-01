@@ -1,36 +1,38 @@
 box_shape:
   lx: 20
-  ly: 1.5
-  lz: 1.5
+  ly: 2.5
+  lz: 2.5
 
-finger_radius: 0.4
+finger_radius: 0.75
+delta_ws_r: 2
+delta_ws_h: 6
 
 start_pose:
-  x: 4.33007  
-  y: 2.5
-  z: 2.5
-  qx: 0.0
-  qy: 0.0
-  qz: 0.0
-  qw: 1.0
-
-goal_pose:
-  x: 4.33007
-  y: 2.8125
+  x: 6.06214  
+  y: -7.616
   z: 2.5
   qx: 0.0
   qy: 0.0
   qz: 0.7071
   qw: 0.7071
 
+goal_pose:
+  x: 6.06214
+  y: -7.616
+  z: 2.5
+  qx: 0.0
+  qy: 0.0
+  qz: 0.0
+  qw: 1.0
+
 friction_coefficient: 0.5 
-grasp_measure_charac_length: 2.0
+grasp_measure_charac_length: -1
 
 random_seed: 122
 
 delta_locations:
-  robot_1: [2.165, 0, 0]
-  robot_2: [6.4951, 0, 0]
-  robot_3: [0, 3.75, 0]
-  robot_4: [4.3301, 3.75, 0]
-  robot_5: [8.6602, 3.75, 0]
+  robot_1: [4.3301, -3.75, 0]
+  robot_2: [4.3301, -7.5, 0]
+  robot_3: [4.3301, -11.25, 0]
+  robot_4: [8.6602, -5.915, 0]
+  robot_5: [8.6602, -9.665, 0]

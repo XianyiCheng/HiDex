@@ -1,9 +1,11 @@
 
 grasp_measure_scale: 0.25
 
-use_object_surface_sampling: true
+use_object_surface_sampling: false
 
-visualization_option: "setup"
+output_file_name: "output.csv"
+
+visualization_option: "csv"
 
 run_batch: false
 

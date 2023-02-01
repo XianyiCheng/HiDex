@@ -33,7 +33,7 @@ void setup(std::shared_ptr<CMGTASK> task, bool use_object_surface_sampling)
   SkeletonPtr object =
       createFreeBox("box_object", Vector3d(box_length, box_length, box_height));
   SkeletonPtr env1 =
-      createFixedBox("ground", Vector3d(4, 4, 0.2), Vector3d(0, 0, -0.1));
+      createFixedBox("ground", Vector3d(4, 4, 0.2), Vector3d(0, 0, -0.1), Vector3d(1,1,1), 0.00001);
 
   world->addObject(object);
   world->addEnvironmentComponent(env1);
@@ -218,6 +218,15 @@ int main(int argc, char *argv[])
 
   task->grasp_measure_charac_length = grasp_measure_scale;
 
+    std::string output_file_path = std::string(SRC_DIR) + "/data/env_pick_card/" + config["output_file_name"].as<std::string>();
+
+  if (visualization_option == "csv")
+  {
+    visualize_output_file(task->m_world, output_file_path);
+    task->m_world->startWindow(&argc, argv);
+    return 0;
+  }
+
   if (visualization_option == "setup")
   {
     VisualizeSG(task->m_world, task->start_object_pose, task->goal_object_pose);
@@ -240,6 +249,9 @@ int main(int argc, char *argv[])
 
   get_results(&tree, task, object_trajectory, action_trajectory,
               current_node->m_value);
+
+  MatrixXd output_mat = get_output(object_trajectory, action_trajectory, task);
+  saveData(output_file_path, output_mat);
 
   if (visualization_option == "result")
   {

@@ -1,0 +1,84 @@
+save_file: "peg_in_hole_up.csv"
+# unit box
+surface_contact_file: "cube_surface_contacts_peg_in_hole_side.csv"
+
+# visualization options: {"csv", "setup", "results", "none"}
+# "csv": show the trajecotry in the result csv file
+# "results": plan a trajectory, saved in csv, and show the results
+# "setup": show the task setup
+# "none": plan a trajectory, saved in csv, no visualization
+visualize_option: "results"
+
+scale_to_real: 100
+
+relocation_distance_to_surface: 0.8
+
+calibration_location: [-1, 0, 0.75]
+
+default_locations:
+  finger_1: [-1, 0, 0.75]
+  finger_2: [1, 0, 0.75]
+
+# in unit length box
+initial_contact_locations:
+  finger_1: [-1, 0, 0.75, 1, 0, 0]
+  finger_2: [1, 0, 0.75, -1, 0, 0]
+
+# mcts options
+max_time: 1
+l1_1st_max_iterations: 10
+l1_max_iterations: 1
+l2_1st_max_iterations: 20
+l2_max_iterations: 5
+final_l2_1st_max_iterations: 100
+final_l2_max_iterations: 20
+
+box_shape:
+  lx: 1
+  ly: 3.4
+  lz: 2
+
+gap: 0.05
+wall_width: 1
+wall_height: 2.5
+
+
+hand_position:
+  x: 0
+  y: 0
+  z: 9
+start_pose:
+  x: 0.05001
+  y: 0
+  z: 3
+  qx: 0.0
+  qy: 0.0
+  qz: 0.0
+  qw: 1.0
+
+goal_pose:
+  x: 0.05001
+  y: 0
+  z: 1
+  qx: 0
+  qy: 0
+  qz: 0
+  qw: 1
+
+mu_env: 0.4
+mu_mnp: 0.8
+
+random_seed: 2654
+
+is_refine: true
+refine_dist: 0.02
+
+wa: 1
+wt: 1
+
+rrt_options:
+  eps_trans: 2
+  eps_angle_deg: 10
+  max_samples: 10
+  goal_biased_prob: 0.8
+  goal_thr: 0.2

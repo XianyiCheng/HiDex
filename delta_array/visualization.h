@@ -164,23 +164,23 @@ MatrixXd get_output(const std::vector<State> &object_trajectory,
   std::vector<VectorXd> output;
   int t_span = 5;
 
-  // first 5 rows are the calibration
-  {
-    VectorXd output_row(6 * task->number_of_robot_contacts + 7);
-    VectorXd mnp_config_world(task->number_of_robot_contacts * 6);
-    for (int k = 0; k < task->number_of_robot_contacts; ++k)
-    {
-      mnp_config_world.segment(6 * k, 3) =
-          delta_locations[k];
-    }
-    output_row.segment(0, 6 * task->number_of_robot_contacts) =
-        mnp_config_world;
-    output_row.segment(6 * task->number_of_robot_contacts, 7) = task->start_object_pose;
-    for (int k = 0; k < t_span; ++k)
-    {
-      output.push_back(output_row);
-    }
-  }
+  // // first 5 rows are the calibration
+  // {
+  //   VectorXd output_row(6 * task->number_of_robot_contacts + 7);
+  //   VectorXd mnp_config_world(task->number_of_robot_contacts * 6);
+  //   for (int k = 0; k < task->number_of_robot_contacts; ++k)
+  //   {
+  //     mnp_config_world.segment(6 * k, 3) =
+  //         delta_locations[k];
+  //   }
+  //   output_row.segment(0, 6 * task->number_of_robot_contacts) =
+  //       mnp_config_world;
+  //   output_row.segment(6 * task->number_of_robot_contacts, 7) = task->start_object_pose;
+  //   for (int k = 0; k < t_span; ++k)
+  //   {
+  //     output.push_back(output_row);
+  //   }
+  // }
 
   for (int i = 1; i < action_trajectory.size(); ++i)
   {

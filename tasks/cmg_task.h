@@ -210,7 +210,7 @@ public:
     double r_env_changes = 1.0 / (1.0 + std::exp(y_env_changes));
 
     double reward =
-        0.3 * r_dist + 0.3 * r_path + 0.1 * r_finger + 0.3 * r_env_changes;
+        0.4 * r_dist + 0.3 * r_path + 0.4 * r_finger; // + 0.3 * r_env_changes;
 
     return reward;
   }
@@ -246,7 +246,7 @@ public:
   }
 
   State2 get_start_state2() const {
-    State2 state(0, -1);
+    State2 state(0, this->start_finger_idx);
     return state;
   }
 
@@ -417,6 +417,8 @@ public:
 
   Vector7d start_object_pose;
   Vector7d goal_object_pose;
+
+  long int start_finger_idx = -1;
 
 private:
   bool m_initialized = false;

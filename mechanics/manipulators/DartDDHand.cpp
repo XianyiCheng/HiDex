@@ -340,6 +340,12 @@ bool DartDDHand::isIK(const VectorXd& config, const Vector7d& object_pose){
     pts.push_back(Vector2d(0,0));
     pts.push_back(Vector2d(0,0));
 
+    if (idx.size() == 2){
+        if((config.segment(0,3) - config.segment(6,3)).norm() < 2.5*this->radius){
+            return false;
+        }
+    }
+
     for (auto i: idx){
         Vector3d pp = R_HO*config.segment<3>(6*i) + p_HO;
         

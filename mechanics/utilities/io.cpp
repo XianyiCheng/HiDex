@@ -7,6 +7,7 @@ using namespace std;
 void saveData(string fileName, MatrixXd  matrix)
 {
     //https://eigen.tuxfamily.org/dox/structEigen_1_1IOFormat.html
+    // const static IOFormat CSVFormat(StreamPrecision, DontAlignCols, ", ", "\n");
     const static IOFormat CSVFormat(FullPrecision, DontAlignCols, ", ", "\n");
  
     ofstream file(fileName);

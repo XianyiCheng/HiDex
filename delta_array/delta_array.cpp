@@ -23,39 +23,39 @@ const InhandTASK::State2::Action InhandTASK::State2::no_action =
     InhandTASK::State2::Action(-1, -1);
 const InhandTASK::State::Action InhandTASK::State::no_action = -1;
 
-std::vector<Vector3d> read_delta_locations(const YAML::Node &config,
-                                           int n_pts) {
+std::vector<Vector3d> read_delta_locations(const YAML::Node &config) {
   std::vector<Vector3d> delta_locations;
-  if (n_pts >= 1) {
+  if (config["delta_locations"]["robot_1"]) {
     std::vector<double> loc =
         config["delta_locations"]["robot_1"].as<std::vector<double>>();
     delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
   }
-  if (n_pts >= 2) {
+  if (config["delta_locations"]["robot_2"]) {
     std::vector<double> loc =
         config["delta_locations"]["robot_2"].as<std::vector<double>>();
     delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
   }
-  if (n_pts >= 3) {
+  if (config["delta_locations"]["robot_3"]) {
     std::vector<double> loc =
         config["delta_locations"]["robot_3"].as<std::vector<double>>();
     delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
   }
-  if (n_pts >= 4) {
+  if (config["delta_locations"]["robot_4"]) {
     std::vector<double> loc =
         config["delta_locations"]["robot_4"].as<std::vector<double>>();
     delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
   }
-  if (n_pts >= 5) {
+  if (config["delta_locations"]["robot_5"]) {
     std::vector<double> loc =
         config["delta_locations"]["robot_5"].as<std::vector<double>>();
     delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
   }
-  if (n_pts >= 6) {
-
-    std::cout << "Don't support more than 5 robots" << std::endl;
-    exit(0);
+  if (config["delta_locations"]["robot_6"]) {
+    std::vector<double> loc =
+        config["delta_locations"]["robot_6"].as<std::vector<double>>();
+    delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
   }
+  int n_pts = delta_locations.size();
   Vector3d center;
   center.setZero();
   for (int i = 0; i < n_pts; i++) {
@@ -132,7 +132,7 @@ void inhand_cube(std::shared_ptr<InhandTASK> task) {
       std::string(SRC_DIR) + "/data/delta_array/inhand_cube_setup.yaml";
   YAML::Node config = YAML::LoadFile(para_path);
 
-  std::vector<Vector3d> delta_locations = read_delta_locations(config, 5);
+  std::vector<Vector3d> delta_locations = read_delta_locations(config);
 
   double box_lx = config["box_shape"]["lx"].as<double>();
   double box_ly = config["box_shape"]["ly"].as<double>();
@@ -153,8 +153,8 @@ void inhand_cube(std::shared_ptr<InhandTASK> task) {
   world->addEnvironmentComponent(env1);
 
   // delta robot
-  double delta_ws_r = 2.5;
-  double delta_ws_h = 6;
+  double delta_ws_r = config["delta_ws_r"].as<double>();
+  double delta_ws_h = config["delta_ws_h"].as<double>();
 
   int n_robot_contacts = delta_locations.size();
   double finger_radius = config["finger_radius"].as<double>();
@@ -191,7 +191,7 @@ void inhand_cube(std::shared_ptr<InhandTASK> task) {
   double wa = 1;
   double wt = 1;
 
-  double mu_env = 0.2;
+  double mu_env = 0.05;
   double mu_mnp = config["friction_coefficient"].as<double>();
 
   double charac_len = 1;
@@ -226,7 +226,7 @@ void inhand_cube(std::shared_ptr<InhandTASK> task) {
   // read surface point, add robot contacts
   std::vector<ContactPoint> surface_pts;
   std::ifstream f(std::string(SRC_DIR) +
-                  "/data/delta_array/cube_surface_contacts.csv");
+                  "/data/delta_array/cube_surface_contacts_2D.csv");
   aria::csv::CsvParser parser(f);
 
   for (auto &row : parser) {
@@ -241,8 +241,8 @@ void inhand_cube(std::shared_ptr<InhandTASK> task) {
     Vector3d pos;
     pos << v(0) * box_lx / 2, v(1) * box_ly / 2, v(2) * box_lz / 2;
     if (surface_contact_filter(box_lx, box_ly, box_lz, pos[0], pos[1], pos[2],
-                               -v[3], -v[4], -v[5], finger_radius / 2)) {
-      ContactPoint p(pos, -v.tail(3));
+                               v[3], v[4], v[5], finger_radius / 2)) {
+      ContactPoint p(pos, v.tail(3));
       surface_pts.push_back(p);
     }
   }
@@ -266,9 +266,8 @@ void table_cube(std::shared_ptr<InhandTASK> task) {
       std::string(SRC_DIR) + "/data/delta_array/table_cube_setup.yaml";
   YAML::Node config = YAML::LoadFile(para_path);
 
-  int n_robot_contacts = config["n_robot_contacts"].as<int>();
-
-  std::vector<Vector3d> delta_locations = read_delta_locations(config, n_robot_contacts);
+  std::vector<Vector3d> delta_locations = read_delta_locations(config);
+  int n_robot_contacts = delta_locations.size();
   Vector3d center;
   center.setZero();
   for (auto &p : delta_locations) {
@@ -296,8 +295,8 @@ void table_cube(std::shared_ptr<InhandTASK> task) {
   world->addEnvironmentComponent(env1);
 
   // delta robot
-  double delta_ws_r = 2.5;
-  double delta_ws_h = 10;
+  double delta_ws_r = config["delta_ws_r"].as<double>();
+  double delta_ws_h = config["delta_ws_h"].as<double>();
 
   // int n_robot_contacts = delta_locations.size();
   double finger_radius = config["finger_radius"].as<double>();
@@ -334,7 +333,7 @@ void table_cube(std::shared_ptr<InhandTASK> task) {
   double wa = 1;
   double wt = 1;
 
-  double mu_env = 0.1;
+  double mu_env = 0.05;
   double mu_mnp = config["friction_coefficient"].as<double>();
 
   double charac_len = 1;
@@ -369,7 +368,7 @@ void table_cube(std::shared_ptr<InhandTASK> task) {
   // read surface point, add robot contacts
   std::vector<ContactPoint> surface_pts;
   std::ifstream f(std::string(SRC_DIR) +
-                  "/data/delta_array/cube_surface_contacts.csv");
+                  "/data/delta_array/cube_surface_contacts_2D.csv");
   aria::csv::CsvParser parser(f);
 
   for (auto &row : parser) {
@@ -384,12 +383,12 @@ void table_cube(std::shared_ptr<InhandTASK> task) {
     Vector3d pos;
     pos << v(0) * box_lx / 2, v(1) * box_ly / 2, v(2) * box_lz / 2;
     if (table_surface_contact_filter(box_lx, box_ly, box_lz, pos[0], pos[1],
-                                     pos[2], -v[3], -v[4], -v[5],
+                                     pos[2], v[3], v[4], v[5],
                                      finger_radius)) {
-    //   if (-v[5] < -0.7) {
+    //   if (v[5] < -0.7) {
     //     continue;
     //   }
-      ContactPoint p(pos, -v.tail(3));
+      ContactPoint p(pos, v.tail(3));
       surface_pts.push_back(p);
     }
   }
@@ -411,7 +410,7 @@ void inhand_mesh(std::shared_ptr<InhandTASK> task) {
       std::string(SRC_DIR) + "/data/delta_array/mesh_setup.yaml";
   YAML::Node config = YAML::LoadFile(para_path);
 
-  std::vector<Vector3d> delta_locations = read_delta_locations(config, 4);
+  std::vector<Vector3d> delta_locations = read_delta_locations(config);
 
   std::string object_name = config["object"].as<std::string>();
   double object_scale = config["object_scale"].as<double>();
@@ -433,8 +432,8 @@ void inhand_mesh(std::shared_ptr<InhandTASK> task) {
   world->addEnvironmentComponent(env1);
 
   // delta robot
-  double delta_ws_r = 2.5;
-  double delta_ws_h = 6;
+  double delta_ws_r = config["delta_ws_r"].as<double>();
+  double delta_ws_h = config["delta_ws_h"].as<double>();
 
   int n_robot_contacts = delta_locations.size();
   double finger_radius = config["finger_radius"].as<double>();
@@ -471,7 +470,7 @@ void inhand_mesh(std::shared_ptr<InhandTASK> task) {
   double wa = 1;
   double wt = 1;
 
-  double mu_env = 0.2;
+  double mu_env = 0.05;
   double mu_mnp = config["friction_coefficient"].as<double>();
 
   double charac_len = 1;
@@ -541,7 +540,7 @@ void planar_manipulation(std::shared_ptr<InhandTASK> task) {
       std::string(SRC_DIR) + "/data/delta_array/planar_manipulation_setup.yaml";
   YAML::Node config = YAML::LoadFile(para_path);
 
-  std::vector<Vector3d> delta_locations = read_delta_locations(config, 4);
+  std::vector<Vector3d> delta_locations = read_delta_locations(config);
 
   Vector3d center;
   center.setZero();
@@ -608,7 +607,7 @@ void planar_manipulation(std::shared_ptr<InhandTASK> task) {
   double wa = 1;
   double wt = 1;
 
-  double mu_env = 0.2;
+  double mu_env = 0.05;
   double mu_mnp = config["friction_coefficient"].as<double>();
 
   double charac_len = 1;
@@ -645,7 +644,7 @@ void planar_manipulation(std::shared_ptr<InhandTASK> task) {
   // read surface point, add robot contacts
   std::vector<ContactPoint> surface_pts;
   std::ifstream f(std::string(SRC_DIR) +
-                  "/data/delta_array/cube_surface_contacts.csv");
+                  "/data/delta_array/cube_surface_contacts_2D.csv");
   aria::csv::CsvParser parser(f);
 
   for (auto &row : parser) {
@@ -660,8 +659,8 @@ void planar_manipulation(std::shared_ptr<InhandTASK> task) {
     Vector3d pos;
     pos << v(0) * box_lx / 2, v(1) * box_ly / 2, v(2) * box_lz / 2;
     if (surface_contact_filter(box_lx, box_ly, box_lz, pos[0], pos[1], pos[2],
-                               -v[3], -v[4], -v[5], finger_radius)) {
-      ContactPoint p(pos, -v.tail(3));
+                               v[3], v[4], v[5], finger_radius)) {
+      ContactPoint p(pos, v.tail(3));
       surface_pts.push_back(p);
     }
   }
@@ -765,16 +764,13 @@ int main(int argc, char *argv[]) {
     std::cout << std::endl;
   }
 
-  VisualizeStateTrajectory(task->m_world, task, object_trajectory,
-                           action_trajectory);
-
   std::remove(output_file_path.c_str());
   double outward_radius = config["outward_radius"].as<double>();
 
    std::string task_para_path =
       std::string(SRC_DIR) + "/data/delta_array/"+task_name+"_setup.yaml";
   YAML::Node task_config = YAML::LoadFile(task_para_path);
-  MatrixXd output_mat = get_output(object_trajectory, action_trajectory, task, outward_radius, read_delta_locations(task_config, task->number_of_robot_contacts));
+  MatrixXd output_mat = get_output(object_trajectory, action_trajectory, task, outward_radius, read_delta_locations(task_config));
   saveData(output_file_path, output_mat);
 
   std::cout << "Total level 1 tree nodes " << tree.count_total_nodes()
@@ -784,6 +780,7 @@ int main(int argc, char *argv[]) {
             << std::endl;
 
   if (visualize_option == "results") {
+    visualize_output_file(task->m_world, output_file_path);
     task->m_world->startWindow(&argc, argv);
   }
 }

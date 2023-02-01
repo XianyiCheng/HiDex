@@ -1,48 +1,55 @@
 box_shape:
-  lx: 9
-  ly: 9
-  lz: 5
+  lx: 10
+  ly: 11
+  lz: 3
 
 finger_radius: 0.75
-delta_ws_r: 1.5
+delta_ws_r: 2.4
 delta_ws_h: 6
 
 start_pose:
-  x: 12.5
-  y: 7.5 
-  z: 2.499
+  x: 4.3301
+  # y: -6.8349 # for 9.0 square
+  y: -7.8349 # for 11.0 square
+  # y: -7.3349
+  # y: -5.915
+  z: 1.5
   qx: 0.0
   qy: 0.0
   qz: 0.0
   qw: 1.0
 
 goal_pose:
-  x: 22
-  y: 7.5
-  z: 2.499
+  x: 4.3301
+  y: -15.00
+  z: 1.5
   qx: 0.0
   qy: 0.0
   qz: 0
   qw: 1
+  # qz: 0.7071
+  # qw: 0.7071
 
-friction_coefficient: 0.5 
+friction_coefficient: 0.2 
 
 random_seed: 1
 
 delta_locations:
-  robot_1: [8.6602,3.75, 0]
-  robot_2: [17.3204, 3.75, 0]
-  robot_3: [17.3204, 11.25, 0]
-  robot_4: [8.6602, 11.25, 0]
+  robot_1: [0, -2.165, 0]
+  robot_2: [8.6602, -2.165, 0]
+  robot_3: [0, -9.665, 0]
+  robot_4: [8.6602, -9.665, 0]
+  robot_5: [0, -17.165, 0]
+  robot_6: [8.6602, -17.165, 0]
 
-grasp_measure_charac_length: -1
+grasp_measure_charac_length: 11
 
 rrt_options:
   eps_trans: 0.5
-  eps_angle_deg: 50
+  eps_angle_deg: 10
   max_samples: 120
-  goal_biased_prob: 0.9
-  goal_thr: 0.174
+  goal_biased_prob: 0.7
+  goal_thr: 1
 
 is_refine: false
 refine_dist: 0.3
