@@ -48,13 +48,13 @@ void setup(std::shared_ptr<CMGTASK> task, const YAML::Node &config) {
   x_start << 0, 0, box_length / 2 * 0.9999, 0, 0, 0, 1;
 
   // goal: rotate around y axis for 90 degrees
-  x_goal << box_length / 2, 0, box_length / 2 * 0.9999, 0, 0.7071, 0, 0.7071;
-  // x_goal << box_length / 2, 0, box_length / 2 * 0.9999, 0, -1, 0, 0;
+  // x_goal << box_length / 2, 0, box_length / 2 * 0.9999, 0, 0.7071, 0, 0.7071;
+  x_goal << box_length / 2, 0, box_length / 2 * 0.9999, 0, -1, 0, 0;
 
   double goal_thr = box_length * 3.14 * 5 / 180;
 
   double wa = 1.0;
-  double wt = 0.5;
+  double wt = 0.1;
 
   double mu_env = 0.3;
   double mu_mnp = 0.8;
@@ -78,7 +78,8 @@ void setup(std::shared_ptr<CMGTASK> task, const YAML::Node &config) {
   rrt_options.eps_trans = config["rrt_options"]["eps_trans"].as<double>();
   // rrt_options.eps_angle = 3.14 * 95 / 180;
   // rrt_options.eps_trans = 0.10;
-  rrt_options.eps_angle = 3.14 * config["rrt_options"]["eps_angle_deg"].as<double>() / 180;
+  rrt_options.eps_angle =
+      3.14 * config["rrt_options"]["eps_angle_deg"].as<double>() / 180;
   rrt_options.max_samples = config["rrt_options"]["max_samples"].as<int>();
 
   rrt_options.goal_biased_prob = 0.7;
@@ -209,6 +210,15 @@ int main(int argc, char *argv[]) {
 
   task->grasp_measure_charac_length = grasp_measure_scale;
 
+  std::string output_file_path = std::string(SRC_DIR) + "/data/env_reorient/" +
+                                 config["output_file_name"].as<std::string>();
+
+  if (visualization_option == "csv") {
+    visualize_output_file(task->m_world, output_file_path);
+    task->m_world->startWindow(&argc, argv);
+    return 0;
+  }
+
   if (visualization_option == "setup") {
     VisualizeSG(task->m_world, task->start_object_pose, task->goal_object_pose);
     task->m_world->startWindow(&argc, argv);
@@ -231,9 +241,12 @@ int main(int argc, char *argv[]) {
   get_results(&tree, task, object_trajectory, action_trajectory,
               current_node->m_value);
 
+  MatrixXd output_mat = get_output(object_trajectory, action_trajectory, task);
+  saveData(output_file_path, output_mat);
+
   if (visualization_option == "result") {
-    VisualizeStateTraj(task->m_world, task, object_trajectory,
-                       action_trajectory);
+    visualize_output_file(task->m_world, output_file_path);
     task->m_world->startWindow(&argc, argv);
   }
+  return 0;
 }

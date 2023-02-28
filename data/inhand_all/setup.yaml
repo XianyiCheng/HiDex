@@ -1,20 +1,23 @@
 hand_type: "5"
-finger_radius: 0.001
-object: "cylindar_l_2_r_1"
-object_scale: 0.001
+finger_radius: 0.1
+object: "c_lego_duplo"
+object_scale: 2
+
+output_file_name: "output.csv"
+
+visualization_option: "result"
 
 grasp_measure_scale: -1
-visualize_setup: true
-visualize_result: false
 
-save_data: true
+save_data: false
 
 number_of_experiments: 1
 start_position:
   x: 0.0
   y: 0.0
-  z: 0.0
-random_seed: 212512
+  z: 0.1
+
+random_seed: -1
 
 max_time: 5
 

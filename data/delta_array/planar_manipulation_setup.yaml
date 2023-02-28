@@ -1,6 +1,6 @@
 box_shape:
-  lx: 10
-  ly: 11
+  lx: 9
+  ly: 9
   lz: 3
 
 finger_radius: 0.75
@@ -25,10 +25,10 @@ goal_pose:
   z: 1.5
   qx: 0.0
   qy: 0.0
-  qz: 0
-  qw: 1
-  # qz: 0.7071
-  # qw: 0.7071
+  # qz: 0
+  # qw: 1
+  qz: 0.7071
+  qw: 0.7071
 
 friction_coefficient: 0.2 
 
@@ -39,10 +39,10 @@ delta_locations:
   robot_2: [8.6602, -2.165, 0]
   robot_3: [0, -9.665, 0]
   robot_4: [8.6602, -9.665, 0]
-  robot_5: [0, -17.165, 0]
-  robot_6: [8.6602, -17.165, 0]
+  robot_5: [0, -5.914, 0]
+  robot_6: [8.6602, -5.914, 0]
 
-grasp_measure_charac_length: 11
+grasp_measure_charac_length: 9
 
 rrt_options:
   eps_trans: 0.5

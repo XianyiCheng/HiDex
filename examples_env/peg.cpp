@@ -76,14 +76,14 @@ void setup(std::shared_ptr<CMGTASK> task, bool use_object_surface_sampling)
     Vector7d x_goal;
     x_start << 0, 0, box_height / 2, 0, 0, 0, 1;
 
-    x_goal << 0, -gap * 2, box_height * 2, 0, 0, 0, 1;
+    x_goal << -gap*1.5, -gap * 2, box_height * 2, 0, 0, 0, 1;
 
     double goal_thr = box_length * 3.14 * 30 / 180;
 
     double wa = 1.0;
     double wt = 1.0;
 
-    double mu_env = 0.4;
+    double mu_env = 0.1;
     double mu_mnp = 0.8;
 
     double charac_len = 1;

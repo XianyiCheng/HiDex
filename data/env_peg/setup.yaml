@@ -1,13 +1,13 @@
 
-grasp_measure_scale: 1
+grasp_measure_scale: -1
 
-use_object_surface_sampling: true
+use_object_surface_sampling: false
 
-visualization_option: "setup"
+visualization_option: "result"
 
 run_batch: false
 
-random_seed: 212512
+random_seed: 1
 
 max_time: 10
 

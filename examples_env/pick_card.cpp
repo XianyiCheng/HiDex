@@ -33,7 +33,7 @@ void setup(std::shared_ptr<CMGTASK> task, bool use_object_surface_sampling)
   SkeletonPtr object =
       createFreeBox("box_object", Vector3d(box_length, box_length, box_height));
   SkeletonPtr env1 =
-      createFixedBox("ground", Vector3d(4, 4, 0.2), Vector3d(0, 0, -0.1), Vector3d(1,1,1), 0.00001);
+      createFixedBox("ground", Vector3d(4, 4, 0.2), Vector3d(0, 0, -0.1));
 
   world->addObject(object);
   world->addEnvironmentComponent(env1);
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 
   task->grasp_measure_charac_length = grasp_measure_scale;
 
-    std::string output_file_path = std::string(SRC_DIR) + "/data/env_pick_card/" + config["output_file_name"].as<std::string>();
+  std::string output_file_path = std::string(SRC_DIR) + "/data/env_pick_card/" + config["output_file_name"].as<std::string>();
 
   if (visualization_option == "csv")
   {

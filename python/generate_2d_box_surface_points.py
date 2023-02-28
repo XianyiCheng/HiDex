@@ -2,8 +2,7 @@ import csv
 import numpy as np
 
 # Number of points to generate
-n = 8
-
+n = 10
 # Coordinates of box corners
 x1, y1, x2, y2 = (-1, -1, 1, 1)
 

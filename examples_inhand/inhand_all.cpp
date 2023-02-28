@@ -19,9 +19,9 @@
 #include "../mechanics/dart_utils/dart_utils.h"
 #endif
 
-#include "visualization.h"
+// #include "visualization.h"
 
-
+#include "../tasks/visualization.h"
 
 Vector7d randomize_a_pose_on_palm(const std::vector<ContactPoint> pts) {
   Quaterniond q_rand = generate_unit_quaternion();
@@ -266,12 +266,11 @@ void setup(const std::string &hand_type, double finger_radius,
     x_start[2] += 0.1;
     x_goal = randomize_a_pose_on_palm(surface_pts);
     x_goal[2] += 0.1;
-  } 
-  else if (hand_type == "3_finger") {
+  } else if (hand_type == "3_finger") {
 
     SkeletonPtr env1 =
         createFixedBox("palm", Vector3d(3, 3, 0.2), Vector3d(0, 0, -1000),
-                       Vector3d(0.9,0.9,0.9), 0.01);
+                       Vector3d(0.9, 0.9, 0.9), 0.01);
 
     world->addEnvironmentComponent(env1);
 
@@ -308,9 +307,8 @@ void setup(const std::string &hand_type, double finger_radius,
 
     x_start = randomize_a_pose_on_palm(surface_pts);
     x_goal = randomize_a_pose_on_palm(surface_pts);
-    
-  }
-  else {
+
+  } else {
     std::cout << "unknown hand type" << std::endl;
     exit(0);
   }
@@ -376,12 +374,13 @@ int main(int argc, char *argv[]) {
   std::string object_name = config["object"].as<std::string>();
   double object_scale = config["object_scale"].as<double>();
 
-  std::string save_path = std::string(SRC_DIR) + "/data/inhand_all/results/" + hand_type + "_" + object_name + ".csv";
+  std::string save_path = std::string(SRC_DIR) + "/data/inhand_all/results/" +
+                          hand_type + "_" + object_name + ".csv";
 
   double grasp_measure_scale = config["grasp_measure_scale"].as<double>();
 
-  bool visualize_setup = config["visualize_setup"].as<bool>();
-  bool visualize_result = config["visualize_result"].as<bool>();
+  std::string visualization_option =
+      config["visualization_option"].as<std::string>();
 
   int number_of_experiments = config["number_of_experiments"].as<int>();
 
@@ -438,7 +437,7 @@ int main(int argc, char *argv[]) {
                             current_node->m_value);
       results.push_back(result);
 
-      if(config["save_data"].as<bool>()){
+      if (config["save_data"].as<bool>()) {
         appendData(save_path, result.transpose());
       }
 
@@ -450,16 +449,30 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  std::srand(random_seed);
-
+  if (random_seed >= 0) {
+    std::srand(random_seed);
+  } else {
+    std::srand(std::time(nullptr));
+  }
+  
   std::shared_ptr<InhandTASK> task = std::make_shared<InhandTASK>();
 
   setup(hand_type, finger_radius, object_name, task, start_x, start_y, start_z,
         object_scale, grasp_measure_scale);
 
-  if (visualize_setup) {
+  std::string output_file_path = std::string(SRC_DIR) + "/data/inhand_all/" +
+                                 config["output_file_name"].as<std::string>();
+
+  if (visualization_option == "csv") {
+    visualize_output_file(task->m_world, output_file_path);
+    task->m_world->startWindow(&argc, argv);
+    return 0;
+  }
+
+  if (visualization_option == "setup") {
     VisualizeSG(task->m_world, task->start_object_pose, task->goal_object_pose);
     task->m_world->startWindow(&argc, argv);
+    return 0;
   }
 
   InhandTASK::State start_state = task->get_start_state();
@@ -496,8 +509,12 @@ int main(int argc, char *argv[]) {
   get_inhand_result(&tree, task, object_trajectory, action_trajectory,
                     current_node->m_value);
 
-  if (visualize_result) {
-    VializeStateTraj(task->m_world, task, object_trajectory, action_trajectory);
+  MatrixXd output_mat = get_output(object_trajectory, action_trajectory, task);
+  saveData(output_file_path, output_mat);
+
+  if (visualization_option == "result") {
+    visualize_output_file(task->m_world, output_file_path);
     task->m_world->startWindow(&argc, argv);
   }
+  return 0;
 }
