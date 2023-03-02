@@ -13,7 +13,6 @@
 #define UTILS_H
 #include "../mechanics/utilities/utilities.h"
 #endif
-#include "../mechanics/contacts/contact_mode_enumeration.h"
 
 #ifndef SAMPLE_H
 #define SAMPLE_H
@@ -28,6 +27,11 @@
 #ifndef RRT_H
 #define RRT_H
 #include "rrt.h"
+#endif
+
+#ifndef Reward_H
+#define Reward_H
+#include "rewards.h"
 #endif
 
 #define CMG_QUASISTATIC 0
@@ -176,9 +180,19 @@ public:
     return num_changes;
   }
 
-  double evaluate_path(const std::vector<State> &path) const {
-    double reward = 1 / double(path.size());
+  double evaluate_path_level_1(const std::vector<State> &object_path,
+                               const std::vector<State2> &robot_contact_path) {
+    std::vector<double> features =
+        this->get_path_features(object_path, robot_contact_path, this->reward_L1->get_feature_names());
+    double reward = this->reward_L1->get(features);
+    return reward;
+  }
 
+  double evaluate_path_level_2(const std::vector<State> &object_path,
+                               const std::vector<State2> &robot_contact_path) {
+    std::vector<double> features =
+        this->get_path_features(object_path, robot_contact_path, this->reward_L2->get_feature_names());
+    double reward = this->reward_L1->get(features);
     return reward;
   }
 
@@ -256,25 +270,6 @@ public:
   double estimate_next_state_value(const State2 &state, State2::Action action) {
     // return 0.0 for now, can use neural networks to estimate values
     return 0.0;
-  }
-
-  double action_heuristics_level2(State2::Action action, const State2 &state,
-                                  const State2 &pre_state) {
-    // return the heuristics of an action in level2, this can be hand designed
-    // or learned todo: improve this heuristics
-    std::vector<int> finger_locations_1 =
-        this->get_finger_locations(pre_state.finger_index);
-    std::vector<int> finger_locations_2 =
-        this->get_finger_locations(action.finger_idx);
-
-    double heu = 1.0;
-    for (int i = 0; i < finger_locations_1.size(); ++i) {
-      if (finger_locations_1[i] == finger_locations_2[i]) {
-        heu *= 2.0;
-      }
-    }
-
-    return heu;
   }
 
   long int get_number_of_robot_actions(const State2 &state) {
@@ -401,6 +396,11 @@ public:
     return p;
   }
 
+  std::vector<double>
+  get_path_features(const std::vector<State> &object_path,
+                    const std::vector<State2> &robot_contact_path,
+                    const std::vector<std::string> &feature_names);
+
   double grasp_measure_charac_length = -1.0;
 
   std::vector<State> saved_object_trajectory;
@@ -419,6 +419,9 @@ public:
   Vector7d goal_object_pose;
 
   long int start_finger_idx = -1;
+
+  std::unique_ptr<RewardFunction> reward_L1;
+  std::unique_ptr<RewardFunction> reward_L2;
 
 private:
   bool m_initialized = false;
@@ -445,27 +448,3 @@ private:
   bool if_refine = false;
   bool refine_dist = 0.0;
 };
-
-bool isQuasistatic(const std::vector<ContactPoint> &mnps,
-                   const std::vector<ContactPoint> &envs,
-                   const VectorXi &ref_cs_mode, const Vector6d &v,
-                   const Vector6d &f_ext_w, const Vector7d object_pose,
-                   double mu_env, double mu_mnp, ContactConstraints *cons);
-
-bool isQuasistatic(const std::vector<ContactPoint> &mnps,
-                   const std::vector<ContactPoint> &envs,
-                   const VectorXi &env_mode, const Vector6d &f_ext_w,
-                   const Vector7d object_pose, double mu_env, double mu_mnp,
-                   ContactConstraints *cons);
-
-bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
-                    const std::vector<ContactPoint> &envs,
-                    const VectorXi &env_mode, const Vector6d &f_ext_w,
-                    const Matrix6d &object_inertia, const Vector7d object_pose,
-                    double mu_env, double mu_mnp, double wa, double wt,
-                    double h_time, ContactConstraints *cons, double thr = 0.5);
-
-Vector6d EnvironmentConstrainedVelocity(const Vector6d &v_goal,
-                                        const std::vector<ContactPoint> &envs,
-                                        const VectorXi &env_mode,
-                                        ContactConstraints &cons);

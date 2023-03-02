@@ -1,11 +1,16 @@
 #include "inhand_task.h"
 #include "../mechanics/contacts/contact_kinematics.h"
+#include "../mechanics/contacts/contact_mode_enumeration.h"
+#include "../mechanics/force_check.h"
+#include "../mechanics/mode_utils.h"
 #include "../mechanics/utilities/combinatorics.h"
 #include "../mechanics/utilities/eiquadprog.hpp"
+
 
 #define MODE_TYPE_CS 0
 #define MODE_TYPE_FULL 1
 
+#include "integration_utils.h"
 // ---------------------------
 // Utility functions
 
@@ -21,100 +26,6 @@ bool is_repeated_idxes(const std::vector<int> &vec) {
     }
   }
   return false;
-}
-
-bool force_closure(Vector7d x, const std::vector<ContactPoint> &mnps,
-                   double friction_coeff) {
-  Matrix4d T_x = pose2SE3(x);
-
-  Matrix3d R_wo = T_x.block(0, 0, 3, 3);
-
-  // define polyhedral friction cone
-  VectorXd f1_c(6, 1);
-  f1_c << 0, -friction_coeff, 1, 0, 0, 0;
-  VectorXd f2_c(6, 1);
-  f2_c << 0, friction_coeff, 1, 0, 0, 0;
-  VectorXd f3_c(6, 1);
-  f3_c << -friction_coeff, 0, 1, 0, 0, 0;
-  VectorXd f4_c(6, 1);
-  f4_c << friction_coeff, 0, 1, 0, 0, 0;
-
-  int num_of_contacts = mnps.size();
-
-  // define the friction cone in contact frame and in object frame
-  MatrixXd w_c(6, 4 * num_of_contacts);
-
-  for (int j = 0; j < num_of_contacts; j++) {
-
-    // find the finger position and norm from surface
-    Vector3d fp_o;
-    Vector3d fn_o;
-    fp_o = mnps[j].p;
-    fn_o = mnps[j].n;
-
-    Vector3d fp_w = R_wo * fp_o + x.head(3);
-
-    // get contact kinematics and transfer force in contact frame to object
-    // frame
-
-    MatrixXd adgco = contact_jacobian(fp_o, fn_o);
-
-    VectorXd f1_o = adgco.transpose() * f1_c;
-    VectorXd f2_o = adgco.transpose() * f2_c;
-    VectorXd f3_o = adgco.transpose() * f3_c;
-    VectorXd f4_o = adgco.transpose() * f4_c;
-
-    w_c.col(j * 4) = f1_o;
-    w_c.col(j * 4 + 1) = f2_o;
-    w_c.col(j * 4 + 2) = f3_o;
-    w_c.col(j * 4 + 3) = f4_o;
-  }
-
-  // std::cout << "w_c: "<< w_c << std::endl;
-
-  // solve it by LP
-  VectorXd sum_2_w_c = w_c.rowwise().sum();  // sum(w_c, 2)
-  VectorXd avg_w_c = sum_2_w_c / w_c.cols(); // get average
-  VectorXd T_0 = -avg_w_c;
-  MatrixXd T(6, 4 * num_of_contacts);
-  for (int i = 0; i < w_c.cols(); i++) {
-    T.col(i) = w_c.col(i) - avg_w_c;
-  }
-
-  // check if T is full rank
-  Eigen::FullPivLU<Eigen::MatrixXd> lu_decomp(T);
-  int rank_T = lu_decomp.rank();
-  if (rank_T < 6) {
-    // std::cout << "T is not full rank" << std::endl;
-    return false;
-  }
-
-  // set up LP
-  VectorXd C = -T_0;
-  MatrixXd A = T.transpose();
-  VectorXd b(w_c.cols());
-  b.fill(1);
-
-  MatrixXd Ae(w_c.cols(), 6);
-  VectorXd be(w_c.cols());
-  VectorXd xl(6);
-  xl << std::numeric_limits<double>::min(), std::numeric_limits<double>::min(),
-      std::numeric_limits<double>::min(), std::numeric_limits<double>::min(),
-      std::numeric_limits<double>::min(), std::numeric_limits<double>::min();
-  VectorXd xu(6);
-  xu << std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
-      std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
-      std::numeric_limits<double>::max(), std::numeric_limits<double>::max();
-  VectorXd xs(6);
-  double optimal_cost;
-
-  bool result = lp(C, A, b, Ae, be, xl, xu, &xs, &optimal_cost);
-
-  if (-optimal_cost <= 1) {
-    return true;
-  } else {
-    return false;
-  }
 }
 
 int number_of_different_elements(const std::vector<int> &v1,
@@ -137,778 +48,6 @@ Vector6d weight_w2o(const Vector7d &x, const Vector6d &f_ext_w) {
   T_.block(0, 0, 3, 3) = T.block(0, 0, 3, 3);
   Vector6d f_ext_o = SE32Adj(T_).transpose() * f_ext_w;
   return f_ext_o;
-}
-
-Vector7d steer_config(Vector7d x_near, Vector7d x_rand,
-                      double epsilon_translation, double epsilon_angle) {
-
-  // double epsilon_translation = 1.5;
-  // double epsilon_angle = 3.14*100/180;
-
-  Vector3d p_rand = x_rand.head(3);
-  Vector3d p_near = x_near.head(3);
-  Quaterniond q_near(x_near[6], x_near[3], x_near[4], x_near[5]);
-  Quaterniond q_rand(x_rand[6], x_rand[3], x_rand[4], x_rand[5]);
-  p_rand = steer_position(p_near, p_rand, epsilon_translation);
-  q_rand = steer_quaternion(q_near, q_rand, epsilon_angle);
-  Vector7d x_steer;
-  x_steer << p_rand[0], p_rand[1], p_rand[2], double(q_rand.x()),
-      double(q_rand.y()), double(q_rand.z()), double(q_rand.w());
-  return x_steer;
-}
-
-bool ifConstraintsSatisfied(const VectorXd &x, const MatrixXd A,
-                            const VectorXd &b, const MatrixXd G,
-                            const VectorXd &h) {
-
-  double Ax_b = (A * x - b).cwiseAbs().sum();
-  if (Ax_b > 1e-3) {
-    return false;
-  }
-
-  VectorXd g = G * x - h;
-  for (int i = 0; i < g.size(); i++) {
-    if (g[i] < -1e-3) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-void steer_velocity(Vector6d &x, double h, double cl = 1.0) {
-
-  Vector6d xx = x;
-  xx.head(3) = xx.head(3) * cl;
-  if (xx.norm() > h) {
-    xx = (h / xx.norm()) * xx;
-    double xx_norm = xx.tail(3).norm();
-    double x_norm = x.tail(3).norm();
-    if (xx_norm > 1e-4 && x_norm > 1e-4) {
-      x = x * (xx.tail(3).norm() / x.tail(3).norm());
-    } else {
-      x = xx / cl;
-    }
-  }
-  return;
-}
-
-bool ifCollide(const std::vector<ContactPoint> &pts) {
-  double thr = -0.04;
-  for (const auto &pt : pts) {
-    if (pt.d < thr) {
-      return true;
-    }
-  }
-  return false;
-}
-
-VectorXi deleteSeparatingMode(const VectorXi &mode) {
-
-  VectorXi m(mode.size());
-  int n_cpts = 0;
-  int n_pts = mode.size() / 3;
-
-  for (int i = 0; i < n_pts; i++) {
-    int cs_mode = mode(i);
-    if (cs_mode == 0) { // contacting
-      n_cpts += 1;
-    }
-  }
-  int k = 0;
-  for (int i = 0; i < n_pts; i++) {
-    int cs_mode = mode(i);
-    if (cs_mode == 0) { // contacting
-      m(k) = cs_mode;
-      m.block(n_cpts + 2 * k, 0, 2, 1) = mode.block(n_pts + 2 * i, 0, 2, 1);
-      k += 1;
-    }
-  }
-  m.conservativeResize(3 * n_cpts);
-  return m;
-}
-
-VectorXi deleteModebyRemainIndex(const VectorXi &mode,
-                                 const VectorXi &remain_idx, int mode_type) {
-  int n_cpts = remain_idx.size();
-  int n_pts;
-
-  if (mode_type == MODE_TYPE_CS) {
-    n_pts = mode.size();
-    VectorXi m(n_cpts);
-    for (int i = 0; i < n_cpts; i++) {
-      m[i] = mode[remain_idx[i]];
-    }
-    return m;
-  }
-  if (mode_type == MODE_TYPE_FULL) {
-    n_pts = int(mode.size() / 3);
-
-    VectorXi m(3 * n_cpts);
-    for (int i = 0; i < n_cpts; i++) {
-      m[i] = mode[remain_idx[i]];
-      m.block(n_cpts + 2 * i, 0, 2, 1) =
-          mode.block(n_pts + 2 * remain_idx[i], 0, 2, 1);
-    }
-    return m;
-  }
-}
-
-bool ifContactingModeDeleted(const VectorXi &mode, const VectorXi &remain_idx,
-                             int n_pts) {
-  for (int i = 0; i < n_pts; i++) {
-    if (mode[i] == 0) {
-      bool ifremained = false;
-      for (int k = 0; k < remain_idx.size(); k++) {
-        if (i == remain_idx[k]) {
-          ifremained = true;
-          break;
-        }
-      }
-      if (!ifremained) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-double CollisionInterpolation(const Vector6d &v,
-                              const std::vector<ContactPoint> &pts) {
-
-  double d_min = 0;
-  Vector3d p;
-  Vector3d n;
-
-  for (const auto &pt : pts) {
-    if (abs(pt.d) > abs(d_min)) {
-      d_min = pt.d;
-      p = pt.p;
-      n = pt.n;
-    }
-  }
-  Vector3d vel = v.block(0, 0, 3, 1);
-  Vector3d omega = v.block(3, 0, 3, 1);
-  Vector3d v_p_max;
-  v_p_max = omega.cross(p) + vel;
-  double k = 0;
-  double a = (v_p_max.transpose() * n)(0);
-  if (std::abs(a) >= std::abs(d_min)) {
-    if (d_min > 0) {
-      k = 1 + (std::abs(d_min) - 0.005) / std::abs(a);
-    } else {
-      k = 1 - (std::abs(d_min) - 0.005) / std::abs(a);
-    }
-  }
-  return k;
-}
-
-bool ifNeedVelocityCorrection(VectorXi mode,
-                              const std::vector<ContactPoint> &pts) {
-  double thr = 0.02;
-  for (int i = 0; i < pts.size(); i++) {
-
-    if ((abs(pts[i].d) > thr) && mode[i] == 0) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool is_penetrate(const std::vector<ContactPoint> &pts) {
-  double thr = 0.05;
-  for (int i = 0; i < pts.size(); i++) {
-    if ((abs(pts[i].d) > thr)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-Vector6d VelocityCorrection(const std::vector<ContactPoint> &pts) {
-
-  int n_pts = pts.size();
-  double violation = -1e-4;
-
-  Vector6d z_axis;
-  z_axis << 0, 0, 1, 0, 0, 0;
-  MatrixXd N(n_pts, 6);
-  VectorXd d(n_pts);
-
-  for (int i = 0; i < n_pts; i++) {
-    Matrix6d Adgco = contact_jacobian(pts[i].p, pts[i].n);
-    N.block(i, 0, 1, 6) = z_axis.transpose() * Adgco;
-
-    d[i] = -(pts[i].d - violation);
-  }
-
-  Matrix6d I;
-  I.setIdentity();
-  Matrix6d G;
-  G = N.transpose() * N + 0.001 * I;
-  Vector6d g0;
-  g0 = -2 * (d.transpose() * N).transpose();
-
-  // MatrixXd A(6,0);
-  // VectorXd b(0);
-  // MatrixXd C(6,0);
-  // VectorXd e(0);
-
-  Vector6d x;
-  x = -G.inverse() * g0 / 2;
-
-  // double f = solve_quadprog(G, g0, A, b,  C, e, x);
-
-  // if (f > 0.0){
-  //     x.setZero();
-  // }
-
-  return x;
-}
-
-bool contactTrack(ContactPoint pt0, ContactPoint pt1,
-                  double normal_product = 0.85, double thr = 0.1) {
-  if (((pt0.p - pt1.p).norm() < thr) &&
-      ((pt0.n.transpose() * pt1.n)[0] > normal_product)) {
-    return true;
-  } else {
-    // std::cout << "d: " << (pt0.p - pt1.p).norm() << " ";
-    return false;
-  }
-}
-
-VectorXi track_contacts_remain(const std::vector<ContactPoint> &pts,
-                               const std::vector<ContactPoint> &pts_new,
-                               double normal_product = 0.85, double thr = 0.1) {
-  std::vector<int> remain_idxes;
-  for (int i = 0; i < pts_new.size(); i++) {
-    for (int j = 0; j < pts.size(); j++) {
-      if (contactTrack(pts[j], pts_new[i], normal_product, thr)) {
-        remain_idxes.push_back(j);
-        break;
-      }
-    }
-  }
-
-  if (remain_idxes.size() < pts_new.size()) {
-    VectorXi empty_idx(0);
-    return empty_idx;
-  }
-
-  VectorXi remain_idx(remain_idxes.size());
-  for (int i = 0; i < remain_idxes.size(); i++) {
-    remain_idx[i] = remain_idxes[i];
-  }
-
-  return remain_idx;
-}
-
-VectorXi cs_mode_from_contacts(const std::vector<ContactPoint> &pts,
-                               const std::vector<ContactPoint> &pts_new) {
-  // conservative estimation, do not consider the normal direction rotating for
-  // 90 degree
-
-  VectorXi remain_idx = track_contacts_remain(pts, pts_new, 0.3, 0.25);
-
-  VectorXi mode(pts.size());
-
-  mode.setOnes();
-
-  for (int i = 0; i < remain_idx.size(); ++i) {
-    mode[remain_idx[i]] = 0;
-  }
-
-  return mode;
-}
-
-VectorXi conservative_cs_mode(const VectorXi &m1, const VectorXi &m2) {
-  VectorXi mode(m1.size());
-  mode.setZero();
-  for (int i = 0; i < m1.size(); ++i) {
-    if (m1[i] == 1 && m2[i] == 1) {
-      mode[i] = 1;
-    }
-  }
-  return mode;
-}
-
-void deleteExtraContacts(const std::vector<ContactPoint> &pts0,
-                         std::vector<ContactPoint> &pts) {
-  std::vector<ContactPoint> pts2;
-  VectorXi track(pts0.size());
-  track.setZero();
-
-  for (auto &pt : pts) {
-    bool iftracked = false;
-    for (int i = 0; i < pts0.size(); i++) {
-      if (track[i] == 1)
-        continue;
-      ContactPoint pt0 = pts0[i];
-      iftracked = contactTrack(pt0, pt);
-      if (iftracked) {
-        track[i] = 1;
-        break;
-      }
-    }
-    if (iftracked)
-      pts2.push_back(pt);
-  }
-  pts = pts2;
-}
-
-bool simplify_line_contacts(const std::vector<ContactPoint> &pts,
-                            std::vector<ContactPoint> *pts_update) {
-
-  if (pts.size() <= 2) {
-    return false;
-  }
-
-  double thr = 5e-2;
-  Vector3d vec = pts[0].p - pts[1].p;
-  vec = vec / vec.norm();
-  int idx = 1;
-  double d = vec.norm();
-  // check if pts are in the same line
-  for (int i = 2; i < pts.size(); i++) {
-    Vector3d vec1 = pts[i].p - pts[0].p;
-    vec1 = vec1 / vec1.norm();
-    double cross_product = vec.cross(vec1).norm();
-    if (cross_product > thr) {
-      // not in the same line
-      return false;
-    } else {
-      double dd = (pts[i].p - pts[0].p).norm();
-      if (dd > d) {
-        d = dd;
-        idx = i;
-      }
-    }
-  }
-  pts_update->push_back(pts[0]);
-  pts_update->push_back(pts[idx]);
-  return true;
-}
-
-bool same_line_update(const std::vector<ContactPoint> &pts,
-                      const std::vector<ContactPoint> &pts_new,
-                      std::vector<ContactPoint> *pts_update) {
-
-  if (pts.size() != 2) {
-    return false;
-  }
-
-  double thr = 1e-3;
-  Vector3d vec = pts[0].p - pts[1].p;
-  double d = vec.norm();
-  ContactPoint pt = pts[1];
-  // check if pts_new are in the same line
-  for (int i = 0; i < pts_new.size(); i++) {
-    if ((vec.cross(pts_new[i].p - pts[0].p)).norm() > thr) {
-      // not in the same line
-      return false;
-    } else {
-      double dd = (pts_new[i].p - pts[0].p).norm();
-      if (dd > d) {
-        d = dd;
-        pt = pts_new[i];
-      }
-    }
-  }
-  pts_update->push_back(pts[0]);
-  pts_update->push_back(pt);
-  return true;
-}
-
-Vector6d recoverContactingContacts(const std::vector<ContactPoint> &pts,
-                                   const VectorXi &mode,
-                                   const VectorXi &remain_idx) {
-  std::vector<ContactPoint> envs;
-  for (int i = 0; i < pts.size(); i++) {
-    if (mode[i] == 0) {
-      bool ifremained = false;
-      for (int k = 0; k < remain_idx.size(); k++) {
-        if (i == remain_idx[k]) {
-          ifremained = true;
-        }
-      }
-      if (!ifremained) {
-        envs.push_back(pts[i]);
-        envs.back().d = 0.042;
-      }
-    }
-  }
-  for (int k = 0; k < remain_idx.size(); k++) {
-    envs.push_back(pts[remain_idx[k]]);
-  }
-  return VelocityCorrection(envs);
-}
-
-Vector6d EnvironmentConstrainedVelocity(const Vector6d &v_goal,
-                                        const std::vector<ContactPoint> &envs,
-                                        const VectorXi &env_mode,
-                                        ContactConstraints &cons) {
-
-  MatrixXd A_env;
-  MatrixXd G_env;
-  VectorXd b_env;
-  VectorXd h_env;
-
-  cons.ModeConstraints(envs, env_mode, 0.2, Vector6d::Zero(), &A_env, &b_env,
-                       &G_env, &h_env);
-
-  MatrixXd A;
-  MatrixXd G;
-  VectorXd b;
-  VectorXd h;
-
-  deleteZeroRows(A_env.block(0, 0, A_env.rows(), 6), b_env, &A, &b);
-  deleteZeroRows(G_env.block(0, 0, G_env.rows(), 6), h_env, &G, &h);
-
-  mergeDependentRows(A, b, &A, &b);
-
-  int n_var = 6;
-
-  MatrixXd P(6, 6);
-  VectorXd p(6);
-  P.setIdentity();
-  p = -v_goal;
-
-  VectorXd x(n_var);
-  // x.setZero();
-  x = v_goal;
-
-  if (A.rows() > n_var) {
-    FullPivLU<MatrixXd> lu_decomp(A.transpose());
-
-    if (lu_decomp.rank() >= n_var) {
-      // if A fully constrainted the velocity
-      x.setZero();
-      // double f = solve_quadprog(P, p, A.transpose(), -b,  G.transpose(), -h,
-      // x);
-      return x;
-    } else {
-      A = (lu_decomp.image(A.transpose())).transpose();
-      b = VectorXd::Zero(A.rows());
-    }
-  }
-
-  double f = solve_quadprog(P, p, A.transpose(), -b, G.transpose(), -h, x);
-  // std::cout << "x: \n" << x << std::endl;
-
-  // if (std::isinf(f) || (!ifConstraintsSatisfied(x, A, b, G, h)) || f > 0.0){
-  // // if fail to solve the problem
-  //     x.setZero();
-  // }
-  if (std::isinf(f) || (!ifConstraintsSatisfied(
-                           x, A, b, G, h))) { // if fail to solve the problem
-    x.setZero();
-  }
-
-  // if(f > 0.0){
-  //     std::cout << "solve_quadprog error" << std::endl;
-  // }
-
-  return x;
-}
-
-Vector6d EnvironmentConstrainedVelocity_CSModeOnly(
-    const Vector6d &v_goal, const std::vector<ContactPoint> &envs,
-    const VectorXi &mode, ContactConstraints &cons) {
-
-  int n_pts = envs.size();
-  const int n = cons.friction_cone->number_of_sliding_planes;
-
-  int n_var = 6;
-  int n_sep = 0;
-  int n_con = 0;
-  for (int i = 0; i < n_pts; i++) {
-    (mode[i] == 0) ? n_con++ : n_sep++;
-  }
-
-  MatrixXd A(n_con, n_var);
-  MatrixXd G(n_sep, n_var);
-
-  VectorXd b(n_con);
-  VectorXd h(n_sep);
-  b.setZero();
-  h.setZero();
-
-  int counter_G = 0;
-  int counter_A = 0;
-
-  for (int i = 0; i < n_pts; i++) {
-
-    int cs_mode = mode[i];
-
-    Matrix6d Adgco = contact_jacobian(envs[i].p, envs[i].n);
-
-    // std::cout << "Adgco\n" << Adgco << std::endl;
-
-    if (cs_mode == 1) { // separate
-      G.block(counter_G, 0, 1, 6) = cons.basis.row(2) * Adgco;
-      counter_G += 1;
-    } else { // contacting
-      A.block(counter_A, 0, 1, 6) = cons.basis.row(2) * Adgco;
-      counter_A += 1;
-    }
-  }
-
-  MatrixXd P(6, 6);
-  VectorXd p(6);
-  P.setIdentity();
-  p = -v_goal;
-
-  VectorXd x(n_var);
-  // x.setZero();
-  x = v_goal;
-
-  if (A.rows() > n_var) {
-    FullPivLU<MatrixXd> lu_decomp(A.transpose());
-
-    if (lu_decomp.rank() >= n_var) {
-      // if A fully constrainted the velocity
-      x.setZero();
-      // double f = solve_quadprog(P, p, A.transpose(), -b,  G.transpose(), -h,
-      // x);
-      return x;
-    } else {
-      A = (lu_decomp.image(A.transpose())).transpose();
-      b = VectorXd::Zero(A.rows());
-    }
-  }
-
-  double f = solve_quadprog(P, p, A.transpose(), -b, G.transpose(), -h, x);
-  // std::cout << "x: \n" << x << std::endl;
-
-  // if (std::isinf(f) || (!ifConstraintsSatisfied(x, A, b, G, h)) || f > 0.0){
-  // // if fail to solve the problem
-  //     x.setZero();
-  // }
-  if (std::isinf(f) || (!ifConstraintsSatisfied(
-                           x, A, b, G, h))) { // if fail to solve the problem
-    x.setZero();
-  }
-
-  // if(f > 0.0){
-  //     std::cout << "solve_quadprog error" << std::endl;
-  // }
-
-  return x;
-}
-
-VectorXi mode_from_velocity(const Vector6d &v,
-                            const std::vector<ContactPoint> &envs,
-                            ContactConstraints *cons) {
-  VectorXi env_mode(envs.size() * 3);
-
-  Eigen::Matrix<double, 3, 6> basis;
-  basis.setZero();
-  for (int i = 0; i < 3; i++) {
-    basis(i, i) = 1;
-  }
-
-  double thr = 1e-3;
-
-  for (int k = 0; k < envs.size(); ++k) {
-
-    ContactPoint pt = envs[k];
-
-    // calculate contact velocity
-    Matrix6d Adgco = contact_jacobian(pt.p, pt.n);
-    Eigen::Matrix<double, 1, 6> N = basis.row(2) * Adgco;
-    Eigen::Matrix<double, 2, 6> T = basis.block<2, 6>(0, 0) * Adgco;
-
-    // skip this contact if its normal velocity > thr
-    double vn = N * v;
-    if (vn > thr) {
-      env_mode[k] = 1;
-      env_mode[envs.size() + 2 * k] = 0;
-      env_mode[envs.size() + 2 * k + 1] = 0;
-      continue;
-    }
-
-    env_mode[k] = 0;
-
-    Vector6d vt;
-    vt.setZero();
-    vt.block(0, 0, 2, 1) = T * v;
-
-    if (vt.norm() < thr) {
-      // sticking contact
-      env_mode[envs.size() + 2 * k] = 0;
-      env_mode[envs.size() + 2 * k + 1] = 0;
-    } else {
-      // sliding contact
-      // compute its ss mode
-      VectorXd vt_dir = cons->friction_cone->D * vt;
-      VectorXi ss_mode(vt_dir.size());
-      for (int i = 0; i < vt_dir.size(); ++i) {
-        if (vt_dir[i] > thr) {
-          ss_mode[i] = 1;
-        } else if (vt_dir[i] < -thr) {
-          ss_mode[i] = -1;
-        } else {
-          ss_mode[i] = 0;
-        }
-      }
-
-      env_mode[envs.size() + 2 * k] = ss_mode[0];
-      env_mode[envs.size() + 2 * k + 1] = ss_mode[1];
-    }
-  }
-  return env_mode;
-}
-
-void enumerate_cs_modes(ContactConstraints &cons,
-                        const std::vector<ContactPoint> &envs,
-                        std::vector<VectorXi> *modes) {
-  // contacting-separating mode enumeration
-  MatrixXd A;
-  VectorXd b;
-  MatrixXd D;
-  VectorXd d;
-  cons.NormalVelocityConstraints(envs, &A, &b);
-  cons.TangentVelocityConstraints(envs, &D, &d);
-
-  if (envs.size() == 0) {
-    VectorXi m(0);
-    modes->push_back(m);
-  } else {
-    cs_mode_enumeration(A, modes);
-  }
-}
-
-void enumerate_ss_modes(ContactConstraints &cons,
-                        const std::vector<ContactPoint> &envs,
-                        const VectorXi &cs_mode,
-                        std::vector<VectorXi> *ss_modes) {
-
-  MatrixXd A;
-  VectorXd b;
-  MatrixXd D;
-  VectorXd d;
-  cons.NormalVelocityConstraints(envs, &A, &b);
-  cons.TangentVelocityConstraints(envs, &D, &d);
-  ss_mode_enumeration(A, D, cs_mode, ss_modes);
-}
-
-bool isQuasistatic(const std::vector<ContactPoint> &mnps,
-                   const std::vector<ContactPoint> &envs,
-                   const VectorXi &env_mode, const Vector6d &f_ext_w,
-                   const Vector7d object_pose, double mu_env, double mu_mnp,
-                   ContactConstraints *cons) {
-
-  // force check
-
-  if (mnps.size() + envs.size() == 0) {
-    return false;
-  }
-
-  Vector6d f_ext_o;
-  {
-    Matrix4d T = pose2SE3(object_pose);
-    Matrix4d T_;
-    T_.setIdentity();
-    T_.block(0, 0, 3, 3) = T.block(0, 0, 3, 3);
-    f_ext_o = SE32Adj(T_).transpose() * f_ext_w;
-  }
-
-  MatrixXd A_env;
-  MatrixXd G_env;
-  VectorXd b_env;
-  VectorXd h_env;
-
-  cons->ModeConstraints(envs, env_mode, mu_env, f_ext_o, &A_env, &b_env, &G_env,
-                        &h_env);
-
-  MatrixXd A;
-  MatrixXd G;
-  VectorXd b;
-  VectorXd h;
-
-  if (mnps.size() > 0) {
-
-    MatrixXd A_mnp;
-    MatrixXd G_mnp;
-    VectorXd b_mnp;
-    VectorXd h_mnp;
-
-    VectorXi mmode;
-    mmode.resize(3 * mnps.size());
-    mmode.setZero(); // all fixed manipulator contacts
-
-    cons->ModeConstraints(mnps, mmode, mu_mnp, f_ext_o, &A_mnp, &b_mnp, &G_mnp,
-                          &h_mnp);
-
-    mergeManipulatorandEnvironmentConstraints(
-        A_mnp, b_mnp, G_mnp, h_mnp, A_env, b_env, G_env, h_env, &A, &b, &G, &h);
-  } else {
-    A = A_env;
-    b = b_env;
-    G = G_env;
-    h = h_env;
-  }
-
-  int n_var = A.cols() - 6;
-  if (n_var == 0) {
-    return false;
-  }
-  A = A.block(0, 6, A.rows(), n_var);
-  G = G.block(0, 6, G.rows(), n_var);
-
-  deleteZeroRows(A, b, &A, &b);
-  deleteZeroRows(G, h, &G, &h);
-
-  VectorXd
-      xl; // = VectorXd::Constant(n_var, std::numeric_limits<double>::min());
-  VectorXd
-      xu; // = VectorXd::Constant(n_var, std::numeric_limits<double>::max());
-
-  VectorXd C = VectorXd::Constant(n_var, 0);
-  VectorXd x(n_var);
-  x.setZero();
-  double optimal_cost;
-
-  bool result = lp(C, -G, -h, A, b, xl, xu, &x, &optimal_cost);
-
-  return result;
-}
-
-bool isQuasistatic(const std::vector<ContactPoint> &mnps,
-                   const std::vector<ContactPoint> &envs,
-                   const VectorXi &ref_cs_mode, const Vector6d &v,
-                   const Vector6d &f_ext_w, const Vector7d object_pose,
-                   double mu_env, double mu_mnp, ContactConstraints *cons) {
-
-  // force check
-
-  VectorXi env_mode = mode_from_velocity(v, envs, cons);
-
-  for (int i = 0; i < ref_cs_mode.size(); ++i) {
-    if (env_mode[i] == 1) {
-      if (ref_cs_mode[i] == 0) {
-        env_mode[i] = 0;
-      }
-    }
-  }
-
-  bool result = isQuasistatic(mnps, envs, env_mode, f_ext_w, object_pose,
-                              mu_env, mu_mnp, cons);
-  return result;
-}
-
-bool isQuasistatic(const std::vector<ContactPoint> &mnps,
-                   const std::vector<ContactPoint> &envs, const Vector6d &v,
-                   const Vector6d &f_ext_w, const Vector7d object_pose,
-                   double mu_env, double mu_mnp, ContactConstraints *cons) {
-
-  // force check
-
-  VectorXi env_mode = mode_from_velocity(v, envs, cons);
-
-  bool result = isQuasistatic(mnps, envs, env_mode, f_ext_w, object_pose,
-                              mu_env, mu_mnp, cons);
-  return result;
 }
 
 // -----------------------------------------------------------
@@ -947,7 +86,7 @@ void InhandTASK::initialize(
   ReusableRRT::Node start_node(start_object_pose);
 
   this->m_world->getObjectContacts(&(start_node.envs), start_node.config);
-  enumerate_cs_modes(*this->cons.get(), start_node.envs, &start_node.modes);
+  cs_mode_enumeration(*this->cons.get(), start_node.envs, &start_node.modes);
   shared_rrt->initial_node(&start_node);
 
   // calculate total number of finger combinations
@@ -967,7 +106,7 @@ InhandTASK::generate_state(const Vector7d &object_pose) const {
   InhandTASK::State state_;
   state_.m_pose = object_pose;
   this->m_world->getObjectContacts(&state_.envs, object_pose);
-  enumerate_cs_modes(*this->cons.get(), state_.envs, &state_.modes);
+  cs_mode_enumeration(*this->cons.get(), state_.envs, &state_.modes);
 
   return state_;
 }
@@ -1032,9 +171,10 @@ double InhandTASK::evaluate_path(const std::vector<State2> &path) {
     for (auto state : path) {
       total_finger_distance += get_finger_distance(state.finger_index);
     }
-    total_finger_distance += double(path.size()) * get_finger_distance(path.back().finger_index);
+    total_finger_distance +=
+        double(path.size()) * get_finger_distance(path.back().finger_index);
     total_finger_distance /= this->number_of_robot_contacts;
-    total_finger_distance /= 2*double(path.size());
+    total_finger_distance /= 2 * double(path.size());
     double reward_finger_distance =
         1.0 / (1 + std::exp(3.62 * total_finger_distance - 2.09));
     reward = 0.2 * reward + 0.8 * reward_finger_distance;
@@ -1266,9 +406,10 @@ long int InhandTASK::pruning_check(const Vector7d &x, const Vector6d &v,
       }
     }
 
-    dynamic_feasibility =
-        isQuasistatic(mnps, envs, v, this->f_gravity, x, this->mu_env,
-                      this->mu_mnp, this->cons.get());
+    dynamic_feasibility = isQuasistatic(
+        mnps, envs, 
+        mode_from_velocity(v, envs, this->cons.get()),
+        this->f_gravity, x, this->mu_env, this->mu_mnp, this->cons.get());
 
     if (dynamic_feasibility) {
       break;
@@ -1553,8 +694,11 @@ bool InhandTASK::is_finger_valid(long int finger_idx, int timestep) {
     this->m_world->getRobot()->Fingertips2PointContacts(fingertips, &mnps);
   }
 
+  VectorXi conservative_full_mode = conservative_mode_from_velocity(
+    this->saved_object_trajectory[timestep].envs, reference_cs_mode, v, this->cons.get());
+
   bool dynamic_feasibility = isQuasistatic(
-      mnps, this->saved_object_trajectory[timestep].envs, reference_cs_mode, v,
+      mnps, this->saved_object_trajectory[timestep].envs, conservative_full_mode,
       this->f_gravity, x_object, this->mu_env, this->mu_mnp, this->cons.get());
 
   return dynamic_feasibility;
@@ -1875,7 +1019,8 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
     }
 
     if (near_idx < 0) {
-      // std::cout << "There is no unexplored nodes in this subtree. Cannot find "
+      // std::cout << "There is no unexplored nodes in this subtree. Cannot find
+      // "
       //              "a new path. "
       //           << std::endl;
       return path_;
@@ -1905,7 +1050,7 @@ InhandTASK::search_a_new_path(const InhandTASK::State &start_state) {
       }
       this->m_world->getObjectContacts(&(shared_rrt->nodes[near_idx].envs),
                                        shared_rrt->nodes[near_idx].config);
-      enumerate_cs_modes(*this->cons.get(), shared_rrt->nodes[near_idx].envs,
+      cs_mode_enumeration(*this->cons.get(), shared_rrt->nodes[near_idx].envs,
                          &shared_rrt->nodes[near_idx].modes);
     }
 

@@ -2,8 +2,7 @@
 #include "../mechanics/contacts/contact_kinematics.h"
 #include "../mechanics/utilities/combinatorics.h"
 #include "../mechanics/utilities/eiquadprog.hpp"
-#include "../tasks/cmg_task.h"
-
+#include "../mechanics/force_check.h"
 void drop() {
 
   Vector6d v_b = Vector6d::Zero();
@@ -25,7 +24,7 @@ void drop() {
 
   bool result =
       isQuasidynamic(v_b, mnps, envs, env_mode, f_ext_w, object_inertia,
-                     object_pose, mu_env, mu_mnp, wa, wt, h_time, &cons);
+                     object_pose, mu_env, mu_mnp, wa, wt, h_time, &cons, 0.5);
 
   std::cout << "drop result: " << result << std::endl;
 }
@@ -61,7 +60,7 @@ void rotate() {
   std::cout << v_b.normalized().transpose()*v_zero.normalized()<< std::endl;
   bool result =
       isQuasidynamic(v_b, mnps, envs, env_mode, f_ext_w, object_inertia,
-                     object_pose, mu_env, mu_mnp, wa, wt, h_time, &cons);
+                     object_pose, mu_env, mu_mnp, wa, wt, h_time, &cons, 0.5);
 
   std::cout << "rotate result: " << result << std::endl;
 }

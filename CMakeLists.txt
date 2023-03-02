@@ -100,6 +100,7 @@ FILE(GLOB MCTS_HEADERS ${CMAKE_SOURCE_DIR}/*.h)
 #     message("cannot find bullet")
 # endif()
 
+
 add_definitions(-DSRC_DIR="${PROJECT_SOURCE_DIR}")
 
 # ADD_SUBDIRECTORY(games)
@@ -111,3 +112,4 @@ ADD_SUBDIRECTORY(examples_inhand)
 ADD_SUBDIRECTORY(examples_env)
 ADD_SUBDIRECTORY(delta_array)
 ADD_SUBDIRECTORY(ddhand)
+

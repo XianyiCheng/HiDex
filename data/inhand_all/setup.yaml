@@ -5,7 +5,7 @@ object_scale: 2
 
 output_file_name: "output.csv"
 
-visualization_option: "result"
+visualization_option: "csv"
 
 grasp_measure_scale: -1
 

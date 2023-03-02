@@ -14,6 +14,8 @@ set(dart_libs dart dart-utils-urdf dart-gui dart-collision-bullet)
 
 add_library(mcts-mechanics
     mechanics.cpp
+    force_check.cpp 
+    mode_utils.cpp 
     contacts/contact_kinematics.cpp
     contacts/contact_constraints.cpp
     contacts/contact_mode_enumeration.cpp

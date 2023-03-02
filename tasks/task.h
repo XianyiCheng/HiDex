@@ -29,7 +29,12 @@
 #include "rrt.h"
 #endif
 
-class InhandTASK {
+#ifndef Reward_H
+#define Reward_H
+#include "rewards.h"
+#endif
+
+class TASK {
 
 public:
   struct State {
@@ -92,7 +97,6 @@ public:
                 finger_idx == action_.finger_idx);
       }
     };
-
     static const Action no_action;
 
     int timestep = 0;
@@ -118,19 +122,26 @@ public:
     int max_samples = 100;
     Vector3d sample_rotation_axis;
 
+    bool control_neighbors = false;
+
     SearchOptions() {}
   };
 
-  InhandTASK() { this->cons = std::make_unique<ContactConstraints>(2); }
+  TASK() { this->cons = std::make_unique<ContactConstraints>(2); }
 
   void initialize(const Vector7d &start_object_pose,
-                  const Vector7d &goal_object_pose, long int start_finger_idx,
-                  long int goal_finger_idx, double goal_thr, double wa,
+                  const Vector7d &goal_object_pose, double goal_thr, double wa,
                   double wt, double charac_len, double mu_env, double mu_mnp,
-                  Vector6d f_gravity, std::shared_ptr<WorldTemplate> world,
-                  int n_robot_contacts, std::vector<ContactPoint> surface_pts,
+                  Matrix6d object_inertia, Vector6d f_gravity,
+                  std::shared_ptr<WorldTemplate> world, int n_robot_contacts,
+                  std::string dynamic_type, std::vector<ContactPoint> surface_pts,
                   const SearchOptions &options, bool if_refine = false,
                   double refine_dist = 0.0);
+
+  int neighbors_on_the_same_manifold(const Vector7d &q,
+                                     std::vector<ContactPoint> envs,
+                                     std::vector<VectorXi> env_modes,
+                                     double dist_thr);
 
   // --- Level 1 Tree functions ---
   State get_start_state() const { return generate_state(start_object_pose); }
@@ -155,9 +166,19 @@ public:
     return dist;
   }
 
+  int number_environment_contact_changes(const std::vector<State> &path) const {
+    int num_changes = 0;
+    for (int i = 0; i < path.size() - 1; ++i) {
+      if (path[i].envs.size() != path[i + 1].envs.size()) {
+        num_changes++;
+      }
+    }
+    return num_changes;
+  }
+
   double evaluate_path(const std::vector<State> &path,
                        const std::vector<State2> &path2) {
-    //
+    // different for inhand and cmg
 
     double dist = this->travel_distance(path);
     double best_dist =
@@ -173,12 +194,34 @@ public:
     double x_finger = total_finger_changes / double(path2.back().t_max);
     double y_finger = 11.14845406 * x_finger - 4.59804752;
 
+    int n_env_changes = this->number_environment_contact_changes(path);
+    double x_env_changes = double(n_env_changes);
+    double y_env_changes = 1.31 * x_env_changes - 4.41;
+
     double r_dist = 1.0 / (1.0 + std::exp(y_dist));
     double r_path = 1.0 / (1.0 + std::exp(y_path));
     double r_finger = 1.0 / (1.0 + std::exp(y_finger));
+    double r_env_changes = 1.0 / (1.0 + std::exp(y_env_changes));
 
-    double reward = 0.4 * r_dist + 0.4 * r_path + 0.2 * r_finger;
+    double reward =
+        0.4 * r_dist + 0.3 * r_path + 0.4 * r_finger; // + 0.3 * r_env_changes;
 
+    return reward;
+  }
+
+  double evaluate_path_level_1(const std::vector<State> &object_path,
+                               const std::vector<State2> &robot_contact_path) {
+    std::vector<double> features = this->get_path_features(
+        object_path, robot_contact_path, this->reward_L1->get_feature_names());
+    double reward = this->reward_L1->get(features);
+    return reward;
+  }
+
+  double evaluate_path_level_2(const std::vector<State> &object_path,
+                               const std::vector<State2> &robot_contact_path) {
+    std::vector<double> features = this->get_path_features(
+        object_path, robot_contact_path, this->reward_L2->get_feature_names());
+    double reward = this->reward_L1->get(features);
     return reward;
   }
 
@@ -186,16 +229,8 @@ public:
 
   std::vector<int> get_finger_locations(long int finger_location_index);
 
+  // add this for inhand
   long int finger_locations_to_finger_idx(const std::vector<int> &finger_idxs);
-
-  void sample_likely_feasible_finger_idx(Vector7d x_object, int number,
-                                         std::vector<long int> *finger_idxs,
-                                         std::vector<double> *probabilities);
-
-  void sample_likely_feasible_finger_idx(State2 state, double t_change,
-                                         int number,
-                                         std::vector<long int> *finger_idxs,
-                                         std::vector<double> *probabilities);
 
   VectorXd get_robot_config_from_action_idx(long int action_index) {
 
@@ -238,36 +273,15 @@ public:
     return 0.0;
   }
 
-  double action_heuristics_level2(State2::Action action, const State2 &state,
-                                  const State2 &pre_state) {
-    // return the heuristics of an action in level2, this can be hand designed
-    // or learned todo: improve this heuristics
-    std::vector<int> finger_locations_1 =
-        this->get_finger_locations(pre_state.finger_index);
-    std::vector<int> finger_locations_2 =
-        this->get_finger_locations(action.finger_idx);
-
-    double heu = 1.0;
-    for (int i = 0; i < finger_locations_1.size(); ++i) {
-      if (finger_locations_1[i] == finger_locations_2[i]) {
-        heu *= 2.0;
-      }
-    }
-
-    return heu;
-  }
-
-  int get_number_of_robot_actions(const State2 &state) {
+  long int get_number_of_robot_actions(const State2 &state) {
     return this->n_finger_combinations;
   }
 
-  int get_number_of_actions(const State2 &state) {
+  long int get_number_of_actions(const State2 &state) {
     return this->n_finger_combinations * this->saved_object_trajectory.size();
   }
 
   bool is_terminal(const State2 &state) {
-    // TODO: change this
-
     // check if terminal, also check if valid,
     // if not valid it is also terminal
 
@@ -297,7 +311,7 @@ public:
 
   int total_rrt_nodes() { return shared_rrt->nodes.size(); }
 
-  // bool is_valid(const State2 &state, const State2 &prev_state);
+  bool is_valid(const State2 &state, const State2 &prev_state);
 
   bool is_finger_valid(long int finger_idx, int timestep);
 
@@ -317,12 +331,9 @@ public:
                                      const VectorXi &cs_mode, const Vector6d &v,
                                      const std::vector<ContactPoint> &envs);
 
-  long int pruning_check(const Vector7d &x, const Vector6d &v,
+  long int pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
                          const std::vector<ContactPoint> &envs);
-
-  long int pruning_check(const Vector7d &x, const VectorXi &cs_mode,
-                         const Vector6d &v,
-                         const std::vector<ContactPoint> &envs);
+  
 
   long int
   pruning_check_w_transition(const Vector7d &x, const Vector7d &x_pre,
@@ -330,7 +341,16 @@ public:
                              const std::vector<ContactPoint> &envs,
                              const std::vector<ContactPoint> &envs_pre);
 
-  int max_forward_timestep(const State2 &state);
+  void sample_likely_feasible_finger_idx(Vector7d x_object, int number,
+                                         std::vector<long int> *finger_idxs,
+                                         std::vector<double> *probabilities);
+
+  void sample_likely_feasible_finger_idx(State2 state, double t_change,
+                                         int number,
+                                         std::vector<long int> *finger_idxs,
+                                         std::vector<double> *probabilities);
+
+  int max_forward_timestep(const TASK::State2 &state);
   int select_finger_change_timestep(const State2 &state);
 
   void
@@ -360,25 +380,8 @@ public:
     return total_finger_distance;
   }
 
-  double finger_idx_prob(long int finger_idx, int t) {
-    if (this->if_goal_finger) {
-      double d = this->get_finger_distance(finger_idx);
-      d = d / double(this->number_of_robot_contacts);
-      double p = 1.0 / (1.0 + std::exp(4.48413179 * d - 2.2420659));
-      return p;
-    } else {
-      // use grasp measure
-      if (this->grasp_measure_charac_length <= 0){
-        return 1.0;
-      }
-      if (t == -1) {
-        return 1.0;
-      }
-      double x_grasp = this->grasp_measure(finger_idx, t);
-      double y_grasp = 6.90675 * x_grasp - 6.90675;
-      double p = 1.0 / (1.0 + std::exp(y_grasp));
-      return p;
-    }
+  long int encode_action_idx(long int finger_idx, int timestep) {
+    return timestep * this->n_finger_combinations + finger_idx;
   }
 
   double grasp_measure(long int finger_idx, int timestep) {
@@ -409,24 +412,41 @@ public:
     return d;
   }
 
-  // unsigned long int encode_action_idx(int finger_idx, int timestep)
-  // {
-  //     unsigned long int t = timestep;
-  //     unsigned long int f = this->n_finger_combinations;
-  //     unsigned long int action_idx = t * f + finger_idx;
-  //     return action_idx;
-  // }
+  double finger_idx_prob(long int finger_idx, int t) {
 
-  // void do_action(State2 &state, unsigned long int action)
-  // {
-  //     state.timestep = action / this->n_finger_combinations;
-  //     state.finger_index = action % this->n_finger_combinations;
-  // }
+    if (this->if_goal_finger) {
+      double d = this->get_finger_distance(finger_idx);
+      d = d / double(this->number_of_robot_contacts);
+      double p = 1.0 / (1.0 + std::exp(4.48413179 * d - 2.2420659));
+      return p;
+    } else {
+      // use grasp measure
+      if (this->grasp_measure_charac_length <= 0) {
+        return 1.0;
+      }
+      if (t == -1) {
+        return 1.0;
+      }
+      double x_grasp = this->grasp_measure(finger_idx, t);
+      double y_grasp = 6.90675 * x_grasp - 6.90675;
+      double p = 1.0 / (1.0 + std::exp(y_grasp));
+      return p;
+    }
+  }
+
+  std::vector<double>
+  get_path_features(const std::vector<State> &object_path,
+                    const std::vector<State2> &robot_contact_path,
+                    const std::vector<std::string> &feature_names);
 
   double grasp_measure_charac_length = -1.0;
+
   std::vector<State> saved_object_trajectory;
   std::vector<ContactPoint> object_surface_pts;
   int number_of_robot_contacts;
+
+  std::string task_dynamics_type =
+      "quasistatic"; // "quasistatic", "quasidynamic", "none", "force_closure"
 
   std::shared_ptr<WorldTemplate>
       m_world; // save the object, environment, do collision detections, ...
@@ -441,11 +461,14 @@ public:
 
   bool if_goal_finger = false;
 
-private:
-  bool m_initialized = false;
-
   long int start_finger_idx = -1;
   long int goal_finger_idx = -1;
+
+  std::unique_ptr<RewardFunction> reward_L1;
+  std::unique_ptr<RewardFunction> reward_L2;
+
+private:
+  bool m_initialized = false;
 
   double goal_thr;
   double wa; // weigh the importance of angle
@@ -454,7 +477,7 @@ private:
   double charac_len; // characteristic length
 
   double mu_mnp = 0.8;
-  double mu_env = 0.4;
+  double mu_env = 0.5;
 
   Matrix6d object_inertia;
   Vector6d f_gravity;

@@ -1,9 +1,5 @@
 #include "contact_mode_enumeration.h"
 
-#ifndef CONTACTCONSTRAINTS_H
-#define CONTACTCONSTRAINTS_H
-    #include "contact_constraints.h"
-#endif
 
 #include <modus/modes/enumerate.hpp>
 #include <modus/modes/geometry/interior_point.hpp>
@@ -229,3 +225,40 @@ void all_mode_enumeration(const MatrixXd& A, const MatrixXd& T, std::vector<Vect
     delete graph;
 }
 
+void cs_mode_enumeration(ContactConstraints &cons,
+                        const std::vector<ContactPoint> &envs,
+                        std::vector<VectorXi> *modes)
+{
+  // contacting-separating mode enumeration
+  MatrixXd A;
+  VectorXd b;
+  MatrixXd D;
+  VectorXd d;
+  cons.NormalVelocityConstraints(envs, &A, &b);
+  cons.TangentVelocityConstraints(envs, &D, &d);
+
+  if (envs.size() == 0)
+  {
+    VectorXi m(0);
+    modes->push_back(m);
+  }
+  else
+  {
+    cs_mode_enumeration(A, modes);
+  }
+}
+
+void ss_mode_enumeration(ContactConstraints &cons,
+                        const std::vector<ContactPoint> &envs,
+                        const VectorXi &cs_mode,
+                        std::vector<VectorXi> *ss_modes)
+{
+
+  MatrixXd A;
+  VectorXd b;
+  MatrixXd D;
+  VectorXd d;
+  cons.NormalVelocityConstraints(envs, &A, &b);
+  cons.TangentVelocityConstraints(envs, &D, &d);
+  ss_mode_enumeration(A, D, cs_mode, ss_modes);
+}

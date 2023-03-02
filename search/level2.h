@@ -40,7 +40,7 @@ namespace HMP
     }
     ~Level2Tree() {}
 
-    virtual void grow_tree(Node<State> *grow_node, const MCTSOptions &options)
+    void grow_tree(Node<State> *grow_node, const MCTSOptions &options) override
     {
 
       // std::mt19937_64 random_engine(initial_seed);
@@ -98,7 +98,7 @@ namespace HMP
       }
     }
 
-    virtual State generate_next_state(Node<State> *node, unsigned long int action)
+    State generate_next_state(Node<State> *node, unsigned long int action) override
     {
       State new_state = node->m_state;
       new_state.do_action(action);
@@ -106,7 +106,7 @@ namespace HMP
       return new_state;
     }
 
-    virtual double get_result(Node<State> *node)
+    double get_result(Node<State> *node) override
     {
 
       // backtrack to get the a std::vector<State> for all mode nodes (except for
@@ -145,12 +145,12 @@ namespace HMP
       return path_score;
     }
 
-    virtual bool is_terminal(Node<State> *node)
+    bool is_terminal(Node<State> *node) override
     {
       return this->m_task->is_terminal(node->m_state);
     }
 
-    virtual unsigned long int select_action(Node<State> *node)
+    unsigned long int select_action(Node<State> *node) override
     {
       // sample based action selection
       int K = 50;

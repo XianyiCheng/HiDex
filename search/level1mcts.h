@@ -1,8 +1,7 @@
 #pragma once
-#include "level2.h"
-#ifndef SEARCH_LEVEL2FP_H
-#define SEARCH_LEVEL2FP_H
-#include "level2fp.h"
+#ifndef SEARCH_LEVEL2MCTS
+#define SEARCH_LEVEL2MCTS
+#include "level2mcts.h"
 #endif
 #include <algorithm>
 
@@ -11,7 +10,7 @@ namespace HMP
 
   // level one tree should be compatible with many different tasks
   template <typename State, typename State2, typename Task>
-  class Level1Tree : public Tree<State, Task>
+  class Level1MCTS : public Tree<State, Task>
   {
   public:
     typedef typename Tree<State, Task>::Action Action;
@@ -39,8 +38,8 @@ namespace HMP
 
     HierarchicalComputeOptions compute_options;
 
-    Level1Tree() {}
-    Level1Tree(std::shared_ptr<Task> task, State start_state,
+    Level1MCTS() {}
+    Level1MCTS(std::shared_ptr<Task> task, State start_state,
                HierarchicalComputeOptions compute_options_)
 
     {
@@ -57,7 +56,7 @@ namespace HMP
 
       this->compute_options = compute_options_;
     }
-    ~Level1Tree() {}
+    ~Level1MCTS() {}
 
     State generate_next_state(Node<State> *node,
                                       Action action) override
@@ -94,7 +93,7 @@ namespace HMP
       if ((node->number_of_next_actions == 0) && (node->m_type == "pose"))
       {
         std::cerr
-            << "Error in Level1Tree::select_action (level.h). No next action "
+            << "Error in Level1MCTS::select_action (level.h). No next action "
                "found for a pose mode. You should add modes for this pose even "
                "there is no contact"
             << std::endl;
@@ -104,7 +103,7 @@ namespace HMP
 
       if (node->number_of_next_actions == 0)
       {
-        // std::cerr << "Error in Level1Tree::select_action (level1.h). No next "
+        // std::cerr << "Error in Level1MCTS::select_action (level1.h). No next "
         //              "action found. "
         //           << std::endl;
         // exit(-1);
@@ -220,7 +219,7 @@ namespace HMP
 
       // Level2Tree<State2, Task> tree2(this->m_task,
       //                                this->m_task->get_start_state2());
-      Level2TreeFP<State2, Task> tree2(this->m_task,
+      Level2MCTS<State2, Task> tree2(this->m_task,
                                        this->m_task->get_start_state2());
       // tree2.ita = 2.0;
       tree2.ita = 0.1;
@@ -448,7 +447,7 @@ namespace HMP
           else
           {
             // error information: wrong node type
-            std::cerr << "Level1Tree::grow_tree. Incorrect state type. The state "
+            std::cerr << "Level1MCTS::grow_tree. Incorrect state type. The state "
                          "type can only be pose "
                          "or mode. "
                       << std::endl;
@@ -574,7 +573,7 @@ namespace HMP
       // Level2Tree<State2, Task> tree2(this->m_task,
       //                                this->m_task->get_start_state2());
       // tree2.ita = 0.1;
-      Level2TreeFP<State2, Task> tree2(this->m_task,
+      Level2MCTS<State2, Task> tree2(this->m_task,
                                        this->m_task->get_start_state2());
       // tree2.ita = 2.0;
       tree2.ita = 0.1;
