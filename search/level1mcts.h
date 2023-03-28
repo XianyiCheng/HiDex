@@ -263,12 +263,6 @@ namespace HMP
 
       double final_best_reward = final_node_2->m_value;
 
-      // try to capture all the task specific evaluation in the
-      // task->evaluate_path only consider add reward terms here if they are a
-      // MCTS thing
-
-      // path score should be evaluate of trajectory from 1 and 2
-
       double path_score;
 
       if (final_best_reward <= 0)
@@ -277,12 +271,7 @@ namespace HMP
       }
       else
       {
-        // double score_level1 = this->m_task->evaluate_path(state_path);
-        // double score_level2 =
-        //     this->m_task->evaluate_path(tree2.backtrack_state_path(
-        //         final_node_2)); // this is different than final_node_2->m_value
-        // path_score = score_level1 * 2.0 + score_level2;
-        path_score = this->m_task->evaluate_path(state_path, tree2.backtrack_state_path(final_node_2));
+        path_score = this->m_task->evaluate_path_level_1(state_path, tree2.backtrack_state_path(final_node_2));
       }
 
       this->m_task->saved_object_trajectory.clear();

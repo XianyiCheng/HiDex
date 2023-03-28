@@ -34,6 +34,10 @@ ENDIF(NOT CMAKE_BUILD_TYPE)
 
 SET(MY_LIBRARY_DEPENDENCIES)
 
+# If you installed dart-6 and don't want to build dartsim inside this package, uncomment this
+FIND_PACKAGE(DART REQUIRED COMPONENTS gui collision-bullet utils)
+set(dart_libs dart dart-utils dart-utils-urdf dart-gui dart-collision-bullet)
+
 # Multithreading using OpenMP
 OPTION(OPENMP
   "Enable multi-threading (requires OpenMP)"
@@ -112,4 +116,4 @@ ADD_SUBDIRECTORY(examples_inhand)
 ADD_SUBDIRECTORY(examples_env)
 ADD_SUBDIRECTORY(delta_array)
 ADD_SUBDIRECTORY(ddhand)
-
+ADD_SUBDIRECTORY(action_integrator)

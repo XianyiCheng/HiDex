@@ -135,7 +135,7 @@ double InhandTASK::evaluate_path(const std::vector<State2> &path) {
   double y_finger = 10.80772595 * x_finger + -4.59511985;
   double reward_finger = 1.0 / (1.0 + std::exp(y_finger));
 
-  if (this->grasp_measure_charac_length <= 0.0) {
+  if (this->grasp_measure_charac_length < 0.0) {
     reward = reward_finger;
   } else {
     reward += 0.5 * reward_finger;

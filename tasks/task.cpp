@@ -373,6 +373,229 @@ bool TASK::forward_integration(const Vector7d &x_start,
   return true;
 }
 
+bool TASK::forward_integration_velocity(const Vector7d &x_start,
+                               const Vector6d &v_goal, 
+                               const std::vector<ContactPoint> &mnps_,
+                               const std::vector<ContactPoint> &envs_,
+                               const VectorXi &env_mode_,
+                               std::vector<Vector7d> *path)
+{
+
+  // The env_mode_ can either be the full mode (cs + ss) or cs mode
+
+  double thr = 1e-4;
+  double h = 0.04;
+  int max_counter = 150;
+
+  Vector7d x = x_start;
+  Vector7d x_goal = SE32pose(pose2SE3(x_start) * se32SE3(v_goal));
+  
+  VectorXi env_mode = env_mode_;
+
+  path->push_back(x);
+
+  std::vector<ContactPoint> envs;
+  envs = envs_;
+
+  std::vector<ContactPoint> envs_pre;
+  envs_pre = envs;
+
+  int mode_type =
+      (env_mode.size() == envs.size()) ? MODE_TYPE_CS : MODE_TYPE_FULL;
+
+  Vector6d v_b_pre;
+  v_b_pre.setZero();
+
+  int counter;
+  int delete_c = 0;
+
+  for (counter = 0; counter < max_counter; counter++)
+  {
+    // compute the goal velocity v_star by multiplying the direction of v_goal and the norm of v_flow
+    Vector6d v_flow = compute_rbvel_body(x, x_goal);
+    if ((v_flow.norm() < thr) || (v_goal.norm() < thr))
+    {
+      std::cout << "v_flow.norm() < thr || v_goal.norm() < thr" << std::endl;
+      break;
+    }
+    Vector6d v_star = v_goal/v_goal.norm() * v_flow.norm();
+
+    Matrix4d T = pose2SE3(x);
+    Matrix6d Adg = SE32Adj(T);
+
+    Matrix4d T_;
+    T_.setIdentity();
+    T_.block(0, 0, 3, 3) = T.block(0, 0, 3, 3);
+
+    Vector6d v_b;
+    if (mode_type == MODE_TYPE_FULL)
+    {
+      v_b = EnvironmentConstrainedVelocity(v_star, envs, env_mode, *this->cons);
+    }
+    else
+    {
+      // mode_type == MODE_TYPE_CS
+      v_b = EnvironmentConstrainedVelocity_CSModeOnly(v_star, envs, env_mode,
+                                                      *this->cons);
+    }
+
+    if (v_b.norm() < thr)
+    {
+      std::cout << "v_b < thr : " << v_b.transpose() << std::endl;
+      break;
+    }
+
+    if ((v_b_pre.transpose() * v_b)[0] < -1e-5)
+    {
+      printf("v_b back and forth. \n");
+      break;
+    }
+    
+    bool pass_pruning_check = this->robot_contact_feasibile_check(
+        mnps_, x, env_mode.head(envs.size()), v_b, envs);
+    if (!pass_pruning_check)
+    {
+      std::cout << "pass_pruning_check: " << pass_pruning_check << std::endl;
+      break;
+    }
+    
+    steer_velocity(v_b, h, this->charac_len);
+
+    // integrate v
+    Vector7d x_new = SE32pose(T * se32SE3(v_b));
+
+    this->m_world->updateObjectPose(x_new);
+
+    // check penetration & interpolation (break may happen)
+    envs.clear();
+    this->m_world->getObjectContacts(&envs, x_new);
+
+    // velocity correction
+    int pre_env_size =
+        (mode_type == MODE_TYPE_FULL) ? env_mode.size() / 3 : env_mode.size();
+
+    if (envs.size() != 0 && envs.size() == pre_env_size &&
+        (ifNeedVelocityCorrection(env_mode, envs)))
+    {
+      // std::cout << "velocity correction " << counter << std::endl;
+
+      int iter_corr = 0;
+      while (iter_corr < 10)
+      {
+        if (envs.size() == pre_env_size)
+        {
+          if (!ifNeedVelocityCorrection(env_mode, envs))
+          {
+            break;
+          }
+        }
+        else
+        {
+          break;
+        }
+        Vector6d v_corr = VelocityCorrection(envs);
+        x_new = SE32pose(pose2SE3(x_new) * se32SE3(v_corr));
+        envs.clear();
+        this->m_world->getObjectContacts(&envs, x_new);
+        iter_corr++;
+      }
+
+      if (is_penetrate(envs) || (envs.size() != pre_env_size))
+      {
+        break;
+      }
+    }
+
+    if (envs.size() > pre_env_size)
+    {
+      // Detects new contacts: project the object back to zero contact distance
+      int iter_corr = 0;
+      while (iter_corr < 10)
+      {
+        VectorXi mode_corr(envs.size());
+        mode_corr.setZero();
+        if (!ifNeedVelocityCorrection(mode_corr, envs))
+        {
+          path->push_back(x_new);
+          break;
+        }
+        Vector6d v_corr = VelocityCorrection(envs);
+        x_new = SE32pose(pose2SE3(x_new) * se32SE3(v_corr));
+        envs.clear();
+        this->m_world->getObjectContacts(&envs, x_new);
+        iter_corr++;
+      }
+      printf("Made new contacts! \n");
+      // print_contacts(envs);
+      break;
+    }
+
+    // update contact mode if needed (less contact detected)
+    if (envs.size() < pre_env_size)
+    {
+      VectorXi remain_idx = track_contacts_remain(envs_pre, envs);
+      if (envs.size() != 0 && remain_idx.size() == 0)
+      {
+        printf("contact track fails.\n");
+        break;
+      }
+      if (ifContactingModeDeleted(env_mode, remain_idx, envs_pre.size()))
+      {
+        if (h < 0.004 / 5)
+        {
+          Vector6d v_corr =
+              recoverContactingContacts(envs_pre, env_mode, remain_idx);
+
+          x_new = SE32pose(pose2SE3(x_new) * se32SE3(v_corr));
+          envs.clear();
+          this->m_world->getObjectContacts(&envs, x_new);
+
+          remain_idx = track_contacts_remain(envs_pre, envs);
+
+          if (ifContactingModeDeleted(env_mode, remain_idx, envs_pre.size()))
+          {
+
+            break;
+          }
+          else
+          {
+            env_mode = deleteModebyRemainIndex(env_mode, remain_idx, mode_type);
+          }
+        }
+        else
+        {
+          h = h / 1.5;
+          envs = envs_pre;
+          continue;
+        }
+      }
+      else
+      {
+        env_mode = deleteModebyRemainIndex(env_mode, remain_idx, mode_type);
+      }
+    }
+
+    if (is_penetrate(envs))
+    {
+      printf("penetrate! \n");
+      break;
+    }
+
+    x = x_new;
+    envs_pre = envs;
+    v_b_pre = v_b;
+
+    path->push_back(x);
+
+    if (counter == max_counter - 1)
+    {
+      printf("Reach the end.\n");
+    }
+  }
+  std::cout << "counter:" << counter << " x: " << x.transpose() << std::endl;
+
+  return true;
+}
 // -----------------------------------------------------------
 // TASK
 
@@ -1078,7 +1301,6 @@ bool TASK::is_valid_transition(const TASK::State2 &state,
   return true;
 }
 
-
 bool TASK::is_valid_transition(long int pre_finger_idx,
                                long int finger_idx, const Vector7d &x,
                                const std::vector<ContactPoint> &envs)
@@ -1141,51 +1363,6 @@ double TASK::total_finger_change_ratio(const std::vector<State2> &path)
   }
 
   return finger_change;
-}
-double TASK::evaluate_path(const std::vector<State2> &path)
-{
-
-  // different for inhand and cmg
-  if (!path.back().is_valid)
-  {
-    return 0.0;
-  }
-
-  double total_finger_changes = this->total_finger_change_ratio(path);
-
-  // double reward = double(node->m_state.t_max) + 1.0 - total_finger_changes;
-
-  double x = total_finger_changes / double(path.back().t_max);
-  double y = 10.80772595 * x + -4.59511985;
-  double reward = 1.0 / (1.0 + std::exp(y));
-
-  if (this->grasp_measure_charac_length <= 0.0)
-  {
-    return reward;
-  }
-  else
-  {
-    reward *= 0.5;
-
-    double avg_grasp_d = 0.0;
-    for (auto s2 : path)
-    {
-      if (s2.finger_index == -1 || s2.timestep == -1)
-      {
-        continue;
-      }
-      double grasp_d = this->grasp_measure(s2.finger_index, s2.timestep);
-      avg_grasp_d += grasp_d;
-    }
-    double x_grasp = avg_grasp_d / (double(path.size()) - 1);
-
-    double y_grasp = 6.90675 * x_grasp - 6.90675;
-    double reward_grasp = 1.0 / (1.0 + std::exp(y_grasp));
-
-    reward += 0.5 * reward_grasp;
-  }
-
-  return reward;
 }
 
 void TASK::save_trajectory(const std::vector<TASK::State> &path)
@@ -1371,6 +1548,62 @@ bool TASK::robot_contact_feasibile_check(
           fingertips.push_back(this->object_surface_pts[idx]);
         }
       }
+      this->m_world->getRobot()->Fingertips2PointContacts(fingertips, &mnps);
+    }
+  }
+
+  if (this->task_dynamics_type == "quasistatic")
+  {
+
+    dynamic_feasibility =
+        isQuasistatic(mnps, envs, env_mode, this->f_gravity, x, this->mu_env,
+                      this->mu_mnp, this->cons.get());
+  }
+  else if (this->task_dynamics_type == "quasidynamic")
+  {
+    double h_time = 1.0;
+
+    dynamic_feasibility =
+        isQuasidynamic(v, mnps, envs, env_mode, this->f_gravity,
+                       this->object_inertia, x, this->mu_env, this->mu_mnp,
+                       this->wa, this->wt, h_time, this->cons.get(), 0.5);
+  }
+
+  return dynamic_feasibility;
+}
+
+bool TASK::robot_contact_feasibile_check(
+    const std::vector<ContactPoint>& fingertips, const Vector7d &x, const VectorXi &cs_mode,
+    const Vector6d &v, const std::vector<ContactPoint> &envs)
+{
+
+  VectorXi env_mode = mode_from_velocity(v, envs, this->cons.get());
+  env_mode.head(envs.size()) = cs_mode;
+
+  bool dynamic_feasibility = false;
+
+  std::vector<ContactPoint> mnps;
+  std::vector<int> fingertip_idx;
+  if (fingertips.size() != 0)
+  {
+    VectorXd mnp_config = this->get_robot_config_from_points(fingertips);
+
+    // update object pose
+    this->m_world->updateObjectPose(x);
+
+    // if there is no ik solution, not valid
+    if (!this->m_world->getRobot()->ifIKsolution(mnp_config, x))
+    {
+      return false;
+    }
+
+    if (this->m_world->isRobotCollide(mnp_config))
+    {
+      return false;
+    }
+
+    // check if there is quasistatic, or quasidynamic
+    {
       this->m_world->getRobot()->Fingertips2PointContacts(fingertips, &mnps);
     }
   }
@@ -1752,7 +1985,6 @@ bool TASK::is_finger_valid(long int finger_idx, int timestep)
   return dynamic_feasibility;
 }
 
-
 std::vector<double>
 TASK::get_path_features(const std::vector<State> &object_path,
                         const std::vector<State2> &robot_contact_path,
@@ -1806,10 +2038,27 @@ TASK::get_path_features(const std::vector<State> &object_path,
       }
       x = avg_grasp_d / (double(robot_contact_path.size()) - 1);
     }
-    else if (feature_name == "distance_to_goal_fingertips")
+    else if (feature_name == "average_distance_to_goal_fingertips")
     {
       // TODO: to implement
-      x = 0.0;
+      if (!this->if_goal_finger)
+      {
+        x = -1.0;
+      }
+      else
+      {
+        double total_finger_distance = 0.0;
+        for (auto state : robot_contact_path)
+        {
+          total_finger_distance += get_finger_distance(state.finger_index);
+        }
+        // let final distance to be half of the average distance
+        total_finger_distance +=
+            double(robot_contact_path.size()) * get_finger_distance(robot_contact_path.back().finger_index);
+        total_finger_distance /= double(this->number_of_robot_contacts);
+        total_finger_distance /= 2 * double(robot_contact_path.size());
+        x = total_finger_distance;
+      }
     }
     else
     {

@@ -130,7 +130,7 @@ public:
     }
 
     double reward =
-        this->m_task->evaluate_path(this->backtrack_state_path(node));
+        this->m_task->evaluate_path_level_2(this->m_task->saved_object_trajectory, this->backtrack_state_path(node));
 
     return reward;
   }

@@ -5,11 +5,11 @@ set(include_dirs
     "${PROJECT_SOURCE_DIR}"
     "${PROJECT_SOURCE_DIR}/mechanics/external/eigen3"
     "${PROJECT_BINARY_DIR}/mechanics/external/modus/include"
-    "${PROJECT_BINARY_DIR}/mechanics/external/dartsim"
+    # "${PROJECT_BINARY_DIR}/mechanics/external/dartsim"
 )
 
 set(modus_libs modus_common modus_modes)
-set(dart_libs dart dart-utils-urdf dart-gui dart-collision-bullet)
+# set(dart_libs dart dart-utils-urdf dart-gui dart-collision-bullet)
 
 # ADD_EXECUTABLE(test_csv
 # test_csv.cpp
