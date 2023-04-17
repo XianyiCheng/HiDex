@@ -374,11 +374,11 @@ bool TASK::forward_integration(const Vector7d &x_start,
 }
 
 bool TASK::forward_integration_velocity(const Vector7d &x_start,
-                               const Vector6d &v_goal, 
-                               const std::vector<ContactPoint> &mnps_,
-                               const std::vector<ContactPoint> &envs_,
-                               const VectorXi &env_mode_,
-                               std::vector<Vector7d> *path)
+                                        const Vector6d &v_goal,
+                                        const std::vector<ContactPoint> &mnps_,
+                                        const std::vector<ContactPoint> &envs_,
+                                        const VectorXi &env_mode_,
+                                        std::vector<Vector7d> *path)
 {
 
   // The env_mode_ can either be the full mode (cs + ss) or cs mode
@@ -389,12 +389,13 @@ bool TASK::forward_integration_velocity(const Vector7d &x_start,
 
   Vector7d x = x_start;
   Vector7d x_goal = SE32pose(pose2SE3(x_start) * se32SE3(v_goal));
-  
+
   VectorXi env_mode = env_mode_;
 
   path->push_back(x);
 
-  if (v_goal.norm() < thr ){
+  if (v_goal.norm() < thr)
+  {
     std::cout << "Goal velocity is too small." << std::endl;
     return false;
   }
@@ -451,7 +452,7 @@ bool TASK::forward_integration_velocity(const Vector7d &x_start,
       printf("v_b back and forth. \n");
       break;
     }
-    
+
     bool pass_pruning_check = this->robot_contact_feasibile_check(
         mnps_, x, env_mode.head(envs.size()), v_b, envs);
     if (!pass_pruning_check)
@@ -459,7 +460,7 @@ bool TASK::forward_integration_velocity(const Vector7d &x_start,
       std::cout << "pass_pruning_check: " << pass_pruning_check << std::endl;
       break;
     }
-    
+
     steer_velocity(v_b, h, this->charac_len);
 
     // integrate v
@@ -599,18 +600,15 @@ bool TASK::forward_integration_velocity(const Vector7d &x_start,
 }
 // -----------------------------------------------------------
 // TASK
-
-void TASK::initialize(
-    const Vector7d &start_object_pose, const Vector7d &goal_object_pose,
-    double goal_thr, double wa, double wt, double charac_len, double mu_env,
-    double mu_mnp, Matrix6d object_inertia, Vector6d f_gravity,
-    std::shared_ptr<WorldTemplate> world, int n_robot_contacts,
-    std::string dynamic_type, std::vector<ContactPoint> surface_pts,
-    const SearchOptions &options, bool if_refine, double refine_dist)
+void TASK::set_task_parameters(double goal_thr, double wa,
+                               double wt, double charac_len, double mu_env, double mu_mnp,
+                               Matrix6d object_inertia, Vector6d f_gravity,
+                               std::shared_ptr<WorldTemplate> world, int n_robot_contacts,
+                               std::string dynamic_type, std::vector<ContactPoint> surface_pts,
+                               const SearchOptions &options, bool if_refine,
+                               double refine_dist)
 {
 
-  this->start_object_pose = start_object_pose;
-  this->goal_object_pose = goal_object_pose;
   this->goal_thr = goal_thr;
   this->wa = wa;
   this->wt = wt;
@@ -620,7 +618,6 @@ void TASK::initialize(
   this->object_inertia = object_inertia;
   this->f_gravity = f_gravity;
   this->search_options = options;
-  this->m_initialized = true;
   this->m_world = world;
   this->number_of_robot_contacts = n_robot_contacts;
   this->task_dynamics_type = dynamic_type;
@@ -628,6 +625,30 @@ void TASK::initialize(
   this->if_refine = if_refine;
   this->refine_dist = refine_dist;
 
+  this->m_paramter_set = true;
+}
+
+void TASK::set_start_and_goal(const Vector7d &start_object_pose, const Vector7d &goal_object_pose)
+{
+  this->start_object_pose = start_object_pose;
+  this->goal_object_pose = goal_object_pose;
+  this->m_start_and_goal_set = true;
+}
+
+void TASK::initialize()
+{
+  if (!this->m_paramter_set){
+    std::cout << "Please set the task parameters before initialize the task." << std::endl;
+    exit(0);
+  }
+  if (!this->m_start_and_goal_set){
+    std::cout << "Please set the start and goal before initialize the task." << std::endl;
+    exit(0);
+  }
+  if (!this->m_reward_set){
+    std::cout << "Please set the reward function before initialize the task." << std::endl;
+    exit(0);
+  }
   // initialize the shared RRT
   shared_rrt =
       std::make_shared<ReusableRRT>(this->wa, this->charac_len * this->wt);
@@ -648,6 +669,8 @@ void TASK::initialize(
     // std::cout << "sum_i: " << sum_i << std::endl;
     this->n_finger_combinations += sum_i;
   }
+
+  this->m_initialized = true;
 }
 
 TASK::State TASK::generate_state(const Vector7d &object_pose) const
@@ -1574,7 +1597,7 @@ bool TASK::robot_contact_feasibile_check(
 }
 
 bool TASK::robot_contact_feasibile_check(
-    const std::vector<ContactPoint>& fingertips, const Vector7d &x, const VectorXi &cs_mode,
+    const std::vector<ContactPoint> &fingertips, const Vector7d &x, const VectorXi &cs_mode,
     const Vector6d &v, const std::vector<ContactPoint> &envs)
 {
 

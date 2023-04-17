@@ -140,14 +140,25 @@ public:
 
   TASK() { this->cons = std::make_unique<ContactConstraints>(2); }
 
-  void initialize(const Vector7d &start_object_pose,
-                  const Vector7d &goal_object_pose, double goal_thr, double wa,
-                  double wt, double charac_len, double mu_env, double mu_mnp,
-                  Matrix6d object_inertia, Vector6d f_gravity,
-                  std::shared_ptr<WorldTemplate> world, int n_robot_contacts,
-                  std::string dynamic_type, std::vector<ContactPoint> surface_pts,
-                  const SearchOptions &options, bool if_refine = false,
-                  double refine_dist = 0.0);
+  void set_start_and_goal(const Vector7d &start_object_pose, const Vector7d &goal_object_pose);
+
+  void set_task_parameters(double goal_thr, double wa,
+                           double wt, double charac_len, double mu_env, double mu_mnp,
+                           Matrix6d object_inertia, Vector6d f_gravity,
+                           std::shared_ptr<WorldTemplate> world, int n_robot_contacts,
+                           std::string dynamic_type, std::vector<ContactPoint> surface_pts,
+                           const SearchOptions &options, bool if_refine = false,
+                           double refine_dist = 0.0);
+
+  void set_reward_functions(std::shared_ptr<RewardFunction> reward_L1,
+                            std::shared_ptr<RewardFunction> reward_L2)
+  {
+    this->reward_L1 = reward_L1;
+    this->reward_L2 = reward_L2;
+    this->m_reward_set = true;
+  }
+
+  void initialize();
 
   int neighbors_on_the_same_manifold(const Vector7d &q,
                                      std::vector<ContactPoint> envs,
@@ -252,7 +263,7 @@ public:
     return mnp_config;
   }
 
-  VectorXd get_robot_config_from_points(const std::vector<ContactPoint> & mnps)
+  VectorXd get_robot_config_from_points(const std::vector<ContactPoint> &mnps)
   {
     // only works for point fingers
     VectorXd mnp_config(6 * mnps.size());
@@ -346,10 +357,10 @@ public:
   bool robot_contact_feasibile_check(long int finger_idx, const Vector7d &x,
                                      const VectorXi &cs_mode, const Vector6d &v,
                                      const std::vector<ContactPoint> &envs);
-  
+
   bool robot_contact_feasibile_check(
-    const std::vector<ContactPoint>& mnps, const Vector7d &x, const VectorXi &cs_mode,
-    const Vector6d &v, const std::vector<ContactPoint> &envs);
+      const std::vector<ContactPoint> &mnps, const Vector7d &x, const VectorXi &cs_mode,
+      const Vector6d &v, const std::vector<ContactPoint> &envs);
 
   long int pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
                          const std::vector<ContactPoint> &envs);
@@ -501,11 +512,14 @@ public:
   long int start_finger_idx = -1;
   long int goal_finger_idx = -1;
 
-  std::unique_ptr<RewardFunction> reward_L1;
-  std::unique_ptr<RewardFunction> reward_L2;
+  std::shared_ptr<RewardFunction> reward_L1;
+  std::shared_ptr<RewardFunction> reward_L2;
 
 private:
   bool m_initialized = false;
+  bool m_paramter_set = false;
+  bool m_start_and_goal_set = false;
+  bool m_reward_set = false;
 
   double goal_thr;
   double wa; // weigh the importance of angle

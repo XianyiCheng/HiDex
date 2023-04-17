@@ -53,7 +53,7 @@ class CMGLevel1Reward : public RewardFunction
 public:
   CMGLevel1Reward()
   {
-    this->feature_names = {"object_travel_distance_ratio", "object_path_size", "average_finger_change_ratio",
+    this->feature_names = {"object_travel_distance_ratio", "object_path_size", "finger_change_ratio",
                            "number_environment_contact_changes"};
   }
 
@@ -100,7 +100,7 @@ class CMGLevel2Reward : public RewardFunction
 public:
   CMGLevel2Reward()
   {
-    this->feature_names = {"average_finger_change_ratio", "average_grasp_centroid_distance"};
+    this->feature_names = {"finger_change_ratio", "average_grasp_centroid_distance"};
   }
 
   double
@@ -140,7 +140,7 @@ class InhandLevel1Reward
 public:
   InhandLevel1Reward()
   {
-    this->feature_names = {"object_travel_distance_ratio", "object_path_size", "average_finger_change_ratio"};
+    this->feature_names = {"object_travel_distance_ratio", "object_path_size", "finger_change_ratio"};
   }
 
   double
@@ -180,7 +180,7 @@ class InhandLevel2Reward
 public:
   InhandLevel2Reward()
   {
-    this->feature_names = {"average_finger_change_ratio", "average_grasp_centroid_distance", "average_distance_to_goal_fingertips"};
+    this->feature_names = {"finger_change_ratio", "average_grasp_centroid_distance", "average_distance_to_goal_fingertips"};
   }
 
   double

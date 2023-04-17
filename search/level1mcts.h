@@ -8,6 +8,26 @@
 namespace HMP
 {
 
+  struct HierarchicalComputeOptions
+  {
+    MCTSOptions l1_1st;       // MCTS compute options for 1st MCTS search in level 1
+    MCTSOptions l1;           // MCTS compute options for all other MCTS search in level 1
+    MCTSOptions l2_1st;       // MCTS compute options for 1st MCTS search in level 2
+    MCTSOptions l2;           // MCTS compute options for all other MCTS search in level 2
+    MCTSOptions final_l2_1st; // MCTS compute options for 1st MCTS search in
+                              // finding out the final result with level 2
+    MCTSOptions final_l2;     // MCTS compute options for all other MCTS search in
+                              // finding out the final result with level 2
+
+    HierarchicalComputeOptions() {}
+
+    HierarchicalComputeOptions(MCTSOptions l1_1st_, MCTSOptions l1_,
+                               MCTSOptions l2_1st_, MCTSOptions l2_,
+                               MCTSOptions fl2_1, MCTSOptions fl2)
+        : l1_1st(l1_1st_), l1(l1_), l2_1st(l2_1st_), l2(l2_),
+          final_l2_1st(fl2_1), final_l2(fl2) {}
+  };
+
   // level one tree should be compatible with many different tasks
   template <typename State, typename State2, typename Task>
   class Level1MCTS : public Tree<State, Task>
@@ -15,26 +35,6 @@ namespace HMP
   public:
     typedef typename Tree<State, Task>::Action Action;
     double m_alpha = 0.4; // the parameter for expanding new continuous node
-
-    struct HierarchicalComputeOptions
-    {
-      MCTSOptions l1_1st;       // MCTS compute options for 1st MCTS search in level 1
-      MCTSOptions l1;           // MCTS compute options for all other MCTS search in level 1
-      MCTSOptions l2_1st;       // MCTS compute options for 1st MCTS search in level 2
-      MCTSOptions l2;           // MCTS compute options for all other MCTS search in level 2
-      MCTSOptions final_l2_1st; // MCTS compute options for 1st MCTS search in
-                                // finding out the final result with level 2
-      MCTSOptions final_l2;     // MCTS compute options for all other MCTS search in
-                                // finding out the final result with level 2
-
-      HierarchicalComputeOptions() {}
-
-      HierarchicalComputeOptions(MCTSOptions l1_1st_, MCTSOptions l1_,
-                                 MCTSOptions l2_1st_, MCTSOptions l2_,
-                                 MCTSOptions fl2_1, MCTSOptions fl2)
-          : l1_1st(l1_1st_), l1(l1_), l2_1st(l2_1st_), l2(l2_),
-            final_l2_1st(fl2_1), final_l2(fl2) {}
-    };
 
     HierarchicalComputeOptions compute_options;
 
@@ -59,7 +59,7 @@ namespace HMP
     ~Level1MCTS() {}
 
     State generate_next_state(Node<State> *node,
-                                      Action action) override
+                              Action action) override
     {
       // this function is only used to generate new state from node type "pose",
       // (to choose a mode)
@@ -83,7 +83,7 @@ namespace HMP
       return new_state;
     }
 
-    Action select_action(Node<State> *node) override 
+    Action select_action(Node<State> *node) override
     {
       // this function is only called to select from discrete actions
       // TODO: return an action that either unexplored or have the best UCT
@@ -220,7 +220,7 @@ namespace HMP
       // Level2Tree<State2, Task> tree2(this->m_task,
       //                                this->m_task->get_start_state2());
       Level2MCTS<State2, Task> tree2(this->m_task,
-                                       this->m_task->get_start_state2());
+                                     this->m_task->get_start_state2());
       // tree2.ita = 2.0;
       tree2.ita = 0.1;
 
@@ -563,7 +563,7 @@ namespace HMP
       //                                this->m_task->get_start_state2());
       // tree2.ita = 0.1;
       Level2MCTS<State2, Task> tree2(this->m_task,
-                                       this->m_task->get_start_state2());
+                                     this->m_task->get_start_state2());
       // tree2.ita = 2.0;
       tree2.ita = 0.1;
 
@@ -575,6 +575,5 @@ namespace HMP
 
       return;
     }
-
   };
 } // namespace HMP
