@@ -17,6 +17,7 @@ Environment setup given the setup file
 Initialize Task
 Call Task::forward_integration
 
+Example
 `
-bin/action_integrator /home/xianyi/Research/MCTS/action_integrator/setup.yaml 1,0,0,0.05,0,1,0,0,0,0,1,0.5,0,0,0,1 1,1,0,0,0,0 -0.5,0,0,1,0,0 0.5,0.5,-0.5,0,0,1,0.5,-0.5,-0.5,0,0,1,-0.5,0.5,-0.5,0,0,1,-0.5,-0.5,-0.5,0,0,1 0,0,0,0  
+bin/action_integrator /home/xianyi/Research/MCTS/action_integrator/setup.yaml 1,0,0,0.05,0,1,0,0,0,0,1,0.5,0,0,0,1      1,1,0,0,0,0     -0.5,0,0,1,0,     0.5,0.5,-0.5,0,0,1,0.5,-0.5,-0.5,0,0,1,-0.5,0.5,-0.5,0,0,1,-0.5,-0.5,-0.5,0,0,1     0,0,0,0       /home/xianyi/Research/MCTS/action_integrator/output_file.csv  
 `

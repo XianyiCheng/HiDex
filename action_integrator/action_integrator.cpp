@@ -143,7 +143,7 @@ void parser(int argc, char *argv[], std::string &param_path, std::string &save_p
         argc = 7;
         argv[1] = (char *)"/home/xianyi/Research/MCTS/action_integrator/setup.yaml";
         argv[2] = (char *)"1,0,0,0.05,0,1,0,0,0,0,1,0.5,0,0,0,1";
-        argv[3] = (char *)"1,0,0,0,0,0";
+        argv[3] = (char *)"1,0,1,0,0,0";
         argv[4] = (char *)"-0.5,0,0,1,0,0";
         argv[5] = (char *)"0.5,0.5,-0.5,0,0,1,0.5,-0.5,-0.5,0,0,1,-0.5,0.5,-0.5,0,0,1,-0.5,-0.5,-0.5,0,0,1";
         argv[6] = (char *)"0,0,0,0";

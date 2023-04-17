@@ -394,6 +394,13 @@ bool TASK::forward_integration_velocity(const Vector7d &x_start,
 
   path->push_back(x);
 
+  if (v_goal.norm() < thr ){
+    std::cout << "Goal velocity is too small." << std::endl;
+    return false;
+  }
+
+  Vector6d v_goal_dir = v_goal.normalized();
+
   std::vector<ContactPoint> envs;
   envs = envs_;
 
@@ -412,13 +419,7 @@ bool TASK::forward_integration_velocity(const Vector7d &x_start,
   for (counter = 0; counter < max_counter; counter++)
   {
     // compute the goal velocity v_star by multiplying the direction of v_goal and the norm of v_flow
-    Vector6d v_flow = compute_rbvel_body(x, x_goal);
-    if ((v_flow.norm() < thr) || (v_goal.norm() < thr))
-    {
-      std::cout << "v_flow.norm() < thr || v_goal.norm() < thr" << std::endl;
-      break;
-    }
-    Vector6d v_star = v_goal/v_goal.norm() * v_flow.norm();
+    Vector6d v_star = compute_rbvel_body(x, x_goal);
 
     Matrix4d T = pose2SE3(x);
     Matrix6d Adg = SE32Adj(T);
