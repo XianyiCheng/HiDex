@@ -765,6 +765,7 @@ int main(int argc, char *argv[]) {
   }
 
   std::remove(output_file_path.c_str());
+  
   double outward_radius = config["outward_radius"].as<double>();
 
    std::string task_para_path =

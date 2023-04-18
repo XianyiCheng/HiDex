@@ -114,9 +114,10 @@ level_2_reward: "CMGLevel2Reward"
 
 # visualization options: 
 # "csv": show the trajecotry in the result csv file
-# "results": plan a trajectory, saved in csv, and show the results
 # "setup": show the task setup
-# "none": plan a trajectory, saved in csv, no visualization
+# "save": plan a trajectory, saved in csv, no visualization
+# "show": plan a trajectory and show, no save
+# "save_n_show": plan a trajectory, saved in csv, and show the results
 
-visualize_option: "results"
-save_file_path: "path_to_output.csv"
+visualize_option: "csv"
+save_file_path: "/home/xianyi/Research/MCTS/general_planner/path_to_output.csv"

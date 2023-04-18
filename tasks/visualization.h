@@ -123,6 +123,8 @@ template <class State, class State2, class Task>
 MatrixXd get_output(const std::vector<State> &object_trajectory,
                     const std::vector<State2> &action_trajectory,
                     std::shared_ptr<Task> task) {
+
+  // each row: robot contacts (p,n) in the world frame, object pose
   std::vector<VectorXd> output;
   int t_span = 5;
 
@@ -192,32 +194,73 @@ MatrixXd get_output(const std::vector<State> &object_trajectory,
   return output_mat;
 }
 
-void visualize_output_file(std::shared_ptr<WorldTemplate> world, std::string file_name){
+template <class State, class State2, class Task>
+MatrixXd get_output_object_centric(const std::vector<State> &object_trajectory,
+                    const std::vector<State2> &action_trajectory,
+                    std::shared_ptr<Task> task) {
+
+  // each row: robot contacts (p,n) in the object frame, object pose
+  std::vector<VectorXd> output;
+  int t_span = 5;
+
+  for (int i = 1; i < action_trajectory.size(); ++i) {
+    int t = action_trajectory[i].timestep;
+    int t_next;
+    if (i == action_trajectory.size() - 1) {
+      t_next = object_trajectory.size() - 1;
+    } else {
+      t_next = action_trajectory[i + 1].timestep;
+    }
+
+    VectorXd mnp_config = task->get_robot_config_from_action_idx(
+        action_trajectory[i].finger_index);
+
+    // get the array of object pose
+    std::vector<Vector7d> object_poses;
+    if (t_next <= t) {
+      for (int kk = 0; kk < t_span; ++kk) {
+        object_poses.push_back(object_trajectory[t].m_pose);
+      }
+    } else {
+      std::vector<Vector7d> object_poses_all;
+      // object_poses_all.push_back(object_trajectory[t].m_pose);
+      for (int kk = t+1; kk <= t_next; ++kk) {
+        object_poses_all.insert(object_poses_all.end(),
+                                object_trajectory[kk].m_path.begin(),
+                                object_trajectory[kk].m_path.end());
+      }
+      int n_span = std::max(int(object_poses_all.size())- 2, 0) / 3;
+      object_poses = object_poses_all;
+    }
+
+    // for each object pose, get the array of mnp config
+
+    for (auto x : object_poses) {
+      VectorXd output_row(6 * task->number_of_robot_contacts + 7);
+      output_row.segment(0, 6 * task->number_of_robot_contacts) =
+          mnp_config;
+      output_row.segment(6 * task->number_of_robot_contacts, 7) = x;
+      output.push_back(output_row);
+    }
+  }
+
+  MatrixXd output_mat(output.size(), 6 * task->number_of_robot_contacts + 7);
+  for (int i = 0; i < output.size(); ++i) {
+    output_mat.row(i) = output[i];
+  }
+  return output_mat;
+}
+
+
+void visualize_output_file_object_centric(std::shared_ptr<WorldTemplate> world, std::string file_name){
   MatrixXd data = openData(file_name);
   int n_data = data.rows();
   int n_pts = (data.cols() - 7) / 6;
   std::vector<Vector7d> object_traj;
   std::vector<VectorXd> mnp_traj;
   for (int i = 0; i < n_data; ++i){
-    VectorXd mnp_config_world = data.row(i).segment(0, 6 * n_pts);
-    VectorXd mnp_config(6*n_pts);
+    VectorXd mnp_config = data.row(i).segment(0, 6 * n_pts);
     Vector7d object_pose = data.row(i).segment(6 * n_pts, 7);
-    
-    Matrix3d R = quat2SO3(object_pose(6), object_pose(3), object_pose(4), object_pose(5));
-    Matrix3d R_inv = R.transpose();
-    Vector3d t = object_pose.segment(0, 3);
-    for (int j = 0; j < n_pts; ++j){
-      if (std::isnan(mnp_config_world[6 * j])){
-        mnp_config.segment(6 * j, 6) = mnp_config_world.segment(6 * j, 6);
-        continue;
-      }
-      Vector3d pw = mnp_config_world.segment(6 * j, 3);
-      Vector3d nw = mnp_config_world.segment(6 * j + 3, 3);
-      Vector3d p = R_inv*( pw - t);
-      Vector3d n = R_inv * nw;
-      mnp_config.segment(6 * j, 3) = p;
-      mnp_config.segment(6 * j + 3, 3) = n;
-    }
     object_traj.push_back(object_pose);
     mnp_traj.push_back(mnp_config);
   }

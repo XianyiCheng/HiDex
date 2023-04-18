@@ -11,10 +11,11 @@ int main(int argc, char *argv[])
     std::shared_ptr<TASK> task = std::make_shared<TASK>();
 
     // should use arg to specify the path to the setup.yaml file
-    std::string output_file = "/home/xianyi/Research/MCTS/general_planner/output_file.csv";
+
     YAML::Node config = YAML::LoadFile("/home/xianyi/Research/MCTS/general_planner/setup.yaml");
 
     std::string visualize_option = config["visualize_option"].as<std::string>();
+    std::string output_file = config["save_file_path"].as<std::string>();
 
     load_task(task, config);
     load_start_and_goal_poses(task, config);
@@ -22,9 +23,9 @@ int main(int argc, char *argv[])
 
     if (visualize_option == "csv")
     {
-        // visualize_output_file(task->m_world, output_file_path);
-        // task->m_world->startWindow(&argc, argv);
-        // return 0;
+        visualize_output_file_object_centric(task->m_world, output_file);
+        task->m_world->startWindow(&argc, argv);
+        return 0;
     }
 
     if (visualize_option == "setup")
@@ -60,11 +61,22 @@ int main(int argc, char *argv[])
     tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
 
     // TODO: save the trajectory and visualize it, refer to delta_array.cpp
-    VisualizeStateTraj(task->m_world, task, object_trajectory, action_trajectory);
-    task->m_world->startWindow(&argc, argv);
-    // if (visualize_option == "results")
-    // {
-    //     visualize_output_file(task->m_world, output_file_path);
-    //     task->m_world->startWindow(&argc, argv);
-    // }
+    if (visualize_option == "show")
+    {
+        VisualizeStateTraj(task->m_world, task, object_trajectory, action_trajectory);
+        task->m_world->startWindow(&argc, argv);
+    }
+
+    if ((visualize_option == "save") || (visualize_option == "save_n_show"))
+    {
+        std::remove(output_file.c_str());
+        MatrixXd output_mat = get_output_object_centric(object_trajectory, action_trajectory, task);
+        saveData(output_file, output_mat);
+    }
+
+    if (visualize_option == "save_n_show")
+    {
+        visualize_output_file_object_centric(task->m_world, output_file);
+        task->m_world->startWindow(&argc, argv);
+    }
 }
