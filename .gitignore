@@ -49,3 +49,5 @@ _deps
 .vscode/settings.json
 
 python/pymcts
+
+data/*/runs/

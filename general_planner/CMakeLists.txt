@@ -11,10 +11,18 @@ set(include_dirs
 set(modus_libs modus_common modus_modes)
 set(dart_libs dart dart-utils-urdf dart-gui dart-collision-bullet)
 
-add_executable(test_general test_general.cpp 
+add_executable(hidex_planner hidex_planner.cpp 
     ../tasks/task.cpp 
     ../tasks/setup.cpp
     ../mechanics/manipulators/DartPointManipulator.cpp 
     ../mechanics/manipulators/DartDeltaManipulator.cpp )
 
-target_link_libraries(test_general PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})
+target_link_libraries(hidex_planner PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})
+
+add_executable(hidex_batch collect_data_in_batch.cpp 
+    ../tasks/task.cpp 
+    ../tasks/setup.cpp
+    ../mechanics/manipulators/DartPointManipulator.cpp 
+    ../mechanics/manipulators/DartDeltaManipulator.cpp )
+
+target_link_libraries(hidex_batch PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})

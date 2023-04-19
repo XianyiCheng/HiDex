@@ -1,0 +1,8 @@
+folder: "/home/xianyi/Research/MCTS/data/pushing"
+
+number_of_experiments: 50
+
+sample_start_and_goal:
+  random: true
+  position_upper_bound: [2,2,0.5]
+  position_lower_bound: [-2,-2,0.5]

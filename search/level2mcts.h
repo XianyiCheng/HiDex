@@ -195,6 +195,7 @@ public:
     std::vector<double> probs;
 
     // TODO: here sample finger idxes based on State2
+    // TODO: change it to sample_actions
     this->m_task->sample_likely_feasible_finger_idx(
         node->m_state, t, max_sample, &sampled_finger_idxes, &probs);
 

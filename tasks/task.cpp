@@ -637,15 +637,18 @@ void TASK::set_start_and_goal(const Vector7d &start_object_pose, const Vector7d 
 
 void TASK::initialize()
 {
-  if (!this->m_paramter_set){
+  if (!this->m_paramter_set)
+  {
     std::cout << "Please set the task parameters before initialize the task." << std::endl;
     exit(0);
   }
-  if (!this->m_start_and_goal_set){
+  if (!this->m_start_and_goal_set)
+  {
     std::cout << "Please set the start and goal before initialize the task." << std::endl;
     exit(0);
   }
-  if (!this->m_reward_set){
+  if (!this->m_reward_set)
+  {
     std::cout << "Please set the reward function before initialize the task." << std::endl;
     exit(0);
   }
@@ -1430,6 +1433,7 @@ void TASK::save_trajectory(const std::vector<TASK::State> &path)
       this->m_world->getObjectContacts(&state.envs, state.m_pose);
       std::vector<Vector7d> new_path(state.m_path.begin() + pre_step,
                                      state.m_path.end());
+      state.m_path = new_path;
       this->saved_object_trajectory.push_back(state);
     }
   }
@@ -2064,7 +2068,6 @@ TASK::get_path_features(const std::vector<State> &object_path,
     }
     else if (feature_name == "average_distance_to_goal_fingertips")
     {
-      // TODO: to implement
       if (!this->if_goal_finger)
       {
         x = -1.0;
@@ -2086,7 +2089,7 @@ TASK::get_path_features(const std::vector<State> &object_path,
     }
     else
     {
-      std::cout << "Error in get_path_features: feature name not found"
+      std::cout << "Error in TASK::get_path_features: feature name not found"
                 << std::endl;
       exit(0);
     }
@@ -2100,72 +2103,86 @@ void TASK::sample_likely_feasible_finger_idx(
     Vector7d x_object, int number, std::vector<long int> *finger_idxs,
     std::vector<double> *probabilities)
 {
-
-  // CMG TASK
-  for (int n = number; n > 0; n--)
+  if (this->action_prob_L2 == "env")
   {
-    finger_idxs->push_back(randi(this->n_finger_combinations));
-    probabilities->push_back(this->finger_idx_prob(finger_idxs->back(), -1));
+    // CMG TASK
+    for (int n = number; n > 0; n--)
+    {
+      finger_idxs->push_back(randi(this->n_finger_combinations));
+      probabilities->push_back(this->finger_idx_prob(finger_idxs->back(), -1));
+    }
   }
+  else if (this->action_prob_L2 == "inhand")
+  {
+    // Inhand task
 
-  // // Inhand task
+    std::vector<ContactPoint> object_surface_world;
+    Eigen::Matrix4d T;
+    T = pose2SE3(x_object);
+    Eigen::Matrix3d R;
+    R = T.block(0, 0, 3, 3);
+    Eigen::Vector3d p;
+    p = T.block(0, 3, 3, 1);
 
-  // std::vector<ContactPoint> object_surface_world;
-  // Eigen::Matrix4d T;
-  // T = pose2SE3(x_object);
-  // Eigen::Matrix3d R;
-  // R = T.block(0, 0, 3, 3);
-  // Eigen::Vector3d p;
-  // p = T.block(0, 3, 3, 1);
+    for (auto pt : this->object_surface_pts)
+    {
+      ContactPoint pt_w;
+      pt_w.p = R * pt.p + p;
+      pt_w.n = R * pt.n;
+      object_surface_world.push_back(pt_w);
+    }
 
-  // for (auto pt : this->object_surface_pts) {
-  //   ContactPoint pt_w;
-  //   pt_w.p = R * pt.p + p;
-  //   pt_w.n = R * pt.n;
-  //   object_surface_world.push_back(pt_w);
-  // }
+    std::vector<int> active_idxes;
+    for (int k = 0; k < this->number_of_robot_contacts; ++k)
+    {
+      if (randd() < 0.9)
+      {
+        active_idxes.push_back(k);
+      }
+    }
 
-  // std::vector<int> active_idxes;
-  // for (int k = 0; k < this->number_of_robot_contacts; ++k) {
-  //   if (randd() < 0.9) {
-  //     active_idxes.push_back(k);
-  //   }
-  // }
+    std::vector<std::vector<int>> points_in_workspaces;
 
-  // std::vector<std::vector<int>> points_in_workspaces;
+    std::vector<int> locs_;
 
-  // std::vector<int> locs_;
+    for (int k = 0; k < this->number_of_robot_contacts; ++k)
+    {
+      std::vector<int> pws;
+      points_in_workspaces.push_back(pws);
+      locs_.push_back(-1);
+    }
+    for (int k : active_idxes)
+    {
+      this->m_world->getRobot()->points_in_workspace(k, object_surface_world,
+                                                     &points_in_workspaces[k]);
+    }
 
-  // for (int k = 0; k < this->number_of_robot_contacts; ++k) {
-  //   std::vector<int> pws;
-  //   points_in_workspaces.push_back(pws);
-  //   locs_.push_back(-1);
-  // }
-  // for (int k : active_idxes) {
-  //   this->m_world->getRobot()->points_in_workspace(k, object_surface_world,
-  //                                                  &points_in_workspaces[k]);
-  // }
+    for (int iter = 0; iter < number; iter++)
+    {
+      std::vector<int> locs;
+      locs = locs_;
 
-  // for (int iter = 0; iter < number; iter++) {
-  //   std::vector<int> locs;
-  //   locs = locs_;
+      for (int k : active_idxes)
+      {
+        if (points_in_workspaces[k].size() == 0)
+        {
+          locs[k] = -1;
+        }
+        else
+        {
+          locs[k] =
+              points_in_workspaces[k][randi(points_in_workspaces[k].size())];
+        }
+      }
+      if (is_repeated_idxes(locs))
+      {
+        continue;
+      }
+      finger_idxs->push_back(this->finger_locations_to_finger_idx(locs));
 
-  //   for (int k : active_idxes) {
-  //     if (points_in_workspaces[k].size() == 0) {
-  //       locs[k] = -1;
-  //     } else {
-  //       locs[k] =
-  //           points_in_workspaces[k][randi(points_in_workspaces[k].size())];
-  //     }
-  //   }
-  //   if (is_repeated_idxes(locs)) {
-  //     continue;
-  //   }
-  //   finger_idxs->push_back(this->finger_locations_to_finger_idx(locs));
-
-  //   probabilities->push_back(this->finger_idx_prob(finger_idxs->back(), -1));
-  // }
-
+      probabilities->push_back(this->finger_idx_prob(finger_idxs->back(), -1));
+    }
+  }
   return;
 }
 
@@ -2175,295 +2192,352 @@ void TASK::sample_likely_feasible_finger_idx(
 {
 
   // CMG TASK
-  for (int n = number; n > 0; n--)
+  if (this->action_prob_L2 == "env")
   {
-    finger_idxs->push_back(randi(this->n_finger_combinations));
-    probabilities->push_back(
-        this->finger_idx_prob(finger_idxs->back(), t_change));
+    for (int n = number; n > 0; n--)
+    {
+      finger_idxs->push_back(randi(this->n_finger_combinations));
+      probabilities->push_back(
+          this->finger_idx_prob(finger_idxs->back(), t_change));
+    }
   }
+  else if (this->action_prob_L2 == "inhand")
+  {
 
-  // Inhand Task
+    // Inhand Task
 
-  // // sample the finger idxes that are likely to be feasible in this state and
-  // // move to the next state
+    // sample the finger idxes that are likely to be feasible in this state and
+    // move to the next state
 
-  // // feasible: in workspace & changing contact
+    // feasible: in workspace & changing contact
 
-  // // 1. find contact points in workspace
-  // Vector7d x_object = this->saved_object_trajectory[t_change].m_pose;
-  // Vector7d x_object_next;
-  // bool check_next_step = true;
-  // if (t_change == this->saved_object_trajectory.size() - 1) {
-  //   check_next_step = false;
-  // } else {
-  //   x_object_next = this->saved_object_trajectory[t_change + 1].m_pose;
-  // }
+    // 1. find contact points in workspace
+    Vector7d x_object = this->saved_object_trajectory[t_change].m_pose;
+    Vector7d x_object_next;
+    bool check_next_step = true;
+    if (t_change == this->saved_object_trajectory.size() - 1)
+    {
+      check_next_step = false;
+    }
+    else
+    {
+      x_object_next = this->saved_object_trajectory[t_change + 1].m_pose;
+    }
 
-  // Eigen::VectorXi ss_mode_relocate = Eigen::VectorXi::Zero(
-  //     this->saved_object_trajectory[t_change].envs.size() * 3);
+    Eigen::VectorXi ss_mode_relocate = Eigen::VectorXi::Zero(
+        this->saved_object_trajectory[t_change].envs.size() * 3);
 
-  // std::vector<ContactPoint> object_surface_world_current;
-  // std::vector<ContactPoint> object_surface_world_next;
-  // {
-  //   Eigen::Matrix4d T;
-  //   T = pose2SE3(x_object);
-  //   Eigen::Matrix3d R;
-  //   R = T.block(0, 0, 3, 3);
-  //   Eigen::Vector3d p;
-  //   p = T.block(0, 3, 3, 1);
+    std::vector<ContactPoint> object_surface_world_current;
+    std::vector<ContactPoint> object_surface_world_next;
+    {
+      Eigen::Matrix4d T;
+      T = pose2SE3(x_object);
+      Eigen::Matrix3d R;
+      R = T.block(0, 0, 3, 3);
+      Eigen::Vector3d p;
+      p = T.block(0, 3, 3, 1);
 
-  //   for (auto pt : this->object_surface_pts) {
-  //     ContactPoint pt_w;
-  //     pt_w.p = R * pt.p + p;
-  //     pt_w.n = R * pt.n;
-  //     object_surface_world_current.push_back(pt_w);
-  //   }
-  // }
-  // if (check_next_step) {
-  //   Eigen::Matrix4d T;
-  //   T = pose2SE3(x_object_next);
-  //   Eigen::Matrix3d R;
-  //   R = T.block(0, 0, 3, 3);
-  //   Eigen::Vector3d p;
-  //   p = T.block(0, 3, 3, 1);
+      for (auto pt : this->object_surface_pts)
+      {
+        ContactPoint pt_w;
+        pt_w.p = R * pt.p + p;
+        pt_w.n = R * pt.n;
+        object_surface_world_current.push_back(pt_w);
+      }
+    }
+    if (check_next_step)
+    {
+      Eigen::Matrix4d T;
+      T = pose2SE3(x_object_next);
+      Eigen::Matrix3d R;
+      R = T.block(0, 0, 3, 3);
+      Eigen::Vector3d p;
+      p = T.block(0, 3, 3, 1);
 
-  //   for (auto pt : this->object_surface_pts) {
-  //     ContactPoint pt_w;
-  //     pt_w.p = R * pt.p + p;
-  //     pt_w.n = R * pt.n;
-  //     object_surface_world_next.push_back(pt_w);
-  //   }
-  // }
+      for (auto pt : this->object_surface_pts)
+      {
+        ContactPoint pt_w;
+        pt_w.p = R * pt.p + p;
+        pt_w.n = R * pt.n;
+        object_surface_world_next.push_back(pt_w);
+      }
+    }
 
-  // std::vector<std::vector<int>> points_in_workspaces;
+    std::vector<std::vector<int>> points_in_workspaces;
 
-  // std::vector<int> locs_;
+    std::vector<int> locs_;
 
-  // for (int k = 0; k < this->number_of_robot_contacts; ++k) {
-  //   locs_.push_back(-1);
-  //   std::vector<int> pws;
-  //   std::vector<int> pws_next;
-  //   points_in_workspaces.push_back(pws);
-  //   if (check_next_step) {
-  //     this->m_world->getRobot()->points_in_workspace(
-  //         k, object_surface_world_current, &pws);
-  //     this->m_world->getRobot()->points_in_workspace(
-  //         k, object_surface_world_next, &pws_next);
-  //     for (int pt_i : pws) {
-  //       if (std::find(pws_next.begin(), pws_next.end(), pt_i) !=
-  //           pws_next.end()) {
-  //         points_in_workspaces[k].push_back(pt_i);
-  //       }
-  //     }
-  //   } else {
-  //     this->m_world->getRobot()->points_in_workspace(
-  //         k, object_surface_world_next, &points_in_workspaces[k]);
-  //   }
-  // }
+    for (int k = 0; k < this->number_of_robot_contacts; ++k)
+    {
+      locs_.push_back(-1);
+      std::vector<int> pws;
+      std::vector<int> pws_next;
+      points_in_workspaces.push_back(pws);
+      if (check_next_step)
+      {
+        this->m_world->getRobot()->points_in_workspace(
+            k, object_surface_world_current, &pws);
+        this->m_world->getRobot()->points_in_workspace(
+            k, object_surface_world_next, &pws_next);
+        for (int pt_i : pws)
+        {
+          if (std::find(pws_next.begin(), pws_next.end(), pt_i) !=
+              pws_next.end())
+          {
+            points_in_workspaces[k].push_back(pt_i);
+          }
+        }
+      }
+      else
+      {
+        this->m_world->getRobot()->points_in_workspace(
+            k, object_surface_world_next, &points_in_workspaces[k]);
+      }
+    }
 
-  // // 2. find feasible finger changing pattern
+    // 2. find feasible finger changing pattern
 
-  // std::vector<int> pre_fingertips =
-  //     this->get_finger_locations(state.finger_index);
+    std::vector<int> pre_fingertips =
+        this->get_finger_locations(state.finger_index);
 
-  // std::vector<std::vector<int>> remain_idxes;
+    std::vector<std::vector<int>> remain_idxes;
 
-  // for (int finger_stay = 0; finger_stay < this->number_of_robot_contacts;
-  //      ++finger_stay) {
-  //   for (int idx = 0;
-  //        idx < combination(this->number_of_robot_contacts, finger_stay);
-  //        ++idx) {
-  //     std::vector<int> remain_idx =
-  //         combination_set(this->number_of_robot_contacts, finger_stay, idx);
-  //     bool is_remain_ws =
-  //         true; // is all the remaining fingers in workspace, if not, skip
+    for (int finger_stay = 0; finger_stay < this->number_of_robot_contacts;
+         ++finger_stay)
+    {
+      for (int idx = 0;
+           idx < combination(this->number_of_robot_contacts, finger_stay);
+           ++idx)
+      {
+        std::vector<int> remain_idx =
+            combination_set(this->number_of_robot_contacts, finger_stay, idx);
+        bool is_remain_ws =
+            true; // is all the remaining fingers in workspace, if not, skip
 
-  //     // check if the remain_idx can maintain the object in quasistatic balance
-  //     std::vector<ContactPoint> remain_fingertips;
-  //     for (int ir : remain_idx) {
-  //       int finger_loc = pre_fingertips[ir];
-  //       if (std::find(points_in_workspaces[ir].begin(),
-  //                     points_in_workspaces[ir].end(),
-  //                     finger_loc) == points_in_workspaces[ir].end()) {
-  //         is_remain_ws = false;
-  //         break;
-  //       }
-  //       if (finger_loc != -1) {
-  //         remain_fingertips.push_back(this->object_surface_pts[finger_loc]);
-  //       }
-  //     }
-  //     if (!is_remain_ws) {
-  //       continue;
-  //     }
-  //     std::vector<ContactPoint> remain_mnps;
-  //     this->m_world->getRobot()->Fingertips2PointContacts(remain_fingertips,
-  //                                                         &remain_mnps);
+        // check if the remain_idx can maintain the object in quasistatic balance
+        std::vector<ContactPoint> remain_fingertips;
+        for (int ir : remain_idx)
+        {
+          int finger_loc = pre_fingertips[ir];
+          if (std::find(points_in_workspaces[ir].begin(),
+                        points_in_workspaces[ir].end(),
+                        finger_loc) == points_in_workspaces[ir].end())
+          {
+            is_remain_ws = false;
+            break;
+          }
+          if (finger_loc != -1)
+          {
+            remain_fingertips.push_back(this->object_surface_pts[finger_loc]);
+          }
+        }
+        if (!is_remain_ws)
+        {
+          continue;
+        }
+        std::vector<ContactPoint> remain_mnps;
+        this->m_world->getRobot()->Fingertips2PointContacts(remain_fingertips,
+                                                            &remain_mnps);
 
-  //     bool dynamic_feasibility = isQuasistatic(
-  //         remain_mnps, this->saved_object_trajectory[t_change].envs,
-  //         ss_mode_relocate, this->f_gravity,
-  //         this->saved_object_trajectory[t_change].m_pose, this->mu_env,
-  //         this->mu_mnp, this->cons.get());
+        bool dynamic_feasibility = isQuasistatic(
+            remain_mnps, this->saved_object_trajectory[t_change].envs,
+            ss_mode_relocate, this->f_gravity,
+            this->saved_object_trajectory[t_change].m_pose, this->mu_env,
+            this->mu_mnp, this->cons.get());
 
-  //     if (dynamic_feasibility) {
-  //       remain_idxes.push_back(remain_idx);
-  //     }
-  //   }
-  // }
+        if (dynamic_feasibility)
+        {
+          remain_idxes.push_back(remain_idx);
+        }
+      }
+    }
 
-  // // 3. sample from feasible finger contacts
+    // 3. sample from feasible finger contacts
 
-  // if (remain_idxes.size() == 0) {
-  //   // just random sample quasistatic feasible finger contacts
-  //   for (int iter = 0; iter < number; ++iter) {
-  //     std::vector<int> locs = locs_;
-  //     std::vector<int> remain_locs;
-  //     for (int k_finger = 0; k_finger < this->number_of_robot_contacts;
-  //          ++k_finger) {
-  //       // sample -1
-  //       // sample relocation
-  //       // sample stay
+    if (remain_idxes.size() == 0)
+    {
+      // just random sample quasistatic feasible finger contacts
+      for (int iter = 0; iter < number; ++iter)
+      {
+        std::vector<int> locs = locs_;
+        std::vector<int> remain_locs;
+        for (int k_finger = 0; k_finger < this->number_of_robot_contacts;
+             ++k_finger)
+        {
+          // sample -1
+          // sample relocation
+          // sample stay
 
-  //       if (points_in_workspaces[k_finger].size() == 0) {
-  //         locs[k_finger] = -1;
-  //         remain_locs.push_back(locs[k_finger]);
-  //         continue;
-  //       }
+          if (points_in_workspaces[k_finger].size() == 0)
+          {
+            locs[k_finger] = -1;
+            remain_locs.push_back(locs[k_finger]);
+            continue;
+          }
 
-  //       // recore remain_fingertips
+          // recore remain_fingertips
 
-  //       if (pre_fingertips[k_finger] == -1) // if the fingertip was not touching
-  //       {
-  //         // 0.8 relocate, 0.2 stay
-  //         if (randd() < 0.8) {
-  //           locs[k_finger] = points_in_workspaces[k_finger][randi(
-  //               points_in_workspaces[k_finger].size())];
-  //           remain_locs.push_back(locs[k_finger]);
-  //         }
-  //       } else // if the fingertip was thouching
-  //       {
+          if (pre_fingertips[k_finger] == -1) // if the fingertip was not touching
+          {
+            // 0.8 relocate, 0.2 stay
+            if (randd() < 0.8)
+            {
+              locs[k_finger] = points_in_workspaces[k_finger][randi(
+                  points_in_workspaces[k_finger].size())];
+              remain_locs.push_back(locs[k_finger]);
+            }
+          }
+          else // if the fingertip was thouching
+          {
 
-  //         // out of ws
-  //         if (std::find(points_in_workspaces[k_finger].begin(),
-  //                       points_in_workspaces[k_finger].end(),
-  //                       pre_fingertips[k_finger]) ==
-  //             points_in_workspaces[k_finger].end()) {
-  //           if (randd() < 0.7) {
-  //             // change
-  //             locs[k_finger] = points_in_workspaces[k_finger][randi(
-  //                 points_in_workspaces[k_finger].size())];
-  //           } else {
-  //             // leave
-  //             locs[k_finger] = -1;
-  //             remain_locs.push_back(pre_fingertips[k_finger]);
-  //           }
-  //         } else {
-  //           // in ws
-  //           if (randd() < 0.7) {
-  //             // stay
-  //             locs[k_finger] = pre_fingertips[k_finger];
-  //             remain_locs.push_back(locs[k_finger]);
-  //           } else if (randd() < 0.8) {
-  //             // change
-  //             locs[k_finger] = points_in_workspaces[k_finger][randi(
-  //                 points_in_workspaces[k_finger].size())];
-  //           } else {
-  //             // leave
-  //             locs[k_finger] = -1;
-  //             remain_locs.push_back(pre_fingertips[k_finger]);
-  //           }
-  //         }
-  //       }
-  //     }
+            // out of ws
+            if (std::find(points_in_workspaces[k_finger].begin(),
+                          points_in_workspaces[k_finger].end(),
+                          pre_fingertips[k_finger]) ==
+                points_in_workspaces[k_finger].end())
+            {
+              if (randd() < 0.7)
+              {
+                // change
+                locs[k_finger] = points_in_workspaces[k_finger][randi(
+                    points_in_workspaces[k_finger].size())];
+              }
+              else
+              {
+                // leave
+                locs[k_finger] = -1;
+                remain_locs.push_back(pre_fingertips[k_finger]);
+              }
+            }
+            else
+            {
+              // in ws
+              if (randd() < 0.7)
+              {
+                // stay
+                locs[k_finger] = pre_fingertips[k_finger];
+                remain_locs.push_back(locs[k_finger]);
+              }
+              else if (randd() < 0.8)
+              {
+                // change
+                locs[k_finger] = points_in_workspaces[k_finger][randi(
+                    points_in_workspaces[k_finger].size())];
+              }
+              else
+              {
+                // leave
+                locs[k_finger] = -1;
+                remain_locs.push_back(pre_fingertips[k_finger]);
+              }
+            }
+          }
+        }
 
-  //     if (is_repeated_idxes(locs)) {
-  //       continue;
-  //     }
+        if (is_repeated_idxes(locs))
+        {
+          continue;
+        }
 
-  //     std::vector<ContactPoint> new_fingertips;
-  //     for (int ir : locs) {
-  //       if (ir != -1) {
-  //         new_fingertips.push_back(this->object_surface_pts[ir]);
-  //       }
-  //     }
-  //     std::vector<ContactPoint> new_mnps;
-  //     this->m_world->getRobot()->Fingertips2PointContacts(new_fingertips,
-  //                                                         &new_mnps);
+        std::vector<ContactPoint> new_fingertips;
+        for (int ir : locs)
+        {
+          if (ir != -1)
+          {
+            new_fingertips.push_back(this->object_surface_pts[ir]);
+          }
+        }
+        std::vector<ContactPoint> new_mnps;
+        this->m_world->getRobot()->Fingertips2PointContacts(new_fingertips,
+                                                            &new_mnps);
 
-  //     bool dynamic_feasibility =
-  //         isQuasistatic(new_mnps, this->saved_object_trajectory[t_change].envs,
-  //                       ss_mode_relocate, this->f_gravity,
-  //                       this->saved_object_trajectory[t_change].m_pose,
-  //                       this->mu_env, this->mu_mnp, this->cons.get());
+        bool dynamic_feasibility =
+            isQuasistatic(new_mnps, this->saved_object_trajectory[t_change].envs,
+                          ss_mode_relocate, this->f_gravity,
+                          this->saved_object_trajectory[t_change].m_pose,
+                          this->mu_env, this->mu_mnp, this->cons.get());
 
-  //     std::vector<ContactPoint> remain_fingertips;
-  //     for (int ir : remain_locs) {
-  //       if (ir != -1) {
-  //         remain_fingertips.push_back(this->object_surface_pts[ir]);
-  //       }
-  //     }
-  //     std::vector<ContactPoint> remain_mnps;
-  //     this->m_world->getRobot()->Fingertips2PointContacts(remain_fingertips,
-  //                                                         &remain_mnps);
+        std::vector<ContactPoint> remain_fingertips;
+        for (int ir : remain_locs)
+        {
+          if (ir != -1)
+          {
+            remain_fingertips.push_back(this->object_surface_pts[ir]);
+          }
+        }
+        std::vector<ContactPoint> remain_mnps;
+        this->m_world->getRobot()->Fingertips2PointContacts(remain_fingertips,
+                                                            &remain_mnps);
 
-  //     bool remain_dynamic_feasibility = isQuasistatic(
-  //         remain_mnps, this->saved_object_trajectory[t_change].envs,
-  //         ss_mode_relocate, this->f_gravity,
-  //         this->saved_object_trajectory[t_change].m_pose, this->mu_env,
-  //         this->mu_mnp, this->cons.get());
+        bool remain_dynamic_feasibility = isQuasistatic(
+            remain_mnps, this->saved_object_trajectory[t_change].envs,
+            ss_mode_relocate, this->f_gravity,
+            this->saved_object_trajectory[t_change].m_pose, this->mu_env,
+            this->mu_mnp, this->cons.get());
 
-  //     if (dynamic_feasibility && remain_dynamic_feasibility) {
-  //       // sanity check for IK
-  //       // int check_idx = this->finger_locations_to_finger_idx(locs);
-  //       // VectorXd mnp_config =
-  //       // this->get_robot_config_from_action_idx(check_idx); bool ik_next; if
-  //       // (check_next_step)
-  //       // {
-  //       //   ik_next = this->m_world->getRobot()->ifIKsolution(mnp_config,
-  //       //   x_object_next);
-  //       // }
-  //       // bool ik = this->m_world->getRobot()->ifIKsolution(mnp_config,
-  //       // x_object); bool if_feasible = this->is_finger_valid(check_idx,
-  //       // t_change);
+        if (dynamic_feasibility && remain_dynamic_feasibility)
+        {
+          // sanity check for IK
+          // int check_idx = this->finger_locations_to_finger_idx(locs);
+          // VectorXd mnp_config =
+          // this->get_robot_config_from_action_idx(check_idx); bool ik_next; if
+          // (check_next_step)
+          // {
+          //   ik_next = this->m_world->getRobot()->ifIKsolution(mnp_config,
+          //   x_object_next);
+          // }
+          // bool ik = this->m_world->getRobot()->ifIKsolution(mnp_config,
+          // x_object); bool if_feasible = this->is_finger_valid(check_idx,
+          // t_change);
 
-  //       finger_idxs->push_back(this->finger_locations_to_finger_idx(locs));
+          finger_idxs->push_back(this->finger_locations_to_finger_idx(locs));
 
-  //       probabilities->push_back(
-  //           this->finger_idx_prob(finger_idxs->back(), t_change));
-  //     }
-  //   }
-  //   return;
-  // }
+          probabilities->push_back(
+              this->finger_idx_prob(finger_idxs->back(), t_change));
+        }
+      }
+      return;
+    }
 
-  // // if remain_idxes.size() > 0
-  // // sample from remain idx
+    // if remain_idxes.size() > 0
+    // sample from remain idx
 
-  // for (int iter = 0; iter < number; ++iter) {
-  //   // random sample a remain idx
-  //   int idx = randi(remain_idxes.size());
-  //   std::vector<int> locs = locs_;
-  //   for (int k_finger = 0; k_finger < this->number_of_robot_contacts;
-  //        ++k_finger) {
-  //     if (std::find(remain_idxes[idx].begin(), remain_idxes[idx].end(),
-  //                   k_finger) != remain_idxes[idx].end()) {
-  //       locs[k_finger] = pre_fingertips[k_finger];
-  //     } else {
+    for (int iter = 0; iter < number; ++iter)
+    {
+      // random sample a remain idx
+      int idx = randi(remain_idxes.size());
+      std::vector<int> locs = locs_;
+      for (int k_finger = 0; k_finger < this->number_of_robot_contacts;
+           ++k_finger)
+      {
+        if (std::find(remain_idxes[idx].begin(), remain_idxes[idx].end(),
+                      k_finger) != remain_idxes[idx].end())
+        {
+          locs[k_finger] = pre_fingertips[k_finger];
+        }
+        else
+        {
 
-  //       if ((randd() > 0.7) || points_in_workspaces[k_finger].size() == 0) {
-  //         locs[k_finger] = -1;
-  //       } else {
-  //         locs[k_finger] = points_in_workspaces[k_finger][randi(
-  //             points_in_workspaces[k_finger].size())];
-  //       }
-  //     }
-  //   }
-  //   if (is_repeated_idxes(locs)) {
-  //     continue;
-  //   }
-  //   finger_idxs->push_back(this->finger_locations_to_finger_idx(locs));
+          if ((randd() > 0.7) || points_in_workspaces[k_finger].size() == 0)
+          {
+            locs[k_finger] = -1;
+          }
+          else
+          {
+            locs[k_finger] = points_in_workspaces[k_finger][randi(
+                points_in_workspaces[k_finger].size())];
+          }
+        }
+      }
+      if (is_repeated_idxes(locs))
+      {
+        continue;
+      }
+      finger_idxs->push_back(this->finger_locations_to_finger_idx(locs));
 
-  //   probabilities->push_back(
-  //       this->finger_idx_prob(finger_idxs->back(), t_change));
-  // }
+      probabilities->push_back(
+          this->finger_idx_prob(finger_idxs->back(), t_change));
+    }
+  }
   return;
 }

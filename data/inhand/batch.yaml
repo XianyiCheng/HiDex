@@ -1,0 +1,12 @@
+folder: "/home/xianyi/Research/MCTS/data/inhand"
+
+number_of_experiments: 2
+
+collect_trajectory: true
+collect_results: true
+
+sample_start_and_goal:
+  random: true
+  position_upper_bound: [0,0,0]
+  position_lower_bound: [0,0,0]
+  random_orientation: true

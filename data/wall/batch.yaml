@@ -1,0 +1,8 @@
+folder: "/home/xianyi/Research/MCTS/data/wall"
+
+number_of_experiments: 1
+
+sample_start_and_goal:
+  random: false
+  position_upper_bound: [2,2,0.5]
+  position_lower_bound: [-2,-2,0.5]

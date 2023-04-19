@@ -136,7 +136,7 @@ namespace HMP
         {
 
           Node<State> *new_node = this->next_node(node, k);
-
+          // TODO: add action probability here
           double U = new_node->m_value + new_node->m_value_estimate +
                      this->ita * (1 / double(node->number_of_next_actions)) *
                          std::sqrt(double(node->m_visits)) /
@@ -152,7 +152,7 @@ namespace HMP
 
       if (node->m_type == "mode")
       {
-
+        // TODO: add action probability here & value estimation
         double U_unexplored =
             0.0 + this->ita * (1 / double(node->number_of_next_actions)) *
                       std::sqrt(double(node->m_visits)) / double(1);

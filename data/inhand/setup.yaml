@@ -1,0 +1,171 @@
+# ---- Environment Setup ----
+
+# The object can be created as a cuboid (box_object) or from mesh file (mesh_object). Comment out the one you don't need. 
+mesh_object:
+  mesh_file: "/home/xianyi/Research/MCTS/data/inhand/data/banana.stl"
+  contact_file: "/home/xianyi/Research/MCTS/data/inhand/data/banana.csv"
+  negate_contact_normal: false
+  scale: 0.75
+
+maximum_surface_contact_points: 100
+
+characteristic_length: 1
+
+robot_object_friction_coefficient: 0.8
+environment_object_friction_coefficient: 0.3
+
+task_dynamics: "quasistatic" # "quasistatic", "quasidynamic", "none", "force_closure"
+object_weight: [0,0,-0.1,0,0,0]
+object_inertia: 
+  [ 1, 0, 0, 0, 0, 0, 
+    0, 1, 0, 0, 0, 0, 
+    0, 0, 1, 0, 0, 0, 
+    0, 0, 0, 0.167, 0, 0, 
+    0, 0, 0, 0, 0.167, 0, 
+    0, 0, 0, 0, 0, 0.167 ]
+
+# ---- Robot ----
+
+# 4 fingers
+free_sphere_robot: 
+  number_of_contacts: 4
+  radius: 0.1
+  patch_contact: true # false for point contacts
+  workspace_limits: 
+    # [x_min, x_max, y_min, y_max, z_min, z_max]
+    box_1: [-0.75, -0.25, -0.625, 0.625, -0.625, 0.625]
+    box_2: [0.25, 0.75, -0.625, 0.625, -0.625, 0.625]
+    box_3: [-0.625, 0.625, -0.75, -0.25, -0.625, 0.625]
+    box_4: [-0.625, 0.625, 0.25, 0.75, -0.625, 0.625]
+environment: # maximum 20 blocks
+  block_1:
+    dimension: [5, 5, 0.2]
+    location: [0,0,-1000]
+transition_pruning: false
+
+# # 5 fingers
+# free_sphere_robot: 
+#   number_of_contacts: 5
+#   radius: 0.1
+#   patch_contact: true # false for point contacts
+#   workspace_limits: 
+#     # [x_min, x_max, y_min, y_max, z_min, z_max]
+#     box_1: [-3, 0, 0, 1.5, -1, 1]
+#     box_2: [-2, 1, 0, 1.5, -1, 1]
+#     box_3: [-1, 2, 0, 1.5, -1, 1]
+#     box_4: [0, 3, 0, 1.5, -1, 1]
+#     box_5: [0, 3.5, -1.5, 1, -1, 1]
+# environment: # maximum 20 blocks
+#   block_1:
+#     dimension: [5, 5, 0.2]
+#     location: [0,0,-1000]
+# transition_pruning: false
+
+# # 3 fingers
+# free_sphere_robot: 
+#   number_of_contacts: 3
+#   radius: 0.1
+#   patch_contact: true # false for point contacts
+#   workspace_limits: 
+#     # [x_min, x_max, y_min, y_max, z_min, z_max]
+#     box_1: [-0.8, 0.8, 0.2, 1.8, 0, 2]
+#     box_2: [0.065, 1.665, -1.3, 0.3, 0, 2]
+#     box_3: [-1.665, -0.065, -1.3, 0.3, 0, 2]
+# environment: # maximum 20 blocks
+#   block_1:
+#     dimension: [3, 3, 0.2]
+#     location: [0,0,-1000]
+# transition_pruning: true
+
+# # 2 fingers with a palm
+# free_sphere_robot: 
+#   number_of_contacts: 2
+#   radius: 0.1
+#   patch_contact: true # false for point contacts
+#   workspace_limits: 
+#     # [x_min, x_max, y_min, y_max, z_min, z_max]
+#     box_1: [0.2, 2.2, -1, 1, 0, 2]
+#     box_2: [-2.2, -0.2, -1, 1, 0, 2]
+# environment: # maximum 20 blocks
+#   block_1:
+#     dimension: [3, 3, 0.2]
+#     location: [0,0,-0.1]
+# transition_pruning: true
+
+# # 3 fingers with a palm
+# free_sphere_robot: 
+#   number_of_contacts: 3
+#   radius: 0.1
+#   patch_contact: true # false for point contacts
+#   workspace_limits: 
+#     # [x_min, x_max, y_min, y_max, z_min, z_max]
+#     box_1: [-0.8, 0.8, 0.2, 1.8, 0, 2]
+#     box_2: [0.065, 1.665, -1.3, 0.3, 0, 2]
+#     box_3: [-1.665, -0.065, -1.3, 0.3, 0, 2]
+# environment: # maximum 20 blocks
+#   block_1:
+#     dimension: [3, 3, 0.2]
+#     location: [0,0,-0.1]
+# transition_pruning: true
+
+# ---- Start and Goal Pose ----
+# pose [x, y, z, qx, qw, qz, qw]
+object_start_pose: [0,0,0.1,0,0,0,1]
+object_goal_pose: [0, 0, 0.1, 0, -1, 0, 0]
+
+# ---- Run options ----
+random_seed: -1
+
+# ---- Planner options ----
+
+refine_object_trajectory: # whether to refine the trajectory for 2nd level search
+  enabled: false
+  distance: 0.1
+
+
+rrt_options:
+  max_samples: 100
+  goal_biased_prob: 0.8
+  goal_thr: 0.08
+  extend_epsilon:
+    translation: 0.2
+    rotation_degree: 20
+  weight:
+    rotation: 1.0
+    translation: 1.0
+  sample:
+    position_upper_bound: [4,1,4]
+    position_lower_bound: [-3,-1,0]
+    rotation: 
+      SO3_enabled: true
+      axis: [0,0,1] # if SO3_enabled is false, sample rotation on this axis
+
+mcts_options:
+  max_time: 5
+  l1_1st_max_iterations: 10
+  l1_max_iterations: 1
+  l2_1st_max_iterations: 10
+  l2_max_iterations: 1
+  final_l2_1st_max_iterations: 20
+  final_l2_max_iterations: 5
+
+# ---- Reward and Probability ----
+grasp_measure_charac_length: -1 # <0, disable grasp measure
+
+level_1_reward: "InhandLevel1Reward"
+level_2_reward: "InhandLevel2Reward"
+
+# "inhand" (must have workspace limit) or "env"
+action_probability_L2: "inhand"
+
+# ---- Output and Visualization ----
+
+# visualization options: 
+# "csv": show the trajecotry in the result csv file
+# "setup": show the task setup
+# "save": plan a trajectory, saved in csv, no visualization
+# "show": plan a trajectory and show, no save
+# "save_n_show": plan a trajectory, saved in csv, and show the results
+
+visualize_option: "save_n_show"
+save_file_path: "/home/xianyi/Research/MCTS/data/inhand/output.csv"

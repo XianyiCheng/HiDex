@@ -515,6 +515,8 @@ public:
   std::shared_ptr<RewardFunction> reward_L1;
   std::shared_ptr<RewardFunction> reward_L2;
 
+  std::string action_prob_L2 = "env";
+
 private:
   bool m_initialized = false;
   bool m_paramter_set = false;

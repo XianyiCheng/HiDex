@@ -1,0 +1,11 @@
+folder: "/home/xianyi/Research/MCTS/general_planner/batch_test"
+
+number_of_experiments: 10
+
+collect_trajectory: true
+collect_results: true
+
+sample_start_and_goal:
+  random: true
+  position_upper_bound: [2,2,0.5]
+  position_lower_bound: [-2,-2,0.5]
