@@ -1,6 +1,6 @@
-#include "../tasks/setup.h"
+#include "../src/tasks/setup.h"
 
-#include "../tasks/visualization.h"
+#include "../src/tasks/visualization.h"
 
 const TASK::State2::Action TASK::State2::no_action = TASK::State2::Action(-1, -1);
 const TASK::State::Action TASK::State::no_action = -1;

@@ -109,9 +109,8 @@ add_definitions(-DSRC_DIR="${PROJECT_SOURCE_DIR}")
 
 # ADD_SUBDIRECTORY(games)
 # ADD_SUBDIRECTORY(tests)
-ADD_SUBDIRECTORY(mechanics)
-ADD_SUBDIRECTORY(search)
-ADD_SUBDIRECTORY(tasks)
+ADD_SUBDIRECTORY(src)
+
 ADD_SUBDIRECTORY(general_planner)
 # ADD_SUBDIRECTORY(examples_inhand)
 # ADD_SUBDIRECTORY(examples_env)

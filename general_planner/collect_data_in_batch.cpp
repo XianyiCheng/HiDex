@@ -1,6 +1,6 @@
-#include "../tasks/setup.h"
+#include "../src/tasks/setup.h"
 
-#include "../tasks/visualization.h"
+#include "../src/tasks/visualization.h"
 #include <ctime>
 
 #include <sys/stat.h>
@@ -8,7 +8,7 @@
 
 #ifndef SAMPLE_H
 #define SAMPLE_H
-#include "../mechanics/utilities/sample.h"
+#include "../src/mechanics/utilities/sample.h"
 #endif
 
 const TASK::State2::Action TASK::State2::no_action =
