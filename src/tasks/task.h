@@ -229,6 +229,8 @@ public:
 
   // --- Level 2 Tree functions for robot contact planning ----
 
+  void sample_level2_action(const State2 &state, State2::Action &action);
+
   std::vector<int> get_finger_locations(long int finger_location_index);
 
   // add this for inhand

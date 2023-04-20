@@ -182,63 +182,11 @@ public:
       return selected_action;
     }
 
-    // cretae a new child
-    int t = this->m_task->select_finger_change_timestep(node->m_state);
+    // If U_unexplored > U_max (of existing actions), sample a new action
+    Action new_action = State::no_action;
+    this->m_task->sample_level2_action(node->m_state, new_action);
 
-    bool if_valid = false;
-
-    long int finger_idx;
-
-    int max_sample = 300;
-
-    std::vector<long int> sampled_finger_idxes;
-    std::vector<double> probs;
-
-    // TODO: here sample finger idxes based on State2
-    // TODO: change it to sample_actions
-    this->m_task->sample_likely_feasible_finger_idx(
-        node->m_state, t, max_sample, &sampled_finger_idxes, &probs);
-
-    std::default_random_engine randgen;
-    std::discrete_distribution<int> distribution{probs.begin(), probs.end()};
-
-    for (int k_sample = 0; k_sample < sampled_finger_idxes.size(); k_sample++) {
-      int ik_sample = distribution(randgen);
-      finger_idx = sampled_finger_idxes[ik_sample];
-      // finger_idx = sampled_finger_idxes[k_sample];
-
-      // finger_idx =
-      //     randi(this->m_task->get_number_of_robot_actions(node->m_state));
-
-      Action new_action = Action(t, finger_idx);
-
-      State new_state = this->generate_next_state(node, new_action);
-
-      if ((new_state.timestep < 0) ||
-          (new_state.timestep >=
-           this->m_task->saved_object_trajectory.size())) {
-        std::cout << "timestep is issue, debug here" << std::endl;
-        State new_state_ = this->generate_next_state(node, new_action);
-      }
-
-      // is valid transition & valid for at least one timestep
-      if (this->m_task->is_finger_valid(finger_idx, t)) {
-        if (this->m_task->is_valid_transition(new_state, node->m_state)) {
-          if_valid = true;
-          break;
-        }
-      }
-    }
-
-    if (if_valid) {
-      // std::cout << "select action " << finger_idx << " at timestep " << t
-      // << std::endl;
-      selected_action = Action(t, finger_idx);
-    } else {
-      selected_action = State::no_action;
-    }
-
-    return selected_action;
+    return new_action;
   }
 
   Node<State> *search_tree(const MCTSOptions &compute_option_1st_iter,

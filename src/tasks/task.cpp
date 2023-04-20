@@ -1097,7 +1097,7 @@ TASK::search_a_new_path(const TASK::State &start_state)
   return path_;
 }
 
-bool TASK::is_valid(const TASK::State2 &state, const State2 &prev_state)
+bool TASK::is_valid(const TASK::State2 &state, const TASK::State2 &prev_state)
 {
   // TODO: we need finer path to calculate both quasistatic feasibility and
   // quasidynamic feasibility finer that state1 path (maybe modify the
@@ -2538,6 +2538,74 @@ void TASK::sample_likely_feasible_finger_idx(
       probabilities->push_back(
           this->finger_idx_prob(finger_idxs->back(), t_change));
     }
+  }
+  return;
+}
+
+void TASK::sample_level2_action(const TASK::State2 &state, TASK::State2::Action &action)
+{
+  int t = this->select_finger_change_timestep(state);
+
+  bool if_valid = false;
+
+  long int finger_idx;
+
+  int max_sample = 300;
+
+  std::vector<long int> sampled_finger_idxes;
+  std::vector<double> probs;
+
+  // TODO: here sample finger idxes based on State2
+  // TODO: change it to sample_actions
+  this->sample_likely_feasible_finger_idx(
+      state, t, max_sample, &sampled_finger_idxes, &probs);
+
+  std::default_random_engine randgen;
+  std::discrete_distribution<int> distribution{probs.begin(), probs.end()};
+
+  for (int k_sample = 0; k_sample < sampled_finger_idxes.size(); k_sample++)
+  {
+    int ik_sample = distribution(randgen);
+    finger_idx = sampled_finger_idxes[ik_sample];
+    // finger_idx = sampled_finger_idxes[k_sample];
+
+    // finger_idx =
+    //     randi(this->m_task->get_number_of_robot_actions(node->m_state));
+
+    State2::Action new_action = State2::Action(t, finger_idx);
+
+    State2 new_state = state;
+    new_state.do_action(new_action);
+    new_state.is_valid = true; // make sure it is valid for every state in select_action
+    new_state.t_max = -1;
+    
+    if ((new_state.timestep < 0) ||
+        (new_state.timestep >=
+         this->saved_object_trajectory.size()))
+    {
+      std::cout << "timestep is issue, debug here" << std::endl;
+    }
+
+    // is valid transition & valid for at least one timestep
+    if (this->is_finger_valid(finger_idx, t))
+    {
+      if (this->is_valid_transition(new_state, state))
+      {
+        if_valid = true;
+        break;
+      }
+    }
+  }
+
+  if (if_valid)
+  {
+    // std::cout << "select action " << finger_idx << " at timestep " << t
+    // << std::endl;
+    action = State2::Action(t, finger_idx);
+  }
+  else
+  {
+    action = State2::no_action;
   }
   return;
 }
