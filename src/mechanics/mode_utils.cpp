@@ -162,6 +162,7 @@ VectorXi conservative_mode_from_velocity( const std::vector<ContactPoint> &envs,
     
   VectorXi env_mode = mode_from_velocity(v, envs, cons);
 
+  // comparing the cs_mode part only, pick the conservative one (0)
   for (int i = 0; i < ref_cs_mode.size(); ++i) {
     if (env_mode[i] == 1) {
       if (ref_cs_mode[i] == 0) {

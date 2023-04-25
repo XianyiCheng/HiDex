@@ -22,8 +22,8 @@ public:
         std::make_unique<Node<State>>(start_state, State::no_action, nullptr);
     this->m_current_node = this->m_root_node.get();
     this->m_task = task;
-    this->m_root_node->number_of_next_actions =
-        this->m_task->get_number_of_actions(start_state);
+    // this->m_root_node->number_of_next_actions =
+    //     this->m_task->get_number_of_actions(start_state);
     this->m_root_node->m_state.is_valid = true;
   }
   ~Level2MCTS() {}
@@ -47,7 +47,7 @@ public:
 
         // if cannot find a feasible action
         // break and evaluate the heuristics of this path
-        if (action == State::no_action) {
+        if (action.is_no_action()) {
           break;
         }
         node = this->next_node(node, action);
@@ -118,7 +118,7 @@ public:
       return 0.0;
     }
     if ((node->m_state.t_max <
-        (this->m_task->saved_object_trajectory.size() - 1))) {
+        (this->m_task->get_saved_object_trajectory_size() - 1))) {
       return 0.0;
     }
     if (!node->m_state.is_valid) {
@@ -130,7 +130,7 @@ public:
     }
 
     double reward =
-        this->m_task->evaluate_path_level_2(this->m_task->saved_object_trajectory, this->backtrack_state_path(node));
+        this->m_task->evaluate_path_level_2(this->m_task->get_saved_object_trajectory(), this->backtrack_state_path(node));
 
     return reward;
   }

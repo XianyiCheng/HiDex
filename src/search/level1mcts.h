@@ -274,7 +274,7 @@ namespace HMP
         path_score = this->m_task->evaluate_path_level_1(state_path, tree2.backtrack_state_path(final_node_2));
       }
 
-      this->m_task->saved_object_trajectory.clear();
+      this->m_task->clear_saved_object_trajectory();
 
       return path_score;
     }
@@ -341,7 +341,7 @@ namespace HMP
           else if (node->m_type == "mode")
           {
             action = this->select_action(node);
-            if ((action == State::no_action) // if action == -1, explore a new action
+            if ((action.is_no_action()) // if action == -1, explore a new action
                 || ((node->number_of_next_actions +
                      node->number_of_invalid_attempts) <=
                     pow(node->m_visits + 1, m_alpha) - 1))
@@ -571,7 +571,7 @@ namespace HMP
                                                      compute_options.final_l2);
 
       *action_trajectory = tree2.backtrack_state_path(final_node_2);
-      *object_trajectory = this->m_task->saved_object_trajectory;
+      *object_trajectory = this->m_task->get_saved_object_trajectory();
 
       return;
     }

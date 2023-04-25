@@ -96,7 +96,7 @@ int TASK::neighbors_on_the_same_manifold(const Vector7d &q,
       {
         continue;
       }
-      if_feasible = this->robot_contact_feasibile_check(
+      if_feasible = this->robot_contact_feasible_check(
           sampled_finger_idxes[k], this->shared_rrt->nodes[i].config,
           env_modes[k], v, this->shared_rrt->nodes[i].envs);
       if (!if_feasible)
@@ -205,7 +205,7 @@ bool TASK::forward_integration(const Vector7d &x_start,
     }
     else
     {
-      bool pass_pruning_check = this->robot_contact_feasibile_check(
+      bool pass_pruning_check = this->robot_contact_feasible_check(
           selected_finger_idx, x, env_mode.head(envs.size()), v_b, envs);
       if (!pass_pruning_check)
       {
@@ -453,7 +453,7 @@ bool TASK::forward_integration_velocity(const Vector7d &x_start,
       break;
     }
 
-    bool pass_pruning_check = this->robot_contact_feasibile_check(
+    bool pass_pruning_check = this->robot_contact_feasible_check(
         mnps_, x, env_mode.head(envs.size()), v_b, envs);
     if (!pass_pruning_check)
     {
@@ -1534,7 +1534,7 @@ long int TASK::finger_locations_to_finger_idx(
   return finger_idx;
 }
 
-bool TASK::robot_contact_feasibile_check(
+bool TASK::robot_contact_feasible_check(
     long int finger_idx, const Vector7d &x, const VectorXi &cs_mode,
     const Vector6d &v, const std::vector<ContactPoint> &envs)
 {
@@ -1600,7 +1600,7 @@ bool TASK::robot_contact_feasibile_check(
   return dynamic_feasibility;
 }
 
-bool TASK::robot_contact_feasibile_check(
+bool TASK::robot_contact_feasible_check(
     const std::vector<ContactPoint> &fingertips, const Vector7d &x, const VectorXi &cs_mode,
     const Vector6d &v, const std::vector<ContactPoint> &envs)
 {
@@ -1787,7 +1787,7 @@ long int TASK::pruning_check_w_transition(
     int i_sample = randi(sampled_finger_idxes_pre.size());
     long int finger_idx_pre = sampled_finger_idxes_pre[i_sample];
 
-    bool if_feasible_pre = robot_contact_feasibile_check(
+    bool if_feasible_pre = robot_contact_feasible_check(
         finger_idx_pre, x_pre, cs_mode_pre, v_pre, envs_pre);
 
     if (!if_feasible_pre)
@@ -1804,7 +1804,7 @@ long int TASK::pruning_check_w_transition(
       int ii_sample = randi(sampled_finger_idxes.size());
       long int finger_idx = sampled_finger_idxes[ii_sample];
       bool if_feasible =
-          robot_contact_feasibile_check(finger_idx, x, cs_mode, v, envs);
+          robot_contact_feasible_check(finger_idx, x, cs_mode, v, envs);
       if (!if_feasible)
       {
         sampled_finger_idxes.erase(sampled_finger_idxes.begin() + ii_sample);
@@ -1823,8 +1823,6 @@ long int TASK::pruning_check_w_transition(
 
 int TASK::max_forward_timestep(const TASK::State2 &state)
 {
-  // select a timestep to change the finger configuration
-
   int t_max;
 
   for (t_max = state.timestep; t_max < this->saved_object_trajectory.size();

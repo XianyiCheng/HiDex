@@ -83,6 +83,8 @@ public:
       this->m_path = state_.m_path;
       return *this;
     }
+
+    bool is_no_action() { return *this == no_action; }
   };
 
   struct State2
@@ -105,6 +107,7 @@ public:
         return (timestep == action_.timestep &&
                 finger_idx == action_.finger_idx);
       }
+      bool is_no_action() { return *this == no_action; }
     };
     static const Action no_action;
 
@@ -352,15 +355,11 @@ public:
 
   void save_trajectory(const std::vector<State> &path);
 
-  std::vector<State>
-  generate_a_finer_object_trajectory(std::vector<State> &object_traj,
-                                     double dist);
-
-  bool robot_contact_feasibile_check(long int finger_idx, const Vector7d &x,
+  bool robot_contact_feasible_check(long int finger_idx, const Vector7d &x,
                                      const VectorXi &cs_mode, const Vector6d &v,
                                      const std::vector<ContactPoint> &envs);
 
-  bool robot_contact_feasibile_check(
+  bool robot_contact_feasible_check(
       const std::vector<ContactPoint> &mnps, const Vector7d &x, const VectorXi &cs_mode,
       const Vector6d &v, const std::vector<ContactPoint> &envs);
 
@@ -482,6 +481,21 @@ public:
       double p = 1.0 / (1.0 + std::exp(y_grasp));
       return p;
     }
+  }
+
+  std::vector<State> get_saved_object_trajectory()
+  {
+    return this->saved_object_trajectory;
+  }
+
+  int get_saved_object_trajectory_size()
+  {
+    return this->saved_object_trajectory.size();
+  }
+
+  void clear_saved_object_trajectory()
+  {
+    this->saved_object_trajectory.clear();
   }
 
   std::vector<double>
