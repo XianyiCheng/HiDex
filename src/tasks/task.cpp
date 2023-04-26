@@ -1165,8 +1165,6 @@ bool TASK::is_valid(const TASK::State2 &state, const TASK::State2 &prev_state)
           fingertips.push_back(this->object_surface_pts[idx]);
         }
       }
-      // this->m_world->getRobot()->getFingertipsOnObject(mnp_config, x_object,
-      //                                                  &fingertips);
       this->m_world->getRobot()->Fingertips2PointContacts(fingertips, &mnps);
     }
   }
@@ -1712,9 +1710,6 @@ long int TASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode, const V
             fingertips.push_back(this->object_surface_pts[idx]);
           }
         }
-        // this->m_world->getRobot()->getFingertipsOnObject(mnp_config,
-        // x_object,
-        //                                                  &fingertips);
         this->m_world->getRobot()->Fingertips2PointContacts(fingertips, &mnps);
       }
     }
@@ -1973,9 +1968,6 @@ bool TASK::is_finger_valid(long int finger_idx, int timestep)
         fingertips.push_back(this->object_surface_pts[idx]);
       }
     }
-    // this->m_world->getRobot()->getFingertipsOnObject(mnp_config,
-    // x_object,
-    //                                                  &fingertips);
     this->m_world->getRobot()->Fingertips2PointContacts(fingertips, &mnps);
   }
 

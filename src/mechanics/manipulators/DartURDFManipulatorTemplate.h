@@ -1,11 +1,11 @@
 #ifndef MANIPULATORS_DARTMANIPULATORTEMPLATE
 #define MANIPULATORS_DARTMANIPULATORTEMPLATE
-    #include "DartManipulatorTemplate.h"
+#include "DartManipulatorTemplate.h"
 #endif
 
 #ifndef DART_UTILS
 #define DART_UTILS
-    #include "../dart_utils/dart_utils.h"
+#include "../dart_utils/dart_utils.h"
 #endif
 
 // template for loading manipulators from urdf files
@@ -16,26 +16,40 @@
 
 //
 
-class DartURDFManipulatorTemplate: public virtual DartManipulatorTemplate {
+class DartURDFManipulatorTemplate : public virtual DartManipulatorTemplate
+{
 
 public:
     // config should be defined wrt to the object
     int NumDofs = 0;
+    int NumJoints = 0;
     InverseKinematicsPtr ik = 0;
-    DartURDFManipulatorTemplate(){}
-    DartURDFManipulatorTemplate(const DartURDFManipulatorTemplate& dumt): DartManipulatorTemplate(dumt){}
+    DartURDFManipulatorTemplate() {}
+    DartURDFManipulatorTemplate(const DartURDFManipulatorTemplate &dumt) : DartManipulatorTemplate(dumt) {}
 
-    void loadManipulator(const std::string & name, const std::string & filePath){
+    int getNumDofs() const
+    {
+        return this->NumDofs;
+    }
+    int getNumJoints() const
+    {
+        return this->NumJoints;
+    }
+
+    void loadManipulator(const std::string &name, const std::string &filePath)
+    {
         SkeletonPtr robot = createRobot(name, filePath);
-        for(size_t i=0; i < robot->getNumJoints(); i++){
+        for (size_t i = 0; i < robot->getNumJoints(); i++)
+        {
             robot->getJoint(i)->setPositionLimitEnforced(true);
         }
         robot->enableSelfCollisionCheck();
         this->addBody(robot);
+        this->NumDofs = this->bodies[0]->getNumDofs();
+        this->NumJoints = this->bodies[0]->getNumJoints();
     }
-    
-    virtual bool inverseKinematics(const VectorXd& mnp_config, const Vector7d& object_pose, VectorXd& result_joint_config) = 0;
+
+    virtual bool inverseKinematics(const VectorXd &mnp_config, const Vector7d &object_pose, VectorXd &result_joint_config) = 0;
 
     virtual void computeWorkspace(std::string save_to) = 0;
-
 };

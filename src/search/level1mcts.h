@@ -341,7 +341,7 @@ namespace HMP
           else if (node->m_type == "mode")
           {
             action = this->select_action(node);
-            if ((action.is_no_action()) // if action == -1, explore a new action
+            if ((State::is_no_action(action)) // if action == -1, explore a new action
                 || ((node->number_of_next_actions +
                      node->number_of_invalid_attempts) <=
                     pow(node->m_visits + 1, m_alpha) - 1))

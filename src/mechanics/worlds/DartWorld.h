@@ -53,12 +53,18 @@ public:
   DartWorldWindow(
       const WorldPtr& world)
   {
-    // mBackground[0] = 0.7;
-    // mBackground[1] = 0.7;
-    // mBackground[2] = 0.8;
-    mBackground[0] = 1;
-    mBackground[1] = 1;
-    mBackground[2] = 1;    
+    // Set background color and alpha
+
+    // Light gray purple
+    mBackground[0] = 0.7;
+    mBackground[1] = 0.7;
+    mBackground[2] = 0.8;
+
+    // White
+    // mBackground[0] = 1;
+    // mBackground[1] = 1;
+    // mBackground[2] = 1;    
+    
     mBackground[3] = 1;
     setWorld(world);
   }
@@ -203,6 +209,8 @@ class DartWorld: public WorldTemplate {
         void setPlaybackTrajectory(const std::vector<Vector7d>& object_traj, const std::vector<VectorXd>& robot_traj);
 
         void setObjectTrajectory(const std::vector<Vector7d>& object_traj);
+
+        void setRobotTrajectory(const std::vector<VectorXd>& robot_traj);
 
         void setSurfacePoints(const std::vector<ContactPoint>& pts);
 

@@ -20,7 +20,7 @@ public:
     virtual bool resampleFingers(int n_on, const VectorXd& config, const Vector7d& object_pose, const std::vector<ContactPoint>& object_surface,
     VectorXd& new_config, std::vector<ContactPoint>* remain_fingertips) =0; 
 
-    virtual void getFingertipsOnObject(const VectorXd& config, const Vector7d& object_pose, std::vector<ContactPoint>* fingertips) = 0;
+    virtual void getFingertipsOnObject(const VectorXd& config, const Vector7d& object_pose, std::vector<ContactPoint>* fingertips) {};
 
     // contact model
     virtual void Fingertips2PointContacts(const std::vector<ContactPoint>& fingertips, std::vector<ContactPoint>* point_contacts) =0;

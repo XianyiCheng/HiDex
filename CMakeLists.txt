@@ -107,14 +107,11 @@ FILE(GLOB MCTS_HEADERS ${CMAKE_SOURCE_DIR}/*.h)
 
 add_definitions(-DSRC_DIR="${PROJECT_SOURCE_DIR}")
 
-# ADD_SUBDIRECTORY(games)
-# ADD_SUBDIRECTORY(tests)
-ADD_SUBDIRECTORY(src)
 
+ADD_SUBDIRECTORY(tests)
+ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(general_planner)
-# ADD_SUBDIRECTORY(examples_inhand)
-# ADD_SUBDIRECTORY(examples_env)
+
 # ADD_SUBDIRECTORY(delta_array)
 # ADD_SUBDIRECTORY(ddhand)
 # ADD_SUBDIRECTORY(action_integrator)
-# ADD_SUBDIRECTORY(contact_policy_data_collection)

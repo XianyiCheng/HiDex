@@ -83,7 +83,7 @@ public:
             return *this;
         }
 
-        bool is_no_action() { return *this == no_action; }
+        static bool is_no_action(Action action) { return action == -1; }
     };
 
     struct State2
@@ -109,12 +109,13 @@ public:
                 this->motion_types = action_.motion_types;
                 return *this;
             }
-            bool is_no_action()
-            {
-                return this->timestep == -1;
-            }
         };
         static const Action no_action;
+
+        static bool is_no_action(Action action)
+        {
+            return action.timestep == -1;
+        }
 
         int timestep = 0;
         // The state need to be initialized with all possible hand segments

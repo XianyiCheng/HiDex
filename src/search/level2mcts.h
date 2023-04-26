@@ -47,7 +47,7 @@ public:
 
         // if cannot find a feasible action
         // break and evaluate the heuristics of this path
-        if (action.is_no_action()) {
+        if (State::is_no_action(action)) {
           break;
         }
         node = this->next_node(node, action);

@@ -72,7 +72,7 @@ public:
       m_path = state_.m_path;
     }
 
-    void do_action(Action action) { m_mode_idx = action; }
+    void do_action(const Action &action) { m_mode_idx = action; }
 
     State &operator=(const State &state_)
     {
@@ -84,7 +84,7 @@ public:
       return *this;
     }
 
-    bool is_no_action() { return *this == no_action; }
+    static bool is_no_action(const Action &action) { return action == -1; }
   };
 
   struct State2
@@ -107,7 +107,6 @@ public:
         return (timestep == action_.timestep &&
                 finger_idx == action_.finger_idx);
       }
-      bool is_no_action() { return *this == no_action; }
     };
     static const Action no_action;
 
@@ -117,11 +116,12 @@ public:
     int t_max = -1; // maximum time step this can reach
     State2() {}
     State2(int t, long int idx) : timestep(t), finger_index(idx) {}
-    void do_action(Action action)
+    void do_action(const Action &action)
     {
       this->finger_index = action.finger_idx;
       this->timestep = action.timestep;
     }
+    static bool is_no_action(const Action &action) { return action.timestep == -1; }
   };
 
   struct SearchOptions
