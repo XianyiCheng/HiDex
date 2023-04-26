@@ -78,3 +78,4 @@ Vector6d compute_rbvel_spatial(const Vector7d& x, const Vector7d& x_goal){
 
     return v_w;
 }
+

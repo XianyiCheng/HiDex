@@ -55,4 +55,7 @@ private:
     double patch_contact_radius = 0;
 
     std::vector<std::string> part_names;
+
+    VectorXd mJointLowerLimits;
+    VectorXd mJointUpperLimits;
 };

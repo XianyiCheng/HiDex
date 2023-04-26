@@ -79,5 +79,6 @@ set(modus_libs modus_common modus_modes)
 # target_link_libraries(test_task_inhand PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})
 
 add_executable(test_wholehand test_wholehand.cpp 
-    ../src/mechanics/manipulators/DartWholeHand.cpp)
-target_link_libraries(test_wholehand PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})
+    ../src/mechanics/manipulators/DartWholeHand.cpp
+    ../src/mechanics/manipulators/wholehand/optimizer.cpp)
+target_link_libraries(test_wholehand PRIVATE mcts-mechanics ${dart_libs} dart-optimizer-nlopt ${YAML_LIBRARY})

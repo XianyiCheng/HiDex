@@ -43,26 +43,15 @@ int main(int argc, char *argv[])
     std::cout << "Robot has " << robot->getNumDofs() << " dofs" << std::endl;
 
     std::vector<VectorXd> ik_solutions;
-    VectorXd s1(robot->getNumDofs());
-    s1.setZero();
-    Vector7d x;
-    x << 0, 0, 0, 0, 0, 0, 1;
-    // robot->setConfig(s1, x);
-    ik_solutions.push_back(s1);
-    VectorXd s2 = s1;
-    s2(0) = 0.5;
-    s2(1) = 0.5;
-    ik_solutions.push_back(s2);
-    world->setRobotTrajectory(ik_solutions);
-    world->startWindow(&argc, argv);
 
     // // --- Test rought IK ---
-    // std::vector<std::string> part_names = {};
-    // std::vector<ContactPoint> contact_points = {};
-    // std::vector<VectorXd> ik_solutions = {};
-    // Vector7d object_pose;
-    // object_pose << 0, 0, 0, 0, 0, 0, 1;
-    // robot->roughIKsolutions(part_names, contact_points, ik_solutions);
-    // world->setRobotTrajectory(ik_solutions);
-    // world->startWindow(&argc, argv);
+    std::vector<std::string> part_names = {"base_link", "link_7_tip"};
+    std::vector<ContactPoint> contact_points;
+    contact_points.push_back(ContactPoint(Vector3d(0.0, 0.0, 1), Vector3d(0.0, 0.0, 1.0), 0.0));
+    contact_points.push_back(ContactPoint(Vector3d(0.0, 1, 1), Vector3d(0.0, 0.0, -1.0), 0.0));
+    Vector7d object_pose;
+    object_pose << 0, 0, 0, 0, 0, 0, 1;
+    robot->roughIKsolutions(part_names, contact_points, object_pose, &ik_solutions);
+    world->setRobotTrajectory(ik_solutions);
+    world->startWindow(&argc, argv);
 }

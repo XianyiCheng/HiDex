@@ -89,3 +89,5 @@ void mergeDependentRows(const MatrixXd& A, const VectorXd& b, MatrixXd* A_pr, Ve
 void copy_points(const std::vector<ContactPoint>& pts, std::vector<ContactPoint>* pts_new);
 
 void print_contacts(const std::vector<ContactPoint>& pts);
+
+std::vector<ContactPoint> transform_contact_points(const std::vector<ContactPoint>& contact_points, const Vector7d& object_pose);

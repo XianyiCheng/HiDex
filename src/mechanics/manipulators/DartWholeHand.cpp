@@ -1,5 +1,6 @@
 #include "DartWholeHand.h"
 #include "../contacts/contact_kinematics.h"
+#include "wholehand/optimizer.h"
 
 DartWholeHandManipulator::DartWholeHandManipulator(const std::string &manipulator_folder, double patch_contact_radius)
 {
@@ -18,7 +19,16 @@ DartWholeHandManipulator::DartWholeHandManipulator(const std::string &manipulato
         std::cout << part_name << ", ";
         this->part_names.push_back(part_name);
     }
-    std::cout << std::endl;
+
+    mJointLowerLimits.resize(this->NumDofs);
+    mJointUpperLimits.resize(this->NumDofs);
+
+    for (int i = 0; i < this->NumDofs; i++)
+    {
+        DegreeOfFreedom *dof = this->bodies[0]->getDof(i);
+        mJointLowerLimits[i] = dof->getPositionLowerLimit();
+        mJointUpperLimits[i] = dof->getPositionUpperLimit();
+    }
 
     // TODO: load sampled vertices on each part
 }
@@ -76,4 +86,26 @@ bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &
     }
 
     // Solve the optimization problem
+    std::vector<int> part_point_idxes = std::vector<int>(part_names.size(), 0);
+    VectorXd initial_guess = this->mJointLowerLimits;
+    for(int i = 0; i < initial_guess.size(); i++){
+        if (std::isinf(initial_guess[i]) || std::isnan(initial_guess[i])){
+            initial_guess[i] = 0;
+        }
+    }
+
+    // Initialize OptSetup
+    std::shared_ptr<OptSetup> setup = std::make_shared<OptSetup>(this->bodies[0], part_names, part_point_idxes, object_contacts, object_pose, initial_guess);
+    // Initialize Optimizer
+    std::shared_ptr<Optimizer> optimizer = std::make_shared<Optimizer>(setup);
+
+    // TODO: Sample different hand poses (initial_guess)
+    // TODO: Sample part_point_idxes
+    
+    // For each hand pose, compute the solution
+    optimizer->solve();
+    std::pair<double, VectorXd> solution = optimizer->getSolution();
+    std::cout << "Value: " << solution.first << std::endl;
+    std::cout << "Solution: " << solution.second.transpose() << std::endl;
+    rough_ik_solutions->push_back(solution.second);
 }
