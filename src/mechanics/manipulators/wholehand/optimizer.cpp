@@ -2,7 +2,7 @@
 
 const double lambdaDistance = 1.0;
 const double lambdaPrior = 0.01;
-const double lambdaNormal = 1.0;
+const double lambdaNormal = 0.01;
 
 using namespace Eigen;
 using namespace std;
@@ -31,6 +31,7 @@ std::vector<ContactPoint> OptSetup::getManipulatorContactPointsWorld()
             p << point[0], point[1], point[2];
             n << normal[0], normal[1], normal[2];
         }
+        p << 0,0,0;
 
         Vector3d p_w = mtf * p;
         Vector3d n_w = mtf.rotation() * n;

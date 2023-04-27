@@ -80,16 +80,18 @@ void DartWholeHandManipulator::setupCollisionGroup(WorldPtr world)
 bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &part_names, const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, std::vector<VectorXd> *rough_ik_solutions)
 {
     // TODO: implement this function
-    if (rough_ik_solutions != nullptr)
-    {
-        rough_ik_solutions->clear();
-    }
+    // if (rough_ik_solutions != nullptr)
+    // {
+    //     rough_ik_solutions->clear();
+    // }
 
     // Solve the optimization problem
     std::vector<int> part_point_idxes = std::vector<int>(part_names.size(), 0);
     VectorXd initial_guess = this->mJointLowerLimits;
-    for(int i = 0; i < initial_guess.size(); i++){
-        if (std::isinf(initial_guess[i]) || std::isnan(initial_guess[i])){
+    for (int i = 0; i < initial_guess.size(); i++)
+    {
+        if (std::isinf(initial_guess[i]) || std::isnan(initial_guess[i]))
+        {
             initial_guess[i] = 0;
         }
     }
@@ -101,11 +103,21 @@ bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &
 
     // TODO: Sample different hand poses (initial_guess)
     // TODO: Sample part_point_idxes
-    
+
     // For each hand pose, compute the solution
     optimizer->solve();
     std::pair<double, VectorXd> solution = optimizer->getSolution();
     std::cout << "Value: " << solution.first << std::endl;
     std::cout << "Solution: " << solution.second.transpose() << std::endl;
-    rough_ik_solutions->push_back(solution.second);
+    if (rough_ik_solutions != nullptr)
+    {
+        if (solution.second.norm() > 1e-6)
+        {
+            // TODO: change this temporary threshold!!!
+            if (solution.first < 0.05)
+            {
+                rough_ik_solutions->push_back(solution.second);
+            }
+        }
+    }
 }
