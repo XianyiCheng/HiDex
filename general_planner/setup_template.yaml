@@ -4,7 +4,7 @@
 box_object:
   shape: [1,1,1]
   contact_file: "/home/xianyi/Research/MCTS/data/cube_surface_contacts.csv" # path to sampled surface points on cube of unit half length
-  negate_contact_normal: true
+  negate_contact_normal: true # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
   # disabled_normal_directions: [[0,0,-1], [0,0,1]]
 
 # mesh_object:

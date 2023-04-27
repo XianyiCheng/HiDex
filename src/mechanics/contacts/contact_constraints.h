@@ -6,7 +6,7 @@
 struct ContactPoint {
     Vector3d p;
     Vector3d n;
-    double d = 0;
+    double d = 0; // d is positive if the contact point is inside the object, negative if outside
 
     ContactPoint(){}
     

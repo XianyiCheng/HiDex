@@ -18,7 +18,7 @@ characteristic_length: 1
 robot_object_friction_coefficient: 0.8
 environment_object_friction_coefficient: 0.3
 
-task_dynamics: "quasistatic" # "quasistatic", "quasidynamic", "none", "force_closure"
+task_dynamics: "quasidynamic" # "quasistatic", "quasidynamic", "none", "force_closure"
 object_weight: [0,0,-0.1,0,0,0]
 object_inertia: 
   [ 1, 0, 0, 0, 0, 0, 
@@ -31,7 +31,7 @@ object_inertia:
 # ---- Robot ----
 
 free_sphere_robot: 
-  number_of_contacts: 2
+  number_of_contacts: 1
   radius: 0.2
   patch_contact: true # false for point contacts
   # workspace_limits: # comment this out if there is no limits
@@ -42,8 +42,8 @@ free_sphere_robot:
 # ---- Start and Goal Pose ----
 # pose [x, y, z, qx, qw, qz, qw]
 object_start_pose: [0,0,0.5,0,0,0,1]
-# object_goal_pose: [0.5, 0, 0.5, 0, 0.7071, 0, 0.7071]
-object_goal_pose: [0.5, 0, 0.5, 0, -1, 0, 0]
+object_goal_pose: [-0.5, 0, 0.5, 0, 0.7071, 0, 0.7071]
+# object_goal_pose: [0.5, 0, 0.5, 0, -1, 0, 0]
 
 # ---- Run options ----
 random_seed: -1
@@ -57,12 +57,12 @@ refine_object_trajectory: # whether to refine the trajectory for 2nd level searc
 transition_pruning: false
 
 rrt_options:
-  max_samples: 50
+  max_samples: 100
   goal_biased_prob: 0.7
   goal_thr: 0.1
   extend_epsilon:
     translation: 1
-    rotation_degree: 50
+    rotation_degree: 120
   weight:
     rotation: 1.0
     translation: 0.1

@@ -196,7 +196,7 @@ Vector6d VelocityCorrection(const std::vector<ContactPoint> &pts)
   // VectorXd e(0);
 
   Vector6d x;
-  x = -G.inverse() * g0 / 2;
+  x = G.inverse() * g0 / 2;
 
   // double f = solve_quadprog(G, g0, A, b,  C, e, x);
 

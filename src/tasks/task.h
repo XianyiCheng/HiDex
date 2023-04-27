@@ -173,6 +173,8 @@ public:
 
   State generate_state(const Vector7d &object_pose) const;
 
+  bool project_to_zero_contact_distance(const Vector7d &object_pose, Vector7d & projected_pose);
+
   std::vector<State> search_a_new_path(const State &start_state);
 
   // std::vector<State> search_a_new_path_old(const State &start_state);
