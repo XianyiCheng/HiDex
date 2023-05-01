@@ -1,8 +1,8 @@
 #include "optimizer.h"
 
 const double lambdaDistance = 1.0;
-const double lambdaPrior = 0.01;
-const double lambdaNormal = 0.01;
+const double lambdaPrior = 0.001;
+const double lambdaNormal = 0.05;
 
 using namespace Eigen;
 using namespace std;
@@ -31,7 +31,6 @@ std::vector<ContactPoint> OptSetup::getManipulatorContactPointsWorld()
             p << point[0], point[1], point[2];
             n << normal[0], normal[1], normal[2];
         }
-        p << 0,0,0;
 
         Vector3d p_w = mtf * p;
         Vector3d n_w = mtf.rotation() * n;
@@ -158,7 +157,7 @@ void Optimizer::solve()
 {
     mSolver = std::make_shared<NloptSolver>(mProblem, NloptSolver::LD_MMA);
 
-    mSolver->setNumMaxIterations(500);
+    mSolver->setNumMaxIterations(1000);
 
     // Set initial guess
     VectorXd initialGuess = mSetup->getInitialGuess();

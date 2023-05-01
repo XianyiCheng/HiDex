@@ -51,3 +51,5 @@ _deps
 python/pymcts
 
 data/*/runs/
+
+data/*/output.csv

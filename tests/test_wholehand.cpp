@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 
     std::string folder_path = std::string(SRC_DIR) + "/data/wholehand/AllegroHand";
 
-    std::shared_ptr<DartWholeHandManipulator> robot = std::make_shared<DartWholeHandManipulator>(folder_path, 0.5);
+    std::shared_ptr<DartWholeHandManipulator> robot = std::make_shared<DartWholeHandManipulator>(folder_path, 0.01);
 
     world->addRobot(robot.get());
 
@@ -56,7 +56,14 @@ int main(int argc, char *argv[])
     // object_poses.push_back(object_pose);
     // world->setPlaybackTrajectory(object_poses, ik_solutions);
 
-    // --- Test rough IK ---
+    // --- Test preprocess ---
+
+    std::vector<std::string> allowed_parts = {"base_link", "link_1", "link_2", "link_3_tip", "link_5", "link_6", "link_7_tip", "link_9", "link_10", "link_11_tip", "link_14", "link_15", "link_15_tip"};
+    std::vector<int> allowed_part_idxes = {8150, 2375, 4329, 2649, 2375, 4329, 2649, 2375, 4329, 2649, 2456, 3602, 2114};
+
+    robot->preprocess(allowed_parts, allowed_part_idxes, 5);
+
+    // // --- Test rough IK ---
 
     Vector7d object_pose;
     object_pose << 0, 0, 0, 0, 0, 0, 1;
@@ -65,23 +72,38 @@ int main(int argc, char *argv[])
     contact_points.push_back(ContactPoint(Vector3d(0.0, 0.0, l / 2), Vector3d(0, 0, 1)));
     contact_points.push_back(ContactPoint(Vector3d(l / 2, 0.0, 0.0), Vector3d(1, 0, 0)));
 
-    std::vector<std::string> all_parts = robot->getPartNames();
+    double d_contact = (contact_points[0].p - contact_points[1].p).norm();
+
+    std::cout << "Distance between two contact points " << d_contact << std::endl;
+
+    // std::vector<std::string> allowed_parts = {"base_link", "link_3_tip", "link_7_tip", "link_11_tip", "link_15_tip"};
+    // std::vector<int> allowed_part_idxes = {8150, 2649,2649,2649, 2114};
+
+    // // std::vector<std::string> all_parts = robot->getPartNames();
 
     std::vector<VectorXd> ik_solutions;
 
-    for (int i = 0; i < all_parts.size(); i++)
+    // // robot->roughIKsolutions({"base_link", "link_7_tip"}, {8150, 2649}, contact_points, object_pose, &ik_solutions);
+
+    for (int i = 0; i < allowed_parts.size(); i++)
+
     {
-        for (int j = 0; j < all_parts.size(); j++)
+        for (int j = 0; j < allowed_parts.size(); j++)
         {
-            if (i == j)
+            if (robot->ifConsiderPartPairs(i, j, d_contact) == false)
+            {
                 continue;
+            }
 
             std::vector<std::string> part_names;
-            part_names.push_back(all_parts[i]);
-            part_names.push_back(all_parts[j]);
-            robot->roughIKsolutions(part_names, contact_points, object_pose, &ik_solutions);
+            part_names.push_back(allowed_parts[i]);
+            part_names.push_back(allowed_parts[j]);
+            std::vector<int> part_p_idxes;
+            part_p_idxes.push_back(allowed_part_idxes[i]);
+            part_p_idxes.push_back(allowed_part_idxes[j]);
+
+            robot->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, &ik_solutions);
         }
-        
     }
 
     std::vector<Vector7d> object_poses;

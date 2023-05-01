@@ -1,4 +1,5 @@
 #include "wholehand_task.h"
+#include "../mechanics/dart_utils/dart_utils.h"
 
 Vector6d weight_w2o(const Vector7d &x, const Vector6d &f_ext_w)
 {
@@ -12,6 +13,20 @@ Vector6d weight_w2o(const Vector7d &x, const Vector6d &f_ext_w)
     return f_ext_o;
 }
 
+bool is_too_close(const std::vector<ContactPoint> &pts, double d_thr)
+{
+    for (int i = 0; i < pts.size(); i++)
+    {
+        for (int j = i + 1; j < pts.size(); j++)
+        {
+            if ((pts[i].p - pts[j].p).norm() < d_thr)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 // ----------------------- required functions -----------------------
 
 void WholeHandTASK::set_start_and_goal(const Vector7d &start_object_pose, const Vector7d &goal_object_pose)
@@ -58,7 +73,7 @@ void WholeHandTASK::initialize()
 }
 
 void WholeHandTASK::set_reward_functions(std::shared_ptr<RewardFunction> reward_L1,
-                          std::shared_ptr<RewardFunction> reward_L2)
+                                         std::shared_ptr<RewardFunction> reward_L2)
 {
     this->reward_L1 = reward_L1;
     this->reward_L2 = reward_L2;
@@ -315,6 +330,7 @@ std::vector<State> WholeHandTASK::search_a_new_path(const State &start_state)
                     }
                     else
                     {
+
                         is_pass_pruning =
                             this->pruning_check_w_transition(
                                 shared_rrt->nodes[near_idx].config,
@@ -503,10 +519,10 @@ std::vector<State> WholeHandTASK::search_a_new_path(const State &start_state)
 }
 
 bool WholeHandTASK::forward_integration(const Vector7d &x_start,
-                         const Vector7d &x_goal,
-                         const std::vector<ContactPoint> &envs_,
-                         const VectorXi &env_mode_,
-                         std::vector<Vector7d> *path)
+                                        const Vector7d &x_goal,
+                                        const std::vector<ContactPoint> &envs_,
+                                        const VectorXi &env_mode_,
+                                        std::vector<Vector7d> *path)
 {
 
     // The env_mode_ can either be the full mode (cs + ss) or cs mode
@@ -752,7 +768,7 @@ bool WholeHandTASK::forward_integration(const Vector7d &x_start,
 }
 
 double WholeHandTASK::evaluate_path_level_1(const std::vector<State> &object_path,
-                             const std::vector<State2> &robot_contact_path)
+                                            const std::vector<State2> &robot_contact_path)
 {
     std::vector<double> features = this->get_path_features(
         object_path, robot_contact_path, this->reward_L1->get_feature_names());
@@ -761,7 +777,7 @@ double WholeHandTASK::evaluate_path_level_1(const std::vector<State> &object_pat
 }
 
 double WholeHandTASK::evaluate_path_level_2(const std::vector<State> &object_path,
-                             const std::vector<State2> &robot_contact_path)
+                                            const std::vector<State2> &robot_contact_path)
 {
     std::vector<double> features = this->get_path_features(
         object_path, robot_contact_path, this->reward_L2->get_feature_names());
@@ -929,9 +945,9 @@ void WholeHandTASK::clear_saved_object_trajectory()
 // ------------------- helper functions -------------------
 
 int WholeHandTASK::neighbors_on_the_same_manifold(const Vector7d &q,
-                                   std::vector<ContactPoint> envs,
-                                   std::vector<VectorXi> env_modes,
-                                   double dist_thr)
+                                                  std::vector<ContactPoint> envs,
+                                                  std::vector<VectorXi> env_modes,
+                                                  double dist_thr)
 {
     int num = 0;
     for (int i = 0; i < this->shared_rrt->nodes.size(); i++)
@@ -948,6 +964,40 @@ int WholeHandTASK::neighbors_on_the_same_manifold(const Vector7d &q,
         num++;
     }
     return num;
+}
+
+bool WholeHandTASK::contact_force_feasible_check(std::vector<ContactPoint> object_contact_points, const Vector7d &x, const VectorXi &cs_mode,
+                                                 const Vector6d &v, const std::vector<ContactPoint> &envs)
+{
+    std::vector<ContactPoint> mnps;
+    this->m_world->getRobot()->Fingertips2PointContacts(object_contact_points, &mnps);
+
+    if (this->task_dynamics_type == "quasistatic")
+    {
+        if (v.norm() < 1e-6)
+        {
+            env_mode = conservative_mode_from_velocity(envs, cs_mode, v, this->cons.get());
+        }
+        dynamic_feasibility =
+            isQuasistatic(mnps, envs, env_mode, this->f_gravity, x, this->mu_env,
+                          this->mu_mnp, this->cons.get());
+    }
+    else if (this->task_dynamics_type == "quasidynamic")
+    {
+        double h_time = 1.0;
+        double thr = 0.5;
+
+        dynamic_feasibility =
+            isQuasidynamic(v, mnps, envs, env_mode, this->f_gravity,
+                           this->object_inertia, x, this->mu_env, this->mu_mnp,
+                           this->wa, this->wt, h_time, this->cons.get(), thr);
+    }
+    else
+    {
+        return true;
+    }
+
+    return dynamic_feasibility;
 }
 
 bool WholeHandTASK::robot_contact_feasible_check(
@@ -971,39 +1021,18 @@ bool WholeHandTASK::robot_contact_feasible_check(
     {
         fingertips.push_back(this->object_surface_pts[k]);
     }
+    dynamic_feasibility = this->contact_force_feasible_check(fingertips, x, env_mode, v, envs);
 
-    std::vector<ContactPoint> mnps;
-    this->m_world->getRobot()->Fingertips2PointContacts(fingertips, &mnps);
-
-    if (this->task_dynamics_type == "quasistatic")
-    {
-        if (v.norm() < 1e-6)
-        {
-            env_mode = conservative_mode_from_velocity(envs, cs_mode, v, this->cons.get());
-        }
-        dynamic_feasibility =
-            isQuasistatic(mnps, envs, env_mode, this->f_gravity, x, this->mu_env,
-                          this->mu_mnp, this->cons.get());
-    }
-    else if (this->task_dynamics_type == "quasidynamic")
-    {
-        double h_time = 1.0;
-        double thr = 0.5;
-
-        dynamic_feasibility =
-            isQuasidynamic(v, mnps, envs, env_mode, this->f_gravity,
-                           this->object_inertia, x, this->mu_env, this->mu_mnp,
-                           this->wa, this->wt, h_time, this->cons.get(), thr);
-    }
+    return dynamic_feasibility;
 }
 
 bool WholeHandTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
-                   const std::vector<ContactPoint> &envs, ContactConfig &contact_config, int max_sample)
+                                  const std::vector<ContactPoint> &envs, ContactConfig &contact_config, int max_sample)
 {
 
     std::vector<ContactConfig> sampled_contact_configs;
     std::vector<double> probs;
-    this->sample_likely_contact_configs(x, max_sample, &sampled_contact_configs,
+    this->sample_likely_contact_configs(x, cs_mode, v, envs, max_sample, &sampled_contact_configs,
                                         &probs);
 
     if (sampled_contact_configs.size() == 0)
@@ -1019,7 +1048,7 @@ bool WholeHandTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode, co
     for (int k_sample = 0; k_sample < sampled_contact_configs.size(); k_sample++)
     {
         int ik_sample = distribution(randgen);
-        if_feasible = this->robot_contact_feasible_check(sampled_contact_configs[ik_sample], x, cs_mode, v, &envs);
+        if_feasible = this->robot_contact_feasible_check(sampled_contact_configs[ik_sample], x, cs_mode, v, envs);
         if (if_feasible)
         {
             contact_config = sampled_contact_configs[ik_sample];
@@ -1030,16 +1059,20 @@ bool WholeHandTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode, co
 }
 
 bool WholeHandTASK::pruning_check_w_transition(const Vector7d &x, const Vector7d &x_pre,
-                                const VectorXi &cs_mode, const Vector6d &v,
-                                const std::vector<ContactPoint> &envs,
-                                const std::vector<ContactPoint> &envs_pre,
-                                ContactConfig &contact_config,
-                                int max_sample)
+                                               const VectorXi &cs_mode, const Vector6d &v,
+                                               const std::vector<ContactPoint> &envs,
+                                               const std::vector<ContactPoint> &envs_pre,
+                                               ContactConfig &contact_config,
+                                               int max_sample)
 {
+
+    Vector6d v_pre = compute_rbvel_body(x_pre, x);
+    VectorXi cs_mode_pre = mode_from_velocity(v_pre, envs_pre, this->cons.get())
+                               .head(envs_pre.size());
 
     std::vector<ContactConfig> sampled_contact_configs;
     std::vector<double> probs;
-    this->sample_likely_contact_configs(x_pre, max_sample, &sampled_contact_configs,
+    this->sample_likely_contact_configs(x_pre, cs_mode_pre, v_pre, envs_pre, max_sample, &sampled_contact_configs,
                                         &probs);
 
     if (sampled_contact_configs.size() == 0)
@@ -1078,7 +1111,7 @@ bool WholeHandTASK::pruning_check_w_transition(const Vector7d &x, const Vector7d
 }
 
 bool WholeHandTASK::is_contact_config_valid(const ContactConfig &contact_config,
-                             int timestep)
+                                            int timestep)
 {
     Vector7d x_object = this->saved_object_trajectory[timestep].m_pose;
     Vector7d x_object_next;
@@ -1135,4 +1168,143 @@ bool WholeHandTASK::is_contact_config_valid(const ContactConfig &contact_config,
     }
 
     return true;
+}
+
+void WholeHandTASK::sample_likely_contact_configs(
+    const Vector7d &object_pose, const VectorXi &cs_mode, const Vector6d &v,
+    const std::vector<ContactPoint> &envs, int max_sample, std::vector<ContactConfig> *sampled_actions, std::vector<double> *probs)
+{
+    // TODO: test it
+    
+    // Pipeline
+    // 1. Sample number of contact points
+    // 2. Sample contact points that are feasible in force
+    // 3. Sample corresponding hand segments
+        // 3.1 Option 1: use robot->ifConsiderPartPairs 
+        // 3.2 Option 2: Sample a hand config around the object pose, find nearest hand segments; check ifConsiderPartPairs
+
+    int n_sample = 0;
+
+    int max_part_sample = this->robot->allowed_part_names.size();
+
+    while (n_sample < max_sample)
+    {
+        n_sample++;
+
+        // 1. Sample number of contact points
+        int n_contacts = randi(this->robot->maximum_simultaneous_contact);
+
+        // 2. Sample contact points that are feasible in force
+        std::vector<ContactPoint> sampled_fingertips;
+        std::vector<idx> sampled_contact_idxes;
+        for (int i = 0; i < n_contacts; i++)
+        {
+            int k = randi(this->object_surface_pts.size());
+            sampled_contact_idxes.push_back(k);
+            sampled_fingertips.push_back(this->object_surface_pts[k]);
+        }
+        // Points should not be too close from each other (> radius)
+        bool is_close = this->is_too_close(sampled_fingertips, 2.5 * this->robot->getPatchContactRadius());
+        if (is_close)
+        {
+            continue;
+        }
+
+        bool if_force_feasible = this->contact_force_feasible_check(sampled_fingertips, object_pose, cs_mode, v, envs);
+        if (!if_force_feasible)
+        {
+            continue;
+        }
+
+        // 3. Sample corresponding hand segments
+
+        int sample_option = 1;
+
+        if (sample_option == 1) // 3.1 Option 1: use robot->ifConsiderPartPairs
+        {
+
+            std::vector<int> part_idxs;
+            for (int i_contact = 0; i_contact < n_contact; i_contact++)
+            {
+
+                bool is_valid_part = false;
+
+                int n_part_sample = 0;
+
+                int part_idx;
+
+                while ((!is_valid_part) && (n_part_sample < max_part_sample))
+                {
+                    n_part_sample++;
+
+                    part_idx = randi(this->robot->allowed_part_names.size());
+
+                    is_valid_part = true;
+
+                    for (int j_contact = 0; j_contact < i_contact; j_contact++)
+                    {
+                        double d_check = (sampled_fingertips[i_contact].p - sampled_fingertips[j_contact].p).norm();
+
+                        bool is_valid_pair = this->robot->ifConsiderPartPairs(part_idxs[i_contact], part_idxs[j_contact], d_check);
+
+                        if (!is_valid_pair)
+                        {
+                            is_valid_part = false;
+                            break;
+                        }
+                    }
+                }
+                if (is_valid_part)
+                {
+                    part_idxs.push_back(part_idx);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            if (part_idxs.size() != n_contacts)
+            {
+                continue;
+            }
+            else
+            {
+                std::vector<std::string> sampled_segments;
+                for (int i = 0; i < part_idxs.size(); i++)
+                {
+                    sampled_segments.push_back(this->robot->allowed_part_names[part_idxs[i]]);
+                }
+                sampled_actions->push_back(ContactConfig(sampled_segments, sampled_contact_idxes));
+                probs->push_back(1.0);
+            }
+        }
+    }
+    else // 3.2 Option 2: Sample a hand config around the object pose, find nearest hand segments; check ifConsiderPartPairs
+    {
+        VectorXd random_config = this->robot->sampleRandomConfig();
+        random_config.head(3) = pose7d_to_pose6d(object_pose).head(3);
+        // Get points on the hand
+        std::vector<std::string> sampled_segments;
+
+        std::vector<ContactPoint> part_points = this->robot->get_points_in_world(this->robot->allowed_part_names, this->robot->allowed_part_point_idxes, random_config);
+
+        for (int i_contact = 0; i_contact < n_contact; i_contact++)
+        {
+            int closest_part;
+            double closest_dist = 1e10;
+            for (int i_part = 0; i_part < part_points.size(); i_part++)
+            {
+                double d_check = (sampled_fingertips[i_contact].p - part_points[i_part].p).norm();
+                if (d_check < closest_dist)
+                {
+                    closest_dist = d_check;
+                    closest_part = i_part;
+                }
+            }
+            sampled_segments.push_back(this->robot->allowed_part_names[closest_part]);
+        }
+
+        sampled_actions->push_back(ContactConfig(sampled_segments, sampled_contact_idxes));
+        probs->push_back(1.0);
+    }
 }

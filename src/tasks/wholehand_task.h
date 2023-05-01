@@ -198,6 +198,7 @@ public:
 
     void set_start_and_goal(const Vector7d &start_object_pose, const Vector7d &goal_object_pose);
 
+    // TODO
     void set_task_parameters(double goal_thr, double wa,
                              double wt, double charac_len, double mu_env, double mu_mnp,
                              Matrix6d object_inertia, Vector6d f_gravity,
@@ -252,6 +253,7 @@ public:
                              std::vector<Vector7d> *path);
 
     // roughly check ik and collision for a contact config
+    // TODO
     bool rough_ik_and_collision_check(const ContactConfig &contact_config, const Vector7d &object_pose);
 
     // check if there is a good contact config exist for the given motion, save in contact_config
@@ -266,6 +268,9 @@ public:
                                     ContactConfig &contact_config,
                                     int max_sample = 100);
 
+    bool contact_force_feasible_check(std::vector<ContactPoint> object_contact_points, const Vector7d &x, const VectorXi &cs_mode,
+        const Vector6d &v, const std::vector<ContactPoint> &envs);
+
     // check if the contact config is valid for the given motion
     bool robot_contact_feasible_check(
         const ContactConfig &contact_config, const Vector7d &x, const VectorXi &cs_mode,
@@ -275,14 +280,19 @@ public:
     bool is_contact_config_valid(const ContactConfig &contact_config,
                                  int timestep);
 
+    // TODO
     bool is_valid_transition(const ContactConfig &previous_contact_config, const Vector7d &x, const std::vector<ContactPoint> &envs, const State2::Action &action);
 
+    // TODO
     bool sample_a_feasible_action(const Vector7d &object_pose, const ContactConfig &contact_config, const Vector7d &next_object_pose, State2::Action &action, int max_sample = 100);
 
+    // TODO
     // sample contact configs that satisfy the rough ik and collision check
     void sample_likely_contact_configs(
-        const Vector7d &object_pose, int max_sample, std::vector<ContactConfig> *sampled_actions, std::vector<double> *probs);
+        const Vector7d &object_pose, const VectorXi &cs_mode, const Vector6d &v,
+        const std::vector<ContactPoint> &envs, int max_sample, std::vector<ContactConfig> *sampled_actions, std::vector<double> *probs);
 
+    // TODO
     // sample actions that satisfy the rough ik and collision check and transition condition
     void sample_likely_feasible_actions(
         const State2 &state, int max_sample, std::vector<State2::Action> *sampled_actions, std::vector<double> *probs);
@@ -317,6 +327,8 @@ public:
     std::shared_ptr<RewardFunction> reward_L2;
 
     std::string action_prob_L2 = "env";
+
+    std::shared_ptr<DartWholeHandManipulator> robot;
 
 private:
     bool m_initialized = false;
