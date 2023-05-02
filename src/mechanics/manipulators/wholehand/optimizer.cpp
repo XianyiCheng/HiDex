@@ -69,14 +69,14 @@ double OptFunction::computeObjective(const VectorXd &candidate,
         Vector3d handPoint = hand_contact_points[i].p;
         Vector3d objectPoint = object_contact_points[i].p;
 
-        Vector3d handNormal = hand_contact_points[i].n;
-        Vector3d objectNormal = object_contact_points[i].n;
+        Vector3d handNormal = hand_contact_points[i].n; // point outward
+        Vector3d objectNormal = object_contact_points[i].n; // point inward
 
         Vector3d distanceVec = handPoint - objectPoint;
 
         // we want the normals to be as close to
-        // perfectly inverted as possible
-        double normalComp = 1 + handNormal.dot(objectNormal);
+        // perfectly aligned as possible
+        double normalComp = 1 - handNormal.dot(objectNormal);
 
         distanceError += distanceVec.norm();
         normalError += normalComp * normalComp;

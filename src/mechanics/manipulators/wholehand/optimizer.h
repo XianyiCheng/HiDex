@@ -23,7 +23,7 @@ public:
         mManipulator = manipulator;
         mPartNames = partNames;
         mPartPointIdxes = partPointIdxes;
-        mContactPoints_local = contactPoints;
+        mContactPoints_local = contactPoints; // normals pointing inward to the center of the object
         mObjectPose = object_pose;
         mInitialGuess = initial_guess;
 

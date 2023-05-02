@@ -109,7 +109,8 @@ void DartWholeHandManipulator::setupCollisionGroup(WorldPtr world)
     }
 }
 
-std::vector<ContactPoint> DartWholeHandManipulator::get_points_in_world(const std::vector<std::string> &part_names, const std::vector<int> & part_point_idxes, const VectorXd &config){
+std::vector<ContactPoint> DartWholeHandManipulator::get_points_in_world(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const VectorXd &config)
+{
     std::vector<ContactPoint> pts;
 
     this->bodies[0]->setPositions(config);
@@ -142,10 +143,13 @@ std::vector<ContactPoint> DartWholeHandManipulator::get_points_in_world(const st
     return pts;
 }
 
-bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, std::vector<VectorXd> *rough_ik_solutions)
+bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes,
+                                                const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose,
+                                                std::vector<VectorXd> *rough_ik_solutions)
 {
 
     // TODO: need to add SDF in the optimization
+    // object_contact: in the object frame, normals pointing inward
 
     VectorXd initial_guess = (this->mJointLowerLimits + this->mJointUpperLimits) / 2.0;
     for (int i = 0; i < initial_guess.size(); i++)
@@ -165,7 +169,7 @@ bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &
     // TODO: Sample part_point_idxes
 
     // For each hand pose, compute the solution
-    
+
     // TODO: need to filter out optimal values that are too large.
     optimizer->solve();
     std::pair<double, VectorXd> solution = optimizer->getSolution();

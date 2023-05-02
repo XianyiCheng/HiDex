@@ -1,5 +1,34 @@
+
 #include "wholehand_task.h"
-#include "../mechanics/dart_utils/dart_utils.h"
+
+// #include "../mechanics/dart_utils/dart_utils.h"
+
+#include "../mechanics/contacts/contact_kinematics.h"
+#include "../mechanics/contacts/contact_mode_enumeration.h"
+#include "../mechanics/force_check.h"
+#include "../mechanics/mode_utils.h"
+#include "../mechanics/utilities/combinatorics.h"
+#include "../mechanics/utilities/eiquadprog.hpp"
+
+// ---------------------------
+// Utility functions
+#define MODE_TYPE_CS 0
+#define MODE_TYPE_FULL 1
+#include "integration_utils.h"
+
+#define QUASIDYNAMIC_RANGE 1
+
+int find_part_idx(const std::vector<std::string> & x, const std::string & y)
+{
+    for (int i = 0; i < x.size(); ++i)
+    {
+        if (x[i] == y)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
 
 Vector6d weight_w2o(const Vector7d &x, const Vector6d &f_ext_w)
 {
@@ -28,6 +57,34 @@ bool is_too_close(const std::vector<ContactPoint> &pts, double d_thr)
     return false;
 }
 // ----------------------- required functions -----------------------
+void WholeHandTASK::set_task_parameters(double goal_thr, double wa, double wt,
+                                        double charac_len, double mu_env, double mu_mnp,
+                                        Matrix6d object_inertia, Vector6d f_gravity,
+                                        std::shared_ptr<DartWorld> world,
+                                        int n_robot_contacts, std::string dynamic_type,
+                                        std::vector<ContactPoint> surface_pts,
+                                        const SearchOptions &options, bool if_refine,
+                                        double refine_dist)
+{
+
+    this->goal_thr = goal_thr;
+    this->wa = wa;
+    this->wt = wt;
+    this->charac_len = charac_len;
+    this->mu_env = mu_env;
+    this->mu_mnp = mu_mnp;
+    this->object_inertia = object_inertia;
+    this->f_gravity = f_gravity;
+    this->search_options = options;
+    this->m_world = world;
+    this->number_of_robot_contacts = n_robot_contacts;
+    this->task_dynamics_type = dynamic_type;
+    this->object_surface_pts = surface_pts;
+    this->if_refine = if_refine;
+    this->refine_dist = refine_dist;
+
+    this->m_paramter_set = true;
+}
 
 void WholeHandTASK::set_start_and_goal(const Vector7d &start_object_pose, const Vector7d &goal_object_pose)
 {
@@ -87,7 +144,7 @@ void WholeHandTASK::set_robot(std::shared_ptr<DartWholeHandManipulator> robot)
     this->m_robot_set = true;
 }
 
-State WholeHandTASK::get_start_state() const
+WholeHandTASK::State WholeHandTASK::get_start_state() const
 {
     State state_;
     state_.m_pose = this->start_object_pose;
@@ -96,18 +153,18 @@ State WholeHandTASK::get_start_state() const
     return state_;
 }
 
-State2 WholeHandTASK::get_start_state2() const
+WholeHandTASK::State2 WholeHandTASK::get_start_state2() const
 {
     if (this->m_robot_set == false)
     {
         std::cout << "Robot not set" << std::endl;
         exit(0);
     }
-    State2 state_(0, this->robot->get_hand_segments(), std::vector<int>(this->robot->get_hand_segments().size(), -1));
+    State2 state_(0);
     return state_;
 }
 
-std::vector<State> WholeHandTASK::search_a_new_path(const State &start_state)
+std::vector<WholeHandTASK::State> WholeHandTASK::search_a_new_path(const WholeHandTASK::State &start_state)
 {
     // search a new path towards the end, given the START_STATE and M_MODE_IDX!!!
 
@@ -767,8 +824,8 @@ bool WholeHandTASK::forward_integration(const Vector7d &x_start,
     return true;
 }
 
-double WholeHandTASK::evaluate_path_level_1(const std::vector<State> &object_path,
-                                            const std::vector<State2> &robot_contact_path)
+double WholeHandTASK::evaluate_path_level_1(const std::vector<WholeHandTASK::State> &object_path,
+                                            const std::vector<WholeHandTASK::State2> &robot_contact_path)
 {
     std::vector<double> features = this->get_path_features(
         object_path, robot_contact_path, this->reward_L1->get_feature_names());
@@ -776,8 +833,8 @@ double WholeHandTASK::evaluate_path_level_1(const std::vector<State> &object_pat
     return reward;
 }
 
-double WholeHandTASK::evaluate_path_level_2(const std::vector<State> &object_path,
-                                            const std::vector<State2> &robot_contact_path)
+double WholeHandTASK::evaluate_path_level_2(const std::vector<WholeHandTASK::State> &object_path,
+                                            const std::vector<WholeHandTASK::State2> &robot_contact_path)
 {
     std::vector<double> features = this->get_path_features(
         object_path, robot_contact_path, this->reward_L2->get_feature_names());
@@ -785,7 +842,7 @@ double WholeHandTASK::evaluate_path_level_2(const std::vector<State> &object_pat
     return reward;
 }
 
-void WholeHandTASK::sample_level2_action(const State2 &state, State2::Action &action)
+void WholeHandTASK::sample_level2_action(const WholeHandTASK::State2 &state, WholeHandTASK::State2::Action &action)
 {
     int max_sample = 300;
 
@@ -812,7 +869,7 @@ void WholeHandTASK::sample_level2_action(const State2 &state, State2::Action &ac
         bool is_contact_config_valid = this->is_contact_config_valid(contact_config, new_action.timestep);
         if (is_contact_config_valid)
         {
-            bool is_transition_valid = this->is_valid_transition(contact_config, this->saved_object_trajectory[new_action.timestep].m_pose, this->saved_object_trajectory[new_action.timestep].envs, new_action.timestep);
+            bool is_transition_valid = this->is_valid_transition(contact_config, this->saved_object_trajectory[new_action.timestep].m_pose, this->saved_object_trajectory[new_action.timestep].envs, new_action);
             if (is_transition_valid)
             {
                 if_valid = true;
@@ -833,7 +890,7 @@ void WholeHandTASK::sample_level2_action(const State2 &state, State2::Action &ac
     return;
 }
 
-int WholeHandTASK::max_forward_timestep(const State2 &state)
+int WholeHandTASK::max_forward_timestep(const WholeHandTASK::State2 &state)
 {
     int t_max;
     ContactConfig contact_config(state);
@@ -855,7 +912,7 @@ int WholeHandTASK::max_forward_timestep(const State2 &state)
     return t_max - 1;
 }
 
-bool WholeHandTASK::is_terminal(const State2 &state)
+bool WholeHandTASK::is_terminal(const WholeHandTASK::State2 &state)
 {
     if (!state.is_valid)
     {
@@ -875,7 +932,7 @@ bool WholeHandTASK::is_terminal(const State2 &state)
     return false;
 }
 
-void WholeHandTASK::save_trajectory(const std::vector<State> &path)
+void WholeHandTASK::save_trajectory(const std::vector<WholeHandTASK::State> &path)
 {
     if (this->saved_object_trajectory.size() > 0)
     {
@@ -928,7 +985,7 @@ void WholeHandTASK::save_trajectory(const std::vector<State> &path)
     }
 }
 
-std::vector<State> WholeHandTASK::get_saved_object_trajectory()
+std::vector<WholeHandTASK::State> WholeHandTASK::get_saved_object_trajectory()
 {
     return this->saved_object_trajectory;
 }
@@ -942,7 +999,92 @@ void WholeHandTASK::clear_saved_object_trajectory()
 {
     this->saved_object_trajectory.clear();
 }
+// std::vector<double>
+// WholeHandTASK::get_path_features(const std::vector<WholeHandTASK::State> &object_path,
+//                         const std::vector<WholeHandTASK::State2> &robot_contact_path,
+//                         const std::vector<std::string> &feature_names)
+// {
+//     std::vector<double> features;
 
+//     for (auto feature_name : feature_names)
+//     {
+
+//         double x;
+
+//         if (feature_name == "object_path_size")
+//         {
+
+//             x = double(object_path.size());
+//         }
+//         else if (feature_name == "finger_change_ratio")
+//         {
+
+//             double total_finger_changes =
+//                 this->total_finger_change_ratio(robot_contact_path);
+
+//             x = total_finger_changes / double(robot_contact_path.back().t_max);
+//         }
+//         else if (feature_name == "number_environment_contact_changes")
+//         {
+
+//             x = double(this->number_environment_contact_changes(object_path));
+//         }
+//         else if (feature_name == "object_travel_distance_ratio")
+//         {
+
+//             double dist = this->travel_distance(object_path);
+//             double best_dist = this->shared_rrt->dist(this->start_object_pose,
+//                                                       this->goal_object_pose);
+//             x = dist / best_dist;
+//         }
+//         else if (feature_name == "average_grasp_centroid_distance")
+//         {
+
+//             double avg_grasp_d = 0.0;
+//             for (auto s2 : robot_contact_path)
+//             {
+//                 if (s2.finger_index == -1 || s2.timestep == -1)
+//                 {
+//                     continue;
+//                 }
+//                 double grasp_d = this->grasp_measure(s2.finger_index, s2.timestep);
+//                 avg_grasp_d += grasp_d;
+//             }
+//             x = avg_grasp_d / (double(robot_contact_path.size()) - 1);
+//         }
+//         else if (feature_name == "average_distance_to_goal_fingertips")
+//         {
+//             if (!this->if_goal_finger)
+//             {
+//                 x = -1.0;
+//             }
+//             else
+//             {
+//                 double total_finger_distance = 0.0;
+//                 for (auto state : robot_contact_path)
+//                 {
+//                     total_finger_distance += get_finger_distance(state.finger_index);
+//                 }
+//                 // let final distance to be half of the average distance
+//                 total_finger_distance +=
+//                     double(robot_contact_path.size()) *
+//                     get_finger_distance(robot_contact_path.back().finger_index);
+//                 total_finger_distance /= double(this->number_of_robot_contacts);
+//                 total_finger_distance /= 2 * double(robot_contact_path.size());
+//                 x = total_finger_distance;
+//             }
+//         }
+//         else
+//         {
+//             std::cout << "Error in TASK::get_path_features: feature name not found"
+//                       << std::endl;
+//             exit(0);
+//         }
+//         features.push_back(x);
+//     }
+
+//     return features;
+// }
 // ------------------- helper functions -------------------
 
 int WholeHandTASK::neighbors_on_the_same_manifold(const Vector7d &q,
@@ -972,6 +1114,9 @@ bool WholeHandTASK::contact_force_feasible_check(std::vector<ContactPoint> objec
 {
     std::vector<ContactPoint> mnps;
     this->m_world->getRobot()->Fingertips2PointContacts(object_contact_points, &mnps);
+
+    bool dynamic_feasibility;
+    VectorXi env_mode;
 
     if (this->task_dynamics_type == "quasistatic")
     {
@@ -1166,7 +1311,7 @@ bool WholeHandTASK::is_contact_config_valid(const ContactConfig &contact_config,
         return false;
     }
 
-    bool current_feasibility = this->robot_contact_feasible_check(contact_config, x_object, refernece_cs_mode, v, this->saved_object_trajectory[timestep].envs);
+    bool current_feasibility = this->robot_contact_feasible_check(contact_config, x_object, reference_cs_mode, v, this->saved_object_trajectory[timestep].envs);
     if (!current_feasibility)
     {
         return false;
@@ -1180,13 +1325,13 @@ void WholeHandTASK::sample_likely_contact_configs(
     const std::vector<ContactPoint> &envs, int max_sample, std::vector<ContactConfig> *sampled_actions, std::vector<double> *probs)
 {
     // TODO: test it
-    
+
     // Pipeline
     // 1. Sample number of contact points
     // 2. Sample contact points that are feasible in force
     // 3. Sample corresponding hand segments
-        // 3.1 Option 1: use robot->ifConsiderPartPairs 
-        // 3.2 Option 2: Sample a hand config around the object pose, find nearest hand segments; check ifConsiderPartPairs
+    // 3.1 Option 1: use robot->ifConsiderPartPairs
+    // 3.2 Option 2: Sample a hand config around the object pose, find nearest hand segments; check ifConsiderPartPairs
 
     int n_sample = 0;
 
@@ -1202,7 +1347,7 @@ void WholeHandTASK::sample_likely_contact_configs(
         // 2. Sample contact points that are feasible in force
         // TODO: add rought collision check for fingertips
         std::vector<ContactPoint> sampled_fingertips;
-        std::vector<idx> sampled_contact_idxes;
+        std::vector<int> sampled_contact_idxes;
         for (int i = 0; i < n_contacts; i++)
         {
             int k = randi(this->object_surface_pts.size());
@@ -1210,7 +1355,7 @@ void WholeHandTASK::sample_likely_contact_configs(
             sampled_fingertips.push_back(this->object_surface_pts[k]);
         }
         // Points should not be too close from each other (> radius)
-        bool is_close = this->is_too_close(sampled_fingertips, 2.5 * this->robot->getPatchContactRadius());
+        bool is_close = is_too_close(sampled_fingertips, 2.5 * this->robot->getPatchContactRadius());
         if (is_close)
         {
             continue;
@@ -1230,7 +1375,7 @@ void WholeHandTASK::sample_likely_contact_configs(
         {
 
             std::vector<int> part_idxs;
-            for (int i_contact = 0; i_contact < n_contact; i_contact++)
+            for (int i_contact = 0; i_contact < n_contacts; i_contact++)
             {
 
                 bool is_valid_part = false;
@@ -1284,33 +1429,34 @@ void WholeHandTASK::sample_likely_contact_configs(
                 probs->push_back(1.0);
             }
         }
-    }
-    else // 3.2 Option 2: Sample a hand config around the object pose, find nearest hand segments; check ifConsiderPartPairs
-    {
-        VectorXd random_config = this->robot->sampleRandomConfig();
-        random_config.head(3) = pose7d_to_pose6d(object_pose).head(3);
-        // Get points on the hand
-        std::vector<std::string> sampled_segments;
 
-        std::vector<ContactPoint> part_points = this->robot->get_points_in_world(this->robot->allowed_part_names, this->robot->allowed_part_point_idxes, random_config);
-
-        for (int i_contact = 0; i_contact < n_contact; i_contact++)
+        else // 3.2 Option 2: Sample a hand config around the object pose, find nearest hand segments; check ifConsiderPartPairs
         {
-            int closest_part;
-            double closest_dist = 1e10;
-            for (int i_part = 0; i_part < part_points.size(); i_part++)
-            {
-                double d_check = (sampled_fingertips[i_contact].p - part_points[i_part].p).norm();
-                if (d_check < closest_dist)
-                {
-                    closest_dist = d_check;
-                    closest_part = i_part;
-                }
-            }
-            sampled_segments.push_back(this->robot->allowed_part_names[closest_part]);
-        }
+            VectorXd random_config = this->robot->random_sample_config();
+            random_config.head(3) = pose7d_to_pose6d(object_pose).head(3);
+            // Get points on the hand
+            std::vector<std::string> sampled_segments;
 
-        sampled_actions->push_back(ContactConfig(sampled_segments, sampled_contact_idxes));
-        probs->push_back(1.0);
+            std::vector<ContactPoint> part_points = this->robot->get_points_in_world(this->robot->allowed_part_names, this->robot->allowed_part_point_idxes, random_config);
+
+            for (int i_contact = 0; i_contact < n_contacts; i_contact++)
+            {
+                int closest_part;
+                double closest_dist = 1e10;
+                for (int i_part = 0; i_part < part_points.size(); i_part++)
+                {
+                    double d_check = (sampled_fingertips[i_contact].p - part_points[i_part].p).norm();
+                    if (d_check < closest_dist)
+                    {
+                        closest_dist = d_check;
+                        closest_part = i_part;
+                    }
+                }
+                sampled_segments.push_back(this->robot->allowed_part_names[closest_part]);
+            }
+
+            sampled_actions->push_back(ContactConfig(sampled_segments, sampled_contact_idxes));
+            probs->push_back(1.0);
+        }
     }
 }

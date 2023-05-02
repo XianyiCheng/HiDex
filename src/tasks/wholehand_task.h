@@ -18,9 +18,9 @@
 #include "../mechanics/utilities/sample.h"
 #endif
 
-#ifndef _WORLD_TEMPLATE
-#define _WORLD_TEMPLATE
-#include "../mechanics/worlds/WorldTemplate.h"
+#ifndef _DART_WORLD
+#define _DART_WORLD
+#include "../mechanics/worlds/DartWorld.h"
 #endif
 
 #ifndef RRT_H
@@ -32,6 +32,10 @@
 #define Reward_H
 #include "rewards.h"
 #endif
+
+#include "../mechanics/manipulators/DartWholeHand.h"
+
+int find_part_idx(const std::vector<std::string> &x, const std::string &y);
 
 class WholeHandTASK
 {
@@ -95,7 +99,7 @@ public:
             // for finger relocation
             std::vector<std::string> hand_segments; // which hand segment to move
             std::vector<int> contact_idxes;         // move to which contact point on the object surface
-            std::vector<std::string> motion_types;  //"relocate", "roll", "slide", "new"
+            std::vector<std::string> motion_types;  //"relocate", "roll", "slide", "new", "release"
 
             Action() {}
             Action(int timestep_, std::vector<std::string> hand_segments_, std::vector<int> contact_idxes_, std::vector<std::string> motion_types_)
@@ -116,7 +120,8 @@ public:
             return action.timestep == -1;
         }
 
-        static Action no_action(){
+        static Action no_action()
+        {
             return Action();
         }
 
@@ -128,6 +133,7 @@ public:
         bool is_valid;
         int t_max = -1; // maximum time step this can reach
         State2() {}
+        State2(int t) : timestep(t) {}
         State2(int t, std::vector<std::string> hand_segments_, std::vector<int> contact_idxes_)
             : timestep(t), hand_segments(hand_segments_), contact_idxes(contact_idxes_) {}
         void do_action(Action action)
@@ -136,13 +142,21 @@ public:
 
             for (int i = 0; i < action.hand_segments.size(); ++i)
             {
-                for (int k = 0; k < this->hand_segments.size(); ++k)
+                if (action.motion_types[i] == "release")
                 {
-                    if (this->hand_segments[k] == action.hand_segments[i])
-                    {
-                        this->contact_idxes = action.contact_idxes[i];
-                        break;
-                    }
+                    int k = find_part_idx(this->hand_segments, action.hand_segments[i]);
+                    this->hand_segments.erase(this->hand_segments.begin() + k);
+                    this->contact_idxes.erase(this->contact_idxes.begin() + k);
+                }
+                else if (action.motion_types[i] == "new")
+                {
+                    this->hand_segments.push_back(action.hand_segments[i]);
+                    this->contact_idxes.push_back(action.contact_idxes[i]);
+                }
+                else
+                {
+                    int k = find_part_idx(this->hand_segments, action.hand_segments[i]);
+                    this->contact_idxes[k] = action.contact_idxes[i];
                 }
             }
         }
@@ -166,13 +180,21 @@ public:
         {
             for (int i = 0; i < action.hand_segments.size(); ++i)
             {
-                for (int k = 0; k < this->hand_segments.size(); ++k)
+                if (action.motion_types[i] == "release")
                 {
-                    if (this->hand_segments[k] == action.hand_segments[i])
-                    {
-                        this->contact_idxes = action.contact_idxes[i];
-                        break;
-                    }
+                    int k = find_part_idx(this->hand_segments, action.hand_segments[i]);
+                    this->hand_segments.erase(this->hand_segments.begin() + k);
+                    this->contact_idxes.erase(this->contact_idxes.begin() + k);
+                }
+                else if (action.motion_types[i] == "new")
+                {
+                    this->hand_segments.push_back(action.hand_segments[i]);
+                    this->contact_idxes.push_back(action.contact_idxes[i]);
+                }
+                else
+                {
+                    int k = find_part_idx(this->hand_segments, action.hand_segments[i]);
+                    this->contact_idxes[k] = action.contact_idxes[i];
                 }
             }
         }
@@ -205,7 +227,7 @@ public:
     void set_task_parameters(double goal_thr, double wa,
                              double wt, double charac_len, double mu_env, double mu_mnp,
                              Matrix6d object_inertia, Vector6d f_gravity,
-                             std::shared_ptr<WorldTemplate> world, int n_robot_contacts,
+                             std::shared_ptr<DartWorld> world, int n_robot_contacts,
                              std::string dynamic_type, std::vector<ContactPoint> surface_pts,
                              const SearchOptions &options, bool if_refine = false,
                              double refine_dist = 0.0);
@@ -242,6 +264,15 @@ public:
     int get_saved_object_trajectory_size();
 
     void clear_saved_object_trajectory();
+
+    std::vector<double>
+    get_path_features(const std::vector<State> &object_path,
+                      const std::vector<State2> &robot_contact_path,
+                      const std::vector<std::string> &feature_names)
+    {
+        // TODO: to be implemented
+        return std::vector<double>();
+    }
 
     // ----------------------- helper functions -----------------------
     int neighbors_on_the_same_manifold(const Vector7d &q,
@@ -328,7 +359,7 @@ public:
     std::string task_dynamics_type =
         "quasistatic"; // "quasistatic", "quasidynamic", "none", "force_closure"
 
-    std::shared_ptr<WorldTemplate>
+    std::shared_ptr<DartWorld>
         m_world; // save the object, environment, do collision detections, ...
     // unsigned long int n_finger_combinations = 0;
 
@@ -348,8 +379,6 @@ public:
     std::shared_ptr<RewardFunction> reward_L2;
 
     std::string action_prob_L2 = "env";
-
-    std::shared_ptr<DartWholeHandManipulator> robot;
 
 private:
     bool m_initialized = false;
@@ -379,4 +408,6 @@ private:
 
     bool if_refine = false;
     bool refine_dist = 0.0;
+
+    std::shared_ptr<DartWholeHandManipulator> robot;
 };
