@@ -40,7 +40,6 @@ public:
     struct State
     {
         typedef int Action;
-        static const Action no_action;
         Vector7d m_pose;
         std::vector<ContactPoint> envs;
         int m_mode_idx = -1; // the mode chosen for this state, to the next state
@@ -84,6 +83,7 @@ public:
         }
 
         static bool is_no_action(Action action) { return action == -1; }
+        static Action no_action() { return -1; }
     };
 
     struct State2
@@ -110,11 +110,14 @@ public:
                 return *this;
             }
         };
-        static const Action no_action;
 
         static bool is_no_action(Action action)
         {
             return action.timestep == -1;
+        }
+
+        static Action no_action(){
+            return Action();
         }
 
         int timestep = 0;
@@ -252,9 +255,19 @@ public:
                              const VectorXi &env_mode_,
                              std::vector<Vector7d> *path);
 
-    // roughly check ik and collision for a contact config
-    // TODO
-    bool rough_ik_and_collision_check(const ContactConfig &contact_config, const Vector7d &object_pose);
+    // roughly check ik for a contact config
+    bool rough_ik_check(const ContactConfig &contact_config, const Vector7d &object_pose)
+    {
+        // TODO: to be implemented
+        return true;
+    }
+
+    // Rough collision check for fingertips as spheres only
+    bool rough_collision_check(const ContactConfig &contact_config, const Vector7d &object_pose)
+    {
+        // TODO: to be implemented
+        return true;
+    }
 
     // check if there is a good contact config exist for the given motion, save in contact_config
     bool pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
@@ -269,7 +282,7 @@ public:
                                     int max_sample = 100);
 
     bool contact_force_feasible_check(std::vector<ContactPoint> object_contact_points, const Vector7d &x, const VectorXi &cs_mode,
-        const Vector6d &v, const std::vector<ContactPoint> &envs);
+                                      const Vector6d &v, const std::vector<ContactPoint> &envs);
 
     // check if the contact config is valid for the given motion
     bool robot_contact_feasible_check(
@@ -280,22 +293,30 @@ public:
     bool is_contact_config_valid(const ContactConfig &contact_config,
                                  int timestep);
 
-    // TODO
-    bool is_valid_transition(const ContactConfig &previous_contact_config, const Vector7d &x, const std::vector<ContactPoint> &envs, const State2::Action &action);
+    bool is_valid_transition(const ContactConfig &previous_contact_config, const Vector7d &x, const std::vector<ContactPoint> &envs, const State2::Action &action)
+    {
+        // TODO: to be implemented
+        return false;
+    }
 
-    // TODO
-    bool sample_a_feasible_action(const Vector7d &object_pose, const ContactConfig &contact_config, const Vector7d &next_object_pose, State2::Action &action, int max_sample = 100);
+    bool sample_a_feasible_action(const Vector7d &object_pose, const ContactConfig &contact_config, const Vector7d &next_object_pose, State2::Action &action, int max_sample = 100)
+    {
+        // TODO: to be implemented
+        return false;
+    }
 
-    // TODO
+    // TODO: improve this function
     // sample contact configs that satisfy the rough ik and collision check
     void sample_likely_contact_configs(
         const Vector7d &object_pose, const VectorXi &cs_mode, const Vector6d &v,
         const std::vector<ContactPoint> &envs, int max_sample, std::vector<ContactConfig> *sampled_actions, std::vector<double> *probs);
 
-    // TODO
-    // sample actions that satisfy the rough ik and collision check and transition condition
+    // Sample actions that satisfy the rough ik and collision check and transition condition
     void sample_likely_feasible_actions(
-        const State2 &state, int max_sample, std::vector<State2::Action> *sampled_actions, std::vector<double> *probs);
+        const State2 &state, int max_sample, std::vector<State2::Action> *sampled_actions, std::vector<double> *probs)
+    {
+        // TODO: to be implemented
+    }
 
     // properties
     double grasp_measure_charac_length = -1.0;

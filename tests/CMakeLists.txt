@@ -82,3 +82,10 @@ add_executable(test_wholehand test_wholehand.cpp
     ../src/mechanics/manipulators/DartWholeHand.cpp
     ../src/mechanics/manipulators/wholehand/optimizer.cpp)
 target_link_libraries(test_wholehand PRIVATE mcts-mechanics ${dart_libs} dart-optimizer-nlopt ${YAML_LIBRARY})
+
+# add_executable(test_task_wholehand test_wholehand_task.cpp 
+#     ../src/mechanics/manipulators/DartWholeHand.cpp
+#     ../src/mechanics/manipulators/wholehand/optimizer.cpp
+#     ../src/tasks/wholehand_task.cpp 
+#     ../src/tasks/setup.cpp)
+# target_link_libraries(test_task_wholehand PRIVATE mcts-mechanics ${dart_libs} dart-optimizer-nlopt ${YAML_LIBRARY})

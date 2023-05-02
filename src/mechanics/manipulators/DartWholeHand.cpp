@@ -144,15 +144,8 @@ std::vector<ContactPoint> DartWholeHandManipulator::get_points_in_world(const st
 
 bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, std::vector<VectorXd> *rough_ik_solutions)
 {
-    // TODO: implement this function
-    // if (rough_ik_solutions != nullptr)
-    // {
-    //     rough_ik_solutions->clear();
-    // }
 
-    // Solve the optimization problem
-
-    // std::vector<int> part_point_idxes = std::vector<int>(part_names.size(), 0);
+    // TODO: need to add SDF in the optimization
 
     VectorXd initial_guess = (this->mJointLowerLimits + this->mJointUpperLimits) / 2.0;
     for (int i = 0; i < initial_guess.size(); i++)
@@ -172,6 +165,8 @@ bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &
     // TODO: Sample part_point_idxes
 
     // For each hand pose, compute the solution
+    
+    // TODO: need to filter out optimal values that are too large.
     optimizer->solve();
     std::pair<double, VectorXd> solution = optimizer->getSolution();
     std::cout << "Value: " << solution.first << std::endl;

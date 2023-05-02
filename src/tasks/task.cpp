@@ -2214,7 +2214,8 @@ void TASK::sample_level2_action(const TASK::State2 &state,
     // << std::endl;
     action = State2::Action(t, finger_idx);
   } else {
-    action = State2::no_action;
+    // Set to no action
+    action.timestep = -1;
   }
   return;
 }

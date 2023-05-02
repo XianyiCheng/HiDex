@@ -46,7 +46,7 @@ namespace HMP
       // specify the type of the root node
       // this->m_root_node = std::make_unique<Node<State>>(start_state, -1,
       // nullptr); // already done in Tree
-      this->m_root_node = std::make_unique<Node<State>>(start_state, State::no_action, nullptr);
+      this->m_root_node = std::make_unique<Node<State>>(start_state, State::no_action(), nullptr);
       this->m_current_node = this->m_root_node.get();
       this->m_task = task;
 
@@ -98,7 +98,7 @@ namespace HMP
                "there is no contact"
             << std::endl;
         exit(-1);
-        return State::no_action;
+        return State::no_action();
       }
 
       if (node->number_of_next_actions == 0)
@@ -107,7 +107,7 @@ namespace HMP
         //              "action found. "
         //           << std::endl;
         // exit(-1);
-        return State::no_action;
+        return State::no_action();
       }
 
       // if ((node->m_type == "pose") && (node->m_parent != nullptr))
@@ -159,7 +159,7 @@ namespace HMP
 
         if (U_unexplored > U_max)
         {
-          return State::no_action;
+          return State::no_action();
         }
       }
 

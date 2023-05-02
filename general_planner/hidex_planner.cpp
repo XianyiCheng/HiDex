@@ -2,8 +2,8 @@
 
 #include "../src/tasks/visualization.h"
 
-const TASK::State2::Action TASK::State2::no_action = TASK::State2::Action(-1, -1);
-const TASK::State::Action TASK::State::no_action = -1;
+// const TASK::State2::Action TASK::State2::no_action = TASK::State2::Action(-1, -1);
+// const TASK::State::Action TASK::State::no_action = -1;
 
 int main(int argc, char *argv[])
 {

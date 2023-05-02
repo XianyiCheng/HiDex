@@ -38,7 +38,7 @@ namespace HMP
     std::string m_type; // store any type information for interleaving node types
 
     Node *m_parent;
-    Action m_action = State::no_action; // action that lead to this node
+    Action m_action = State::no_action(); // action that lead to this node
     int number_of_next_actions = 0;     // action actions are stored in state
     int number_of_invalid_attempts = 0; // number of invalid new attempts for search_a_new_path
     State m_state;
@@ -94,7 +94,7 @@ namespace HMP
     Tree() {}
     Tree(std::shared_ptr<Task> task_, State start_state)
     {
-      this->m_root_node = std::make_unique<Node<State>>(start_state, State::no_action, nullptr);
+      this->m_root_node = std::make_unique<Node<State>>(start_state, State::no_action(), nullptr);
       this->m_current_node = this->m_root_node.get();
       m_task = task_;
     }
@@ -126,7 +126,8 @@ namespace HMP
 
     Node<State> *add_child(Node<State> *node, Action action_, const State &state_)
     {
-      if (action_ == State::no_action)
+
+      if (State::is_no_action(action_))
       {
         std::cout << "Node<State> *add_child: has no action" << std::endl;
         exit(0);
@@ -153,7 +154,7 @@ namespace HMP
       State next_state = this->generate_next_state(node, action);
 
       // add the child
-      if (action == State::no_action)
+      if (State::is_no_action(action))
       {
         std::cout << "next_node: has no action" << std::endl;
         exit(0);

@@ -41,7 +41,6 @@ public:
   struct State
   {
     typedef int Action;
-    static const Action no_action;
     Vector7d m_pose;
     std::vector<ContactPoint> envs;
     int m_mode_idx = -1; // the mode chosen for this state, to the next state
@@ -85,6 +84,7 @@ public:
     }
 
     static bool is_no_action(const Action &action) { return action == -1; }
+    static Action no_action() { return -1; }
   };
 
   struct State2
@@ -108,7 +108,6 @@ public:
                 finger_idx == action_.finger_idx);
       }
     };
-    static const Action no_action;
 
     int timestep = 0;
     long int finger_index; // current finger index
@@ -122,6 +121,7 @@ public:
       this->timestep = action.timestep;
     }
     static bool is_no_action(const Action &action) { return action.timestep == -1; }
+    static Action no_action() { return Action(-1, -1); }
   };
 
   struct SearchOptions

@@ -827,7 +827,8 @@ void WholeHandTASK::sample_level2_action(const State2 &state, State2::Action &ac
     }
     else
     {
-        action = State2::no_action;
+        // set to no action
+        action.timestep = -1;
     }
     return;
 }
@@ -1007,7 +1008,7 @@ bool WholeHandTASK::robot_contact_feasible_check(
     VectorXi env_mode = mode_from_velocity(v, envs, this->cons.get());
     env_mode.head(envs.size()) = cs_mode;
 
-    bool if_config_possible = this->rough_ik_and_collision_check(contact_config, x);
+    bool if_config_possible = (this->rough_ik_check(contact_config, x) && this->rough_collision_check(contact_config, x));
 
     if (!if_config_possible)
     {
@@ -1048,7 +1049,8 @@ bool WholeHandTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode, co
     for (int k_sample = 0; k_sample < sampled_contact_configs.size(); k_sample++)
     {
         int ik_sample = distribution(randgen);
-        if_feasible = this->robot_contact_feasible_check(sampled_contact_configs[ik_sample], x, cs_mode, v, envs);
+        // if_feasible = this->robot_contact_feasible_check(sampled_contact_configs[ik_sample], x, cs_mode, v, envs);
+        if_feasible = this->rough_ik_check(sampled_contact_configs[ik_sample], x);
         if (if_feasible)
         {
             contact_config = sampled_contact_configs[ik_sample];
@@ -1089,7 +1091,9 @@ bool WholeHandTASK::pruning_check_w_transition(const Vector7d &x, const Vector7d
     {
         int ik_sample = distribution(randgen);
         ContactConfig pre_contact_config;
-        if_feasible = this->robot_contact_feasible_check(sampled_contact_configs[ik_sample], x, cs_mode, v, &envs);
+        // TODO: replace this with ik check
+        // if_feasible = this->robot_contact_feasible_check(sampled_contact_configs[ik_sample], x, cs_mode, v, &envs);
+        if_feasible = this->rough_ik_check(sampled_contact_configs[ik_sample], x);
         if (if_feasible)
         {
             pre_contact_config = sampled_contact_configs[ik_sample];
@@ -1154,7 +1158,8 @@ bool WholeHandTASK::is_contact_config_valid(const ContactConfig &contact_config,
         v.setZero();
     }
 
-    bool next_feasibility = this->rough_ik_and_collision_check(contact_config, x_object_next);
+    bool next_feasibility = this->rough_ik_check(contact_config, x_object_next) &&
+                            this->rough_collision_check(contact_config, x_object_next);
 
     if (!next_feasibility)
     {
@@ -1195,6 +1200,7 @@ void WholeHandTASK::sample_likely_contact_configs(
         int n_contacts = randi(this->robot->maximum_simultaneous_contact);
 
         // 2. Sample contact points that are feasible in force
+        // TODO: add rought collision check for fingertips
         std::vector<ContactPoint> sampled_fingertips;
         std::vector<idx> sampled_contact_idxes;
         for (int i = 0; i < n_contacts; i++)

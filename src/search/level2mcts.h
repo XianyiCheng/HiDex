@@ -19,7 +19,7 @@ public:
   Level2MCTS() {}
   Level2MCTS(std::shared_ptr<Task> task, State start_state) {
     this->m_root_node =
-        std::make_unique<Node<State>>(start_state, State::no_action, nullptr);
+        std::make_unique<Node<State>>(start_state, State::no_action(), nullptr);
     this->m_current_node = this->m_root_node.get();
     this->m_task = task;
     // this->m_root_node->number_of_next_actions =
@@ -168,7 +168,7 @@ public:
 
     // select the largest U value
     double U_max = -1.0;
-    Action selected_action = State::no_action;
+    Action selected_action = State::no_action();
     for (int i = 0; i < U_values.size(); ++i) {
       if (U_values[i] > U_max) {
         U_max = U_values[i];
@@ -183,7 +183,7 @@ public:
     }
 
     // If U_unexplored > U_max (of existing actions), sample a new action
-    Action new_action = State::no_action;
+    Action new_action = State::no_action();
     this->m_task->sample_level2_action(node->m_state, new_action);
 
     return new_action;
