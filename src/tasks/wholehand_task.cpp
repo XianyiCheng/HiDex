@@ -1116,7 +1116,8 @@ bool WholeHandTASK::contact_force_feasible_check(std::vector<ContactPoint> objec
     this->m_world->getRobot()->Fingertips2PointContacts(object_contact_points, &mnps);
 
     bool dynamic_feasibility;
-    VectorXi env_mode;
+    VectorXi env_mode = mode_from_velocity(v, envs, this->cons.get());
+    env_mode.head(envs.size()) = cs_mode;
 
     if (this->task_dynamics_type == "quasistatic")
     {
@@ -1396,7 +1397,7 @@ void WholeHandTASK::sample_likely_contact_configs(
                     {
                         double d_check = (sampled_fingertips[i_contact].p - sampled_fingertips[j_contact].p).norm();
 
-                        bool is_valid_pair = this->robot->ifConsiderPartPairs(part_idxs[i_contact], part_idxs[j_contact], d_check);
+                        bool is_valid_pair = this->robot->ifConsiderPartPairs(part_idx, part_idxs[j_contact], d_check);
 
                         if (!is_valid_pair)
                         {
@@ -1459,4 +1460,28 @@ void WholeHandTASK::sample_likely_contact_configs(
             probs->push_back(1.0);
         }
     }
+}
+
+bool WholeHandTASK::rough_ik_check(const ContactConfig &contact_config, const Vector7d &object_pose, std::vector<VectorXd> *rough_ik_solutions)
+{
+    // TODO: to be improved
+    std::vector<int> part_p_idxes;
+    for (auto seg: contact_config.hand_segments){
+        for (int k = 0; k < this->robot->allowed_part_names.size(); k++){
+            if (seg == this->robot->allowed_part_names[k]){
+                part_p_idxes.push_back(this->robot->allowed_part_point_idxes[k]);
+                break;
+            }
+        }
+    }
+
+    std::vector<ContactPoint> object_contact_points;
+    for (int k : contact_config.contact_idxes)
+    {
+        object_contact_points.push_back(this->object_surface_pts[k]);
+    }
+
+    bool if_ik = this->robot->roughIKsolutions(contact_config.hand_segments, part_p_idxes, object_contact_points, object_pose, rough_ik_solutions);
+
+    return if_ik;
 }

@@ -47,6 +47,38 @@ int main(int argc, char *argv[])
 
     task->initialize();
 
+    // --- Test sample likely contact configs ---
+    std::vector<ContactPoint> envs;
+    task->m_world->getObjectContacts(&envs,task->start_object_pose);
+    VectorXi mode(envs.size());
+    mode.setZero();
+    Vector6d v;
+    v << 1,0,0,0,0,0;
+    std::vector<WholeHandTASK::ContactConfig> sampled_actions;
+    std::vector<double> probs;
+    task->sample_likely_contact_configs(task->start_object_pose, mode, v, envs, 100, &sampled_actions, &probs);
+    
+    std::cout << "sampled_actions.size(): " << sampled_actions.size() << std::endl;
+
+    std::vector<VectorXd> ik_solutions;
+    for (auto contact_config: sampled_actions){
+        task->rough_ik_check(contact_config, task->start_object_pose, &ik_solutions);
+    }
+
+    std::vector<Vector7d> object_poses;
+    for (int k = 0; k < ik_solutions.size(); k++)
+    {
+        object_poses.push_back(task->start_object_pose);
+    }
+
+    for (auto contact_config: sampled_actions){
+        std::cout << "contact_config: " << contact_config << std::endl;
+    }
+
+    task->m_world->setPlaybackTrajectory(object_poses, ik_solutions);
+    task->m_world->startWindow(&argc, argv);
+
+
 //     int random_seed = config["random_seed"].as<int>();
 //     if (random_seed >= 0)
 //     {

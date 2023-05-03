@@ -1,0 +1,606 @@
+<?xml version="1.0"?>
+<!-- created with Phobos 1.0.1 "Capricious Choutengan" -->
+<robot name="allegroHand">
+
+    <link name="base_link">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_base_link">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/base_link.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_base_link">
+            <origin xyz="-0.0093 0.00048 -0.04714" rpy="0 0 0" />
+            <geometry>
+                <box size="0.06894 0.24219 0.24566" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_0">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_0">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_0.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_0">
+            <origin xyz="0 0.00045 0.0086" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.1475" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_1">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_1">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_1.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_1">
+            <origin xyz="0 0.00045 0.0274" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.1311" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_10">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_10.0">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_2.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_10.0">
+            <origin xyz="0 0.00051 0.01952" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.0771" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_11">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_11.0">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_3.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_11.0">
+            <origin xyz="0 0.00051 0.01367" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.0387" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_11_tip">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_11.0_tip">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_3_tip.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="white" />
+        </visual>
+        <collision name="collision_0_link_11.0_tip">
+            <origin xyz="0 0.00051 0.00032" rpy="0 0 0" />
+            <geometry>
+                <sphere radius="0.012" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_12">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_12">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_12_right.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_12">
+            <origin xyz="-0.0175 0.00888 0.01493" rpy="0 0 0" />
+            <geometry>
+                <box size="0.24932 0.0758 0.26109" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_13">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_13">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_13.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_13">
+            <origin xyz="0.0004 -0.00012 0.00928" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.1234" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_14">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_14">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_14.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_14">
+            <origin xyz="0.0004 -0.00012 0.02613" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.1057" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_15">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_15">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_15.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_15">
+            <origin xyz="0.0004 -0.00012 0.02158" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.0543" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_15_tip">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_15_tip">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_15_tip.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="white" />
+        </visual>
+        <collision name="collision_0_link_15_tip">
+            <origin xyz="0.0004 -0.00012 0.00043" rpy="0 0 0" />
+            <geometry>
+                <sphere radius="0.012" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_2">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_2">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_2.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_2">
+            <origin xyz="0 0.00045 0.0196" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.0771" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_3">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_3">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_3.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_3">
+            <origin xyz="0 0.00045 0.01375" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.0387" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_3_tip">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_3_tip">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_3_tip.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="white" />
+        </visual>
+        <collision name="collision_0_link_3_tip">
+            <origin xyz="0 0.00045 0.0004" rpy="0 0 0" />
+            <geometry>
+                <sphere radius="0.012" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_4">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_4">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_0.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_4">
+            <origin xyz="0 0.00048 0.00856" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.1475" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_5">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_5.0">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_1.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_5.0">
+            <origin xyz="0 0.00048 0.02736" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.1311" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_6">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_6.0">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_2.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_6.0">
+            <origin xyz="0 0.00048 0.01956" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.0771" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_7">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_7">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_3.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_7">
+            <origin xyz="0 0.00048 0.01371" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.0387" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_7_tip">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_7_tip">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_3_tip.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="white" />
+        </visual>
+        <collision name="collision_0_link_7_tip">
+            <origin xyz="0 0.00048 0.00036" rpy="0 0 0" />
+            <geometry>
+                <sphere radius="0.012" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_8">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_8.0">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_0.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_8.0">
+            <origin xyz="0 0.00051 0.00852" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.1475" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="link_9">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+        <visual name="visual_0_link_9.0">
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="URDFmeshes/link_1.ply" scale="1.0 1.0 1.0" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision name="collision_0_link_9.0">
+            <origin xyz="0 0.00051 0.02732" rpy="0 0 0" />
+            <geometry>
+                <box size="0.024 0.0275 0.1311" />
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="joint_0" type="revolute">
+        <origin xyz="0 0.0435 -0.00154" rpy="-0.08727 0 0" />
+        <parent link="base_link" />
+        <child link="link_0" />
+        <axis xyz="0 0 1.0" />
+        <limit lower="-0.47" upper="0.47" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_1" type="revolute">
+        <origin xyz="0 0 0.0164" rpy="0 0 0" />
+        <parent link="link_0" />
+        <child link="link_1" />
+        <axis xyz="0 1.0 0" />
+        <limit lower="-0.196" upper="1.61" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_10.0" type="revolute">
+        <origin xyz="0 0 0.054" rpy="0 0 0" />
+        <parent link="link_9" />
+        <child link="link_10" />
+        <axis xyz="0 1.0 0" />
+        <limit lower="-0.174" upper="1.709" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_11.0" type="revolute">
+        <origin xyz="0 0 0.0384" rpy="0 0 0" />
+        <parent link="link_10" />
+        <child link="link_11" />
+        <axis xyz="0 1.0 0" />
+        <limit lower="-0.227" upper="1.618" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_11.0_tip" type="fixed">
+        <origin xyz="0 0 0.0267" rpy="0 0 0" />
+        <parent link="link_11" />
+        <child link="link_11_tip" />
+    </joint>
+
+    <joint name="joint_12" type="revolute">
+        <origin xyz="-0.0182 0.01933 -0.04599" rpy="0 -1.68806 -0.99" />
+        <parent link="base_link" />
+        <child link="link_12" />
+        <axis xyz="-1.0 0 0" />
+        <limit lower="0.263" upper="1.396" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_13" type="revolute">
+        <origin xyz="-0.027 0.005 0.0399" rpy="0 0 0" />
+        <parent link="link_12" />
+        <child link="link_13" />
+        <axis xyz="0 0 1.0" />
+        <limit lower="-0.105" upper="1.163" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_14" type="revolute">
+        <origin xyz="0 0 0.0177" rpy="0 0 0" />
+        <parent link="link_13" />
+        <child link="link_14" />
+        <axis xyz="0 1.0 0" />
+        <limit lower="-0.189" upper="1.644" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_15" type="revolute">
+        <origin xyz="0 0 0.0514" rpy="0 0 0" />
+        <parent link="link_14" />
+        <child link="link_15" />
+        <axis xyz="0 1.0 0" />
+        <limit lower="-0.162" upper="1.719" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_15_tip" type="fixed">
+        <origin xyz="0 0 0.0423" rpy="0 0 0" />
+        <parent link="link_15" />
+        <child link="link_15_tip" />
+    </joint>
+
+    <joint name="joint_2" type="revolute">
+        <origin xyz="0 0 0.054" rpy="0 0 0" />
+        <parent link="link_1" />
+        <child link="link_2" />
+        <axis xyz="0 1.0 0" />
+        <limit lower="-0.174" upper="1.709" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_3" type="revolute">
+        <origin xyz="0 0 0.0384" rpy="0 0 0" />
+        <parent link="link_2" />
+        <child link="link_3" />
+        <axis xyz="0 1.0 0" />
+        <limit lower="-0.227" upper="1.618" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_3_tip" type="fixed">
+        <origin xyz="0 0 0.0267" rpy="0 0 0" />
+        <parent link="link_3" />
+        <child link="link_3_tip" />
+    </joint>
+
+    <joint name="joint_4.0" type="revolute">
+        <origin xyz="0 0 0.0007" rpy="0 0 0" />
+        <parent link="base_link" />
+        <child link="link_4" />
+        <axis xyz="0 0 1.0" />
+        <limit lower="-0.47" upper="0.47" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_5.0" type="revolute">
+        <origin xyz="0 0 0.0164" rpy="0 0 0" />
+        <parent link="link_4" />
+        <child link="link_5" />
+        <axis xyz="0 1.0 0" />
+        <limit lower="-0.196" upper="1.61" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_6.0" type="revolute">
+        <origin xyz="0 0 0.054" rpy="0 0 0" />
+        <parent link="link_5" />
+        <child link="link_6" />
+        <axis xyz="0 1.0 0" />
+        <limit lower="-0.174" upper="1.709" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_7" type="revolute">
+        <origin xyz="0 0 0.0384" rpy="0 0 0" />
+        <parent link="link_6" />
+        <child link="link_7" />
+        <axis xyz="0 1.0 0" />
+        <limit lower="-0.227" upper="1.618" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_7_tip" type="fixed">
+        <origin xyz="0 0 0.0267" rpy="0 0 0" />
+        <parent link="link_7" />
+        <child link="link_7_tip" />
+    </joint>
+
+    <joint name="joint_8.0" type="revolute">
+        <origin xyz="0 -0.0435 -0.00154" rpy="0.08727 0 0" />
+        <parent link="base_link" />
+        <child link="link_8" />
+        <axis xyz="0 0 1.0" />
+        <limit lower="-0.47" upper="0.47" effort="0" velocity="0" />
+    </joint>
+
+    <joint name="joint_9.0" type="revolute">
+        <origin xyz="0 0 0.0164" rpy="0 0 0" />
+        <parent link="link_8" />
+        <child link="link_9" />
+        <axis xyz="0 1.0 0" />
+        <limit lower="-0.196" upper="1.61" effort="0" velocity="0" />
+    </joint>
+
+    <material name="black">
+        <color rgba="0.2 0.2 0.2 1.0" />
+    </material>
+
+    <material name="white">
+        <color rgba="0.9 0.9 0.9 1.0" />
+    </material>
+
+</robot>
