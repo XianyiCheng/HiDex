@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 
   int number_of_experiments = batch_config["number_of_experiments"].as<int>();
 
-  std::string visualize_option = config["visualize_option"].as<std::string>();
+  std::string visualize_option = batch_config["visualize_option"].as<std::string>();
 
   for (int n_exp = 0; n_exp < number_of_experiments; n_exp++)
   {
@@ -139,27 +139,23 @@ int main(int argc, char *argv[])
     tree.get_final_results(current_node, &object_trajectory,
                            &action_trajectory);
 
-    if (visualize_option == "show")
-    {
-      VisualizeStateTraj(task->m_world, task, object_trajectory,
-                         action_trajectory);
-      task->m_world->startWindow(&argc, argv);
-    }
-
     mkdir(run_folder.c_str(), 0755);
 
-    if (batch_config["collect_trajectory"].as<bool>())
-    {
-      MatrixXd output_mat =
-          get_output_object_centric(object_trajectory, action_trajectory, task);
-      saveData(run_folder + "/trajectory.csv", output_mat);
-    }
-
+    // collect full trajectory
+    std::string traj_file = run_folder + "/trajectory.csv";
+    save_full_output_object_centric(object_trajectory, action_trajectory, task, traj_file);
+    
     if (batch_config["collect_results"].as<bool>())
     {
       VectorXd result = get_results(&tree, task, object_trajectory,
                                     action_trajectory, current_node->m_value);
       saveData(run_folder + "/results.csv", result);
+    }
+
+    if (visualize_option == "show")
+    {
+      visualize_full_output_file_object_centric(task->m_world, traj_file);
+      task->m_world->startWindow(&argc, argv);
     }
   }
 }

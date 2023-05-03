@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     else
     {
         // config_file = "/home/xianyi/Research/MCTS/general_planner/setup_template.yaml";
-        config_file = "/home/xianyi/Research/MCTS/data/reorient/setup.yaml";
+        config_file = "/home/xianyi/Research/MCTS/data/pushing/setup.yaml";
     }
 
     // should use arg to specify the path to the setup.yaml file
@@ -86,11 +86,13 @@ int main(int argc, char *argv[])
         std::remove(output_file.c_str());
         MatrixXd output_mat = get_output_object_centric(object_trajectory, action_trajectory, task);
         saveData(output_file, output_mat);
+        // save_full_output_object_centric(object_trajectory, action_trajectory, task, output_file);
     }
 
     if (visualize_option == "save_n_show")
     {
         visualize_output_file_object_centric(task->m_world, output_file);
+        // visualize_full_output_file_object_centric(task->m_world, output_file);
         task->m_world->startWindow(&argc, argv);
     }
 }

@@ -5,7 +5,7 @@ box_object:
   shape: [1,1,1]
   contact_file: "/home/xianyi/Research/MCTS/data/cube_surface_contacts.csv" # path to sampled surface points on cube of unit half length
   negate_contact_normal: true
-  disabled_normal_directions: [[0,0,-1]]
+  disabled_normal_directions: [[0,0,-1],[0,0,1]]
 
 # mesh_object:
 #   mesh_file: "path_to_mesh.stl"
@@ -13,7 +13,7 @@ box_object:
 #   negate_contact_normal: false
 #   scale: 1.0
 
-maximum_surface_contact_points: 200
+maximum_surface_contact_points: 100
 
 environment: # maximum 20 blocks
   block_1:
@@ -43,7 +43,7 @@ object_inertia:
 free_sphere_robot: 
   number_of_contacts: 1
   radius: 0.1
-  patch_contact: true # false for point contacts
+  patch_contact: false # false for point contacts
   # workspace_limits: # comment this out if there is no limits
   #   # [x_min, x_max, y_min, y_max, z_min, z_max]
   #   box_1: [-10,10,-10,10,-10,10]
@@ -125,5 +125,5 @@ action_probability_L2: "env"
 # "show": plan a trajectory and show, no save
 # "save_n_show": plan a trajectory, saved in csv, and show the results
 
-visualize_option: "save"
+visualize_option: "save_n_show"
 save_file_path: "/home/xianyi/Research/MCTS/data/pushing/output.csv"

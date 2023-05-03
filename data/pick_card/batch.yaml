@@ -2,7 +2,8 @@ folder: "/home/xianyi/Research/MCTS/data/pick_card"
 
 number_of_experiments: 3
 
-collect_trajectory: true
+visualize_option: setup # setup, show, none. (overwrite visualize_option in setup.yaml)
+
 collect_results: true
 
 sample_start_and_goal:

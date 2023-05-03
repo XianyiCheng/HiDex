@@ -26,3 +26,15 @@ add_executable(hidex_batch collect_data_in_batch.cpp
     ../src/mechanics/manipulators/DartDeltaManipulator.cpp )
 
 target_link_libraries(hidex_batch PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})
+
+add_executable(hidex_trajectory_visualizer hidex_trajectory_visualizer.cpp 
+    ../src/tasks/task.cpp 
+    ../src/tasks/setup.cpp
+    ../src/mechanics/manipulators/DartPointManipulator.cpp 
+    ../src/mechanics/manipulators/DartDeltaManipulator.cpp )
+
+target_link_libraries(hidex_trajectory_visualizer PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})
+
+add_executable(turn_trajectory_into_dataset turn_trajectory_into_dataset.cpp)
+
+target_link_libraries(turn_trajectory_into_dataset PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})
