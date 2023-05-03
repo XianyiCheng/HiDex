@@ -1370,7 +1370,7 @@ void WholeHandTASK::sample_likely_contact_configs(
 
         // 3. Sample corresponding hand segments
 
-        int sample_option = 1;
+        int sample_option = 2;
 
         if (sample_option == 1) // 3.1 Option 1: use robot->ifConsiderPartPairs
         {
@@ -1378,7 +1378,7 @@ void WholeHandTASK::sample_likely_contact_configs(
             std::vector<int> part_idxs;
             for (int i_contact = 0; i_contact < n_contacts; i_contact++)
             {
-
+                // select part for i_th object contact
                 bool is_valid_part = false;
 
                 int n_part_sample = 0;
@@ -1393,6 +1393,7 @@ void WholeHandTASK::sample_likely_contact_configs(
 
                     is_valid_part = true;
 
+                    // check if part_idx for ith contact is a valid pair for each previously selected part
                     for (int j_contact = 0; j_contact < i_contact; j_contact++)
                     {
                         double d_check = (sampled_fingertips[i_contact].p - sampled_fingertips[j_contact].p).norm();
@@ -1433,31 +1434,64 @@ void WholeHandTASK::sample_likely_contact_configs(
 
         else // 3.2 Option 2: Sample a hand config around the object pose, find nearest hand segments; check ifConsiderPartPairs
         {
-            VectorXd random_config = this->robot->random_sample_config();
-            random_config.head(3) = pose7d_to_pose6d(object_pose).head(3);
-            // Get points on the hand
-            std::vector<std::string> sampled_segments;
 
-            std::vector<ContactPoint> part_points = this->robot->get_points_in_world(this->robot->allowed_part_names, this->robot->allowed_part_point_idxes, random_config);
+            int max_sample_config = 10;
+            int n_sample_config = 0;
 
-            for (int i_contact = 0; i_contact < n_contacts; i_contact++)
-            {
-                int closest_part;
-                double closest_dist = 1e10;
-                for (int i_part = 0; i_part < part_points.size(); i_part++)
+            while (n_sample_config < max_sample_config){
+                n_sample_config ++;
+                VectorXd random_config = this->robot->random_sample_config();
+                random_config.head(3) = pose7d_to_pose6d(object_pose).head(3);
+                // Get points on the hand
+                std::vector<int> part_idxs;
+                std::vector<std::string> sampled_segments;
+
+                std::vector<ContactPoint> part_points = this->robot->get_points_in_world(this->robot->allowed_part_names, this->robot->allowed_part_point_idxes, random_config);
+
+                for (int i_contact = 0; i_contact < n_contacts; i_contact++)
                 {
-                    double d_check = (sampled_fingertips[i_contact].p - part_points[i_part].p).norm();
-                    if (d_check < closest_dist)
+                    int closest_part = -1;
+                    double closest_dist = 1e10;
+                    for (int i_part = 0; i_part < part_points.size(); i_part++)
                     {
-                        closest_dist = d_check;
-                        closest_part = i_part;
+                        double d_check = (sampled_fingertips[i_contact].p - part_points[i_part].p).norm();
+                        if (d_check < closest_dist)
+                        {
+                            // check if i_part is a valid part for all previously selected part
+                            bool is_valid_part = true;
+
+                            for (int j_contact = 0; j_contact < i_contact; j_contact++)
+                            {
+                                bool is_valid_pair = this->robot->ifConsiderPartPairs(i_part, part_idxs[j_contact], d_check);
+
+                                if (!is_valid_pair)
+                                {
+                                    is_valid_part = false;
+                                    break;
+                                }
+                            }
+                            if (is_valid_part){
+                                closest_dist = d_check;
+                                closest_part = i_part;
+                            }
+                        }
+                    }
+                    if (closest_part == -1){
+                        // start over, a new random sample config
+                        break;
+                    } else {       
+                        sampled_segments.push_back(this->robot->allowed_part_names[closest_part]);
+                        part_idxs.push_back(closest_part);
                     }
                 }
-                sampled_segments.push_back(this->robot->allowed_part_names[closest_part]);
-            }
 
-            sampled_actions->push_back(ContactConfig(sampled_segments, sampled_contact_idxes));
-            probs->push_back(1.0);
+                // if find a valid config, add to sampled_actions and leave
+                if (part_idxs.size() == n_contacts){
+                    sampled_actions->push_back(ContactConfig(sampled_segments, sampled_contact_idxes));
+                    probs->push_back(1.0);
+                    break;
+                }
+            }
         }
     }
 }
