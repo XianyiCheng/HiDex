@@ -1,7 +1,6 @@
 import subprocess
 import os
 
-total_number_of_runs = 1000
 path = "/home/xianyi/Research/MCTS/data/pushing"
 setup_yaml = path + "/setup.yaml"
 run_folder = path + "/runs"
