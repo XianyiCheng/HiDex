@@ -1,5 +1,7 @@
 #include "setup.h"
 
+
+
 void load_surface_contacts(const std::string &file_name,
                            std::vector<ContactPoint> *pts, double scale_x,
                            double scale_y, double scale_z,

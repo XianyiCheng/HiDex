@@ -12,7 +12,11 @@
 // #include "../mechanics/manipulators/DartDDHandScalable.h"
 
 #include "../mechanics/utilities/parser.hpp"
+
+#ifndef _DART_WORLD
+#define _DART_WORLD
 #include "../mechanics/worlds/DartWorld.h"
+#endif
 
 #include "../mechanics/utilities/io.h"
 

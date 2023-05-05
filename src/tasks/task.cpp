@@ -65,8 +65,8 @@ Vector6d weight_w2o(const Vector7d &x, const Vector6d &f_ext_w) {
 }
 
 int TASK::neighbors_on_the_same_manifold(const Vector7d &q,
-                                         std::vector<ContactPoint> envs,
-                                         std::vector<VectorXi> env_modes,
+                                         const std::vector<ContactPoint> &envs,
+                                         const std::vector<VectorXi> &env_modes,
                                          double dist_thr) {
 
   std::vector<long int> sampled_finger_idxes;

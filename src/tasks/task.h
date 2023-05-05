@@ -164,8 +164,8 @@ public:
   void initialize();
 
   int neighbors_on_the_same_manifold(const Vector7d &q,
-                                     std::vector<ContactPoint> envs,
-                                     std::vector<VectorXi> env_modes,
+                                     const std::vector<ContactPoint> &envs,
+                                     const std::vector<VectorXi> &env_modes,
                                      double dist_thr);
 
   // --- Level 1 Tree functions ---

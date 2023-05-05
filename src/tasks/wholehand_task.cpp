@@ -18,16 +18,28 @@
 
 #define QUASIDYNAMIC_RANGE 1
 
-int find_part_idx(const std::vector<std::string> & x, const std::string & y)
+template <typename T>
+std::vector<T> retrieve_elements(const std::vector<T> &x, const std::vector<int> &idxes)
 {
-    for (int i = 0; i < x.size(); ++i)
+    std::vector<T> y;
+    for (int i = 0; i < idxes.size(); i++)
     {
-        if (x[i] == y)
-        {
-            return i;
-        }
+        y.push_back(x[idxes[i]]);
     }
-    return -1;
+    return y;
+}
+
+template <typename T>
+std::vector<int> retrieve_idxes(const std::vector<T> &x, const std::vector<T> &y)
+{
+    std::vector<int> idxes;
+    for (int i = 0; i < y.size(); i++)
+    {
+        auto it = std::find(x.begin(), x.end(), y[i]);
+        int k = it - x.begin();
+        idxes.push_back(k);
+    }
+    return idxes;
 }
 
 Vector6d weight_w2o(const Vector7d &x, const Vector6d &f_ext_w)
@@ -55,6 +67,35 @@ bool is_too_close(const std::vector<ContactPoint> &pts, double d_thr)
         }
     }
     return false;
+}
+
+int select_timestep_with_prob(WholeHandTASK *task, const WholeHandTASK::State2 &state, double prob)
+{
+    // select a timestep to change the finger configuration
+    int t_max;
+    if (state.t_max == -1)
+    {
+        t_max = task->max_forward_timestep(state);
+    }
+    else
+    {
+        t_max = state.t_max;
+    }
+
+    int t;
+    if ((randd() > prob) || (t_max + 1 - state.timestep) <= 1)
+    {
+        t = t_max + 1;
+    }
+    else
+    {
+        t = randi(t_max + 1 - state.timestep) + state.timestep + 1;
+    }
+    if (t > task->saved_object_trajectory.size() - 1)
+    {
+        t = task->saved_object_trajectory.size() - 1;
+    }
+    return t;
 }
 // ----------------------- required functions -----------------------
 void WholeHandTASK::set_task_parameters(double goal_thr, double wa, double wt,
@@ -377,24 +418,24 @@ std::vector<WholeHandTASK::State> WholeHandTASK::search_a_new_path(const WholeHa
                 if (v.norm() > 1e-6)
                 {
                     bool is_pass_pruning;
-                    ContactConfig contact_config;
                     if ((shared_rrt->nodes[near_idx].parent < 0) ||
                         !this->if_transition_pruning)
                     {
                         is_pass_pruning = this->pruning_check(
                             shared_rrt->nodes[near_idx].config, cs_mode,
-                            v, shared_rrt->nodes[near_idx].envs, contact_config);
+                            v, shared_rrt->nodes[near_idx].envs);
                     }
                     else
                     {
-
-                        is_pass_pruning =
-                            this->pruning_check_w_transition(
-                                shared_rrt->nodes[near_idx].config,
-                                shared_rrt->nodes[shared_rrt->nodes[near_idx].parent].config,
-                                cs_mode, v, shared_rrt->nodes[near_idx].envs,
-                                shared_rrt->nodes[shared_rrt->nodes[near_idx].parent].envs,
-                                contact_config);
+                        // TODO: fix pruning check with transition
+                        is_pass_pruning = true;
+                        // is_pass_pruning =
+                        //     this->pruning_check_w_transition(
+                        //         shared_rrt->nodes[near_idx].config,
+                        //         shared_rrt->nodes[shared_rrt->nodes[near_idx].parent].config,
+                        //         cs_mode, v, shared_rrt->nodes[near_idx].envs,
+                        //         shared_rrt->nodes[shared_rrt->nodes[near_idx].parent].envs,
+                        //         contact_config);
                     }
                     if (is_pass_pruning)
                     {
@@ -610,7 +651,7 @@ bool WholeHandTASK::forward_integration(const Vector7d &x_start,
     int counter;
     int delete_c = 0;
 
-    ContactConfig selected_contact_config;
+    std::vector<ContactPoint> selected_fingertips;
 
     for (counter = 0; counter < max_counter; counter++)
     {
@@ -655,18 +696,19 @@ bool WholeHandTASK::forward_integration(const Vector7d &x_start,
 
         if (counter == 0)
         {
+            std::vector<int> selected_contact_idxes;
             bool if_select_contact_config =
-                this->pruning_check(x, env_mode.head(envs.size()), v_b, envs, selected_contact_config);
+                this->pruning_check(x, env_mode.head(envs.size()), v_b, envs, 100, &selected_contact_idxes);
             if (if_select_contact_config == -1)
             {
                 std::cout << "Cannot find contact config in forward_integration" << std::endl;
                 break;
             }
+            selected_fingertips = retrieve_elements<ContactPoint>(this->object_surface_pts, selected_contact_idxes);
         }
         else
         {
-            bool pass_pruning_check = this->robot_contact_feasible_check(
-                selected_contact_config, x, env_mode.head(envs.size()), v_b, envs);
+            bool pass_pruning_check = this->point_contact_feasibility_check(selected_fingertips, x, env_mode.head(envs.size()), v_b, envs);
             if (!pass_pruning_check)
             {
                 break;
@@ -852,7 +894,7 @@ void WholeHandTASK::sample_level2_action(const WholeHandTASK::State2 &state, Who
     std::vector<State2::Action> sampled_actions;
     std::vector<double> probs;
 
-    this->sample_likely_feasible_actions(state, max_sample, &sampled_actions, &probs);
+    this->sample_likely_actions(state, max_sample, &sampled_actions, &probs);
 
     std::default_random_engine randgen;
     std::discrete_distribution<int> distribution{probs.begin(), probs.end()};
@@ -862,19 +904,15 @@ void WholeHandTASK::sample_level2_action(const WholeHandTASK::State2 &state, Who
         int ik_sample = distribution(randgen);
         new_action = sampled_actions[ik_sample];
 
-        ContactConfig contact_config(state);
-        contact_config.apply_action(new_action);
+        ContactConfig pre_contact_config(state);
+        ContactConfig next_contact_config(state);
+        next_contact_config.apply_action(new_action);
 
-        // is valid transition & valid for at least one timestep
-        bool is_contact_config_valid = this->is_contact_config_valid(contact_config, new_action.timestep);
-        if (is_contact_config_valid)
+        // Only does rough ik check here
+        if_valid = this->rough_ik_check(next_contact_config, this->saved_object_trajectory[action.timestep].m_pose);
+        if (if_valid)
         {
-            bool is_transition_valid = this->is_valid_transition(contact_config, this->saved_object_trajectory[new_action.timestep].m_pose, this->saved_object_trajectory[new_action.timestep].envs, new_action);
-            if (is_transition_valid)
-            {
-                if_valid = true;
-                break;
-            }
+            break;
         }
     }
 
@@ -885,7 +923,7 @@ void WholeHandTASK::sample_level2_action(const WholeHandTASK::State2 &state, Who
     else
     {
         // set to no action
-        action.timestep = -1;
+        action = State2::no_action();
     }
     return;
 }
@@ -893,12 +931,13 @@ void WholeHandTASK::sample_level2_action(const WholeHandTASK::State2 &state, Who
 int WholeHandTASK::max_forward_timestep(const WholeHandTASK::State2 &state)
 {
     int t_max;
-    ContactConfig contact_config(state);
+    std::vector<ContactPoint> fingertips = retrieve_elements<ContactPoint>(this->object_surface_pts, state.contact_idxes);
 
     for (t_max = state.timestep; t_max < this->saved_object_trajectory.size();
          ++t_max)
     {
-        bool is_feasible = this->is_contact_config_valid(contact_config, t_max);
+        bool is_feasible = this->is_point_contacts_valid_forward(fingertips, t_max);
+        // bool is_feasible = this->is_contact_config_valid(contact_config, t_max);
         if (!is_feasible)
         {
             break;
@@ -1088,8 +1127,8 @@ void WholeHandTASK::clear_saved_object_trajectory()
 // ------------------- helper functions -------------------
 
 int WholeHandTASK::neighbors_on_the_same_manifold(const Vector7d &q,
-                                                  std::vector<ContactPoint> envs,
-                                                  std::vector<VectorXi> env_modes,
+                                                  const std::vector<ContactPoint> &envs,
+                                                  const std::vector<VectorXi> &env_modes,
                                                   double dist_thr)
 {
     int num = 0;
@@ -1109,7 +1148,7 @@ int WholeHandTASK::neighbors_on_the_same_manifold(const Vector7d &q,
     return num;
 }
 
-bool WholeHandTASK::contact_force_feasible_check(std::vector<ContactPoint> object_contact_points, const Vector7d &x, const VectorXi &cs_mode,
+bool WholeHandTASK::contact_force_feasible_check(const std::vector<ContactPoint> &object_contact_points, const Vector7d &x, const VectorXi &cs_mode,
                                                  const Vector6d &v, const std::vector<ContactPoint> &envs)
 {
     std::vector<ContactPoint> mnps;
@@ -1147,121 +1186,22 @@ bool WholeHandTASK::contact_force_feasible_check(std::vector<ContactPoint> objec
     return dynamic_feasibility;
 }
 
-bool WholeHandTASK::robot_contact_feasible_check(
-    const ContactConfig &contact_config, const Vector7d &x, const VectorXi &cs_mode,
-    const Vector6d &v, const std::vector<ContactPoint> &envs)
+bool WholeHandTASK::point_contact_feasibility_check(const std::vector<ContactPoint> &fingertips,
+                                                    const Vector7d &x, const VectorXi &cs_mode,
+                                                    const Vector6d &v,
+                                                    const std::vector<ContactPoint> &envs)
 {
-    VectorXi env_mode = mode_from_velocity(v, envs, this->cons.get());
-    env_mode.head(envs.size()) = cs_mode;
 
-    bool if_config_possible = (this->rough_ik_check(contact_config, x) && this->rough_collision_check(contact_config, x));
-
-    if (!if_config_possible)
+    bool if_force = this->contact_force_feasible_check(fingertips, x, cs_mode, v, envs);
+    if (!if_force)
     {
         return false;
     }
-
-    bool dynamic_feasibility = false;
-
-    std::vector<ContactPoint> fingertips;
-    for (int k : contact_config.contact_idxes)
-    {
-        fingertips.push_back(this->object_surface_pts[k]);
-    }
-    dynamic_feasibility = this->contact_force_feasible_check(fingertips, x, env_mode, v, envs);
-
-    return dynamic_feasibility;
+    bool if_collision = this->rough_collision_check(fingertips, x);
+    return !if_collision;
 }
 
-bool WholeHandTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
-                                  const std::vector<ContactPoint> &envs, ContactConfig &contact_config, int max_sample)
-{
-
-    std::vector<ContactConfig> sampled_contact_configs;
-    std::vector<double> probs;
-    this->sample_likely_contact_configs(x, cs_mode, v, envs, max_sample, &sampled_contact_configs,
-                                        &probs);
-
-    if (sampled_contact_configs.size() == 0)
-    {
-        return false;
-    }
-
-    bool if_feasible = false;
-
-    std::default_random_engine randgen;
-    std::discrete_distribution<int> distribution{probs.begin(), probs.end()};
-
-    for (int k_sample = 0; k_sample < sampled_contact_configs.size(); k_sample++)
-    {
-        int ik_sample = distribution(randgen);
-        // if_feasible = this->robot_contact_feasible_check(sampled_contact_configs[ik_sample], x, cs_mode, v, envs);
-        if_feasible = this->rough_ik_check(sampled_contact_configs[ik_sample], x);
-        if (if_feasible)
-        {
-            contact_config = sampled_contact_configs[ik_sample];
-            return true;
-        }
-    }
-    return false;
-}
-
-bool WholeHandTASK::pruning_check_w_transition(const Vector7d &x, const Vector7d &x_pre,
-                                               const VectorXi &cs_mode, const Vector6d &v,
-                                               const std::vector<ContactPoint> &envs,
-                                               const std::vector<ContactPoint> &envs_pre,
-                                               ContactConfig &contact_config,
-                                               int max_sample)
-{
-
-    Vector6d v_pre = compute_rbvel_body(x_pre, x);
-    VectorXi cs_mode_pre = mode_from_velocity(v_pre, envs_pre, this->cons.get())
-                               .head(envs_pre.size());
-
-    std::vector<ContactConfig> sampled_contact_configs;
-    std::vector<double> probs;
-    this->sample_likely_contact_configs(x_pre, cs_mode_pre, v_pre, envs_pre, max_sample, &sampled_contact_configs,
-                                        &probs);
-
-    if (sampled_contact_configs.size() == 0)
-    {
-        return false;
-    }
-
-    bool if_feasible = false;
-
-    std::default_random_engine randgen;
-    std::discrete_distribution<int> distribution{probs.begin(), probs.end()};
-
-    for (int k_sample = 0; k_sample < sampled_contact_configs.size(); k_sample++)
-    {
-        int ik_sample = distribution(randgen);
-        ContactConfig pre_contact_config;
-        // TODO: replace this with ik check
-        // if_feasible = this->robot_contact_feasible_check(sampled_contact_configs[ik_sample], x, cs_mode, v, &envs);
-        if_feasible = this->rough_ik_check(sampled_contact_configs[ik_sample], x);
-        if (if_feasible)
-        {
-            pre_contact_config = sampled_contact_configs[ik_sample];
-        }
-        else
-        {
-            continue;
-        }
-        State2::Action action;
-        bool is_action_sampled = sample_a_feasible_action(x, pre_contact_config, x_pre, action, max_sample);
-        if (is_action_sampled)
-        {
-            pre_contact_config.apply_action(action);
-            contact_config = pre_contact_config;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool WholeHandTASK::is_contact_config_valid(const ContactConfig &contact_config,
-                                            int timestep)
+bool WholeHandTASK::is_point_contacts_valid_forward(const std::vector<ContactPoint> &fingertips, int timestep)
 {
     Vector7d x_object = this->saved_object_trajectory[timestep].m_pose;
     Vector7d x_object_next;
@@ -1304,15 +1244,14 @@ bool WholeHandTASK::is_contact_config_valid(const ContactConfig &contact_config,
         v.setZero();
     }
 
-    bool next_feasibility = this->rough_ik_check(contact_config, x_object_next) &&
-                            this->rough_collision_check(contact_config, x_object_next);
+    bool next_feasibility = !this->rough_collision_check(fingertips, x_object_next);
 
     if (!next_feasibility)
     {
         return false;
     }
 
-    bool current_feasibility = this->robot_contact_feasible_check(contact_config, x_object, reference_cs_mode, v, this->saved_object_trajectory[timestep].envs);
+    bool current_feasibility = this->point_contact_feasibility_check(fingertips, x_object, reference_cs_mode, v, this->saved_object_trajectory[timestep].envs);
     if (!current_feasibility)
     {
         return false;
@@ -1321,12 +1260,85 @@ bool WholeHandTASK::is_contact_config_valid(const ContactConfig &contact_config,
     return true;
 }
 
+bool WholeHandTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
+                                  const std::vector<ContactPoint> &envs, int max_sample, std::vector<int> *sampled_idxes)
+{
+    for (int n_sample = 0; n_sample < max_sample; n_sample++)
+    {
+        int n_contacts = randi(this->number_of_robot_contacts);
+        double prob;
+        std::vector<int> idxes;
+        bool if_sampled = this->sample_a_feasible_point_contacts_set(x, cs_mode, v, envs, n_contacts, &idxes, prob);
+        if (if_sampled)
+        {
+            if(sampled_idxes != nullptr)
+            {
+                *sampled_idxes = idxes;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+bool WholeHandTASK::pruning_check_w_transition(const Vector7d &x, const Vector7d &x_pre,
+                                               const VectorXi &cs_mode, const Vector6d &v,
+                                               const std::vector<ContactPoint> &envs,
+                                               const std::vector<ContactPoint> &envs_pre,
+                                               ContactConfig &contact_config,
+                                               int max_sample)
+{
+
+    // TODO: to be implemented
+    return true;
+}
+
+bool WholeHandTASK::sample_a_feasible_point_contacts_set(
+    const Vector7d &object_pose, const VectorXi &cs_mode, const Vector6d &v,
+    const std::vector<ContactPoint> &envs, int n_contacts,
+    std::vector<int> *sampled_idxes, double &prob, std::vector<int> *existing_idxes)
+{
+    std::vector<int> sampled_contact_idxes;
+    for (int i = 0; i < n_contacts; i++)
+    {
+        int k = randi(this->object_surface_pts.size());
+        sampled_contact_idxes.push_back(k);
+    }
+
+    std::vector<int> all_contact_idxes = sampled_contact_idxes;
+    if (existing_idxes != nullptr)
+    {
+        all_contact_idxes.insert(all_contact_idxes.end(), existing_idxes->begin(), existing_idxes->end());
+    }
+
+    std::vector<ContactPoint> all_fingertips = retrieve_elements<ContactPoint>(this->object_surface_pts, all_contact_idxes);
+
+    // Points should not be too close from each other (> radius)
+    bool is_close = is_too_close(all_fingertips, 2.5 * this->robot->getPatchContactRadius());
+    if (is_close)
+    {
+        return false;
+    }
+
+    bool if_force_feasible = this->contact_force_feasible_check(all_fingertips, object_pose, cs_mode, v, envs);
+    if (!if_force_feasible)
+    {
+        return false;
+    }
+    bool if_rough_collision = this->rough_collision_check(all_fingertips, object_pose);
+    if (if_rough_collision)
+    {
+        return false;
+    }
+    prob = 1.0;
+    *sampled_idxes = sampled_contact_idxes;
+    return true;
+}
+
 void WholeHandTASK::sample_likely_contact_configs(
     const Vector7d &object_pose, const VectorXi &cs_mode, const Vector6d &v,
     const std::vector<ContactPoint> &envs, int max_sample, std::vector<ContactConfig> *sampled_actions, std::vector<double> *probs)
 {
-    // TODO: test it
-
     // Pipeline
     // 1. Sample number of contact points
     // 2. Sample contact points that are feasible in force
@@ -1334,164 +1346,38 @@ void WholeHandTASK::sample_likely_contact_configs(
     // 3.1 Option 1: use robot->ifConsiderPartPairs
     // 3.2 Option 2: Sample a hand config around the object pose, find nearest hand segments; check ifConsiderPartPairs
 
-    int n_sample = 0;
-
-    int max_part_sample = this->robot->allowed_part_names.size();
-
-    while (n_sample < max_sample)
+    for (int n_sample = 0; n_sample < max_sample; n_sample++)
     {
         n_sample++;
 
         // 1. Sample number of contact points
         int n_contacts = randi(this->robot->maximum_simultaneous_contact);
 
-        // 2. Sample contact points that are feasible in force
-        // TODO: add rought collision check for fingertips
+        // 2. Sample contact points that are feasible in force & collision & not too close
         std::vector<ContactPoint> sampled_fingertips;
         std::vector<int> sampled_contact_idxes;
-        for (int i = 0; i < n_contacts; i++)
+        double prob;
+        bool if_sampled_fingertips = this->sample_a_feasible_point_contacts_set(object_pose, cs_mode, v, envs, n_contacts, &sampled_contact_idxes, prob);
+        if (if_sampled_fingertips)
         {
-            int k = randi(this->object_surface_pts.size());
-            sampled_contact_idxes.push_back(k);
-            sampled_fingertips.push_back(this->object_surface_pts[k]);
+            sampled_fingertips = retrieve_elements<ContactPoint>(this->object_surface_pts, sampled_contact_idxes);
         }
-        // Points should not be too close from each other (> radius)
-        bool is_close = is_too_close(sampled_fingertips, 2.5 * this->robot->getPatchContactRadius());
-        if (is_close)
-        {
-            continue;
-        }
-
-        bool if_force_feasible = this->contact_force_feasible_check(sampled_fingertips, object_pose, cs_mode, v, envs);
-        if (!if_force_feasible)
+        else
         {
             continue;
         }
 
         // 3. Sample corresponding hand segments
 
-        int sample_option = 2;
+        std::vector<int> part_idxes;
 
-        if (sample_option == 1) // 3.1 Option 1: use robot->ifConsiderPartPairs
+        bool if_sampled_hand_segments = this->sample_hand_segments(sampled_fingertips, object_pose, &part_idxes);
+        if (if_sampled_hand_segments)
         {
+            std::vector<std::string> sampled_segments = retrieve_elements<std::string>(this->robot->allowed_part_names, part_idxes);
 
-            std::vector<int> part_idxs;
-            for (int i_contact = 0; i_contact < n_contacts; i_contact++)
-            {
-                // select part for i_th object contact
-                bool is_valid_part = false;
-
-                int n_part_sample = 0;
-
-                int part_idx;
-
-                while ((!is_valid_part) && (n_part_sample < max_part_sample))
-                {
-                    n_part_sample++;
-
-                    part_idx = randi(this->robot->allowed_part_names.size());
-
-                    is_valid_part = true;
-
-                    // check if part_idx for ith contact is a valid pair for each previously selected part
-                    for (int j_contact = 0; j_contact < i_contact; j_contact++)
-                    {
-                        double d_check = (sampled_fingertips[i_contact].p - sampled_fingertips[j_contact].p).norm();
-
-                        bool is_valid_pair = this->robot->ifConsiderPartPairs(part_idx, part_idxs[j_contact], d_check);
-
-                        if (!is_valid_pair)
-                        {
-                            is_valid_part = false;
-                            break;
-                        }
-                    }
-                }
-                if (is_valid_part)
-                {
-                    part_idxs.push_back(part_idx);
-                }
-                else
-                {
-                    break;
-                }
-            }
-            if (part_idxs.size() != n_contacts)
-            {
-                continue;
-            }
-            else
-            {
-                std::vector<std::string> sampled_segments;
-                for (int i = 0; i < part_idxs.size(); i++)
-                {
-                    sampled_segments.push_back(this->robot->allowed_part_names[part_idxs[i]]);
-                }
-                sampled_actions->push_back(ContactConfig(sampled_segments, sampled_contact_idxes));
-                probs->push_back(1.0);
-            }
-        }
-
-        else // 3.2 Option 2: Sample a hand config around the object pose, find nearest hand segments; check ifConsiderPartPairs
-        {
-
-            int max_sample_config = 10;
-            int n_sample_config = 0;
-
-            while (n_sample_config < max_sample_config){
-                n_sample_config ++;
-                VectorXd random_config = this->robot->random_sample_config();
-                random_config.head(3) = pose7d_to_pose6d(object_pose).head(3);
-                // Get points on the hand
-                std::vector<int> part_idxs;
-                std::vector<std::string> sampled_segments;
-
-                std::vector<ContactPoint> part_points = this->robot->get_points_in_world(this->robot->allowed_part_names, this->robot->allowed_part_point_idxes, random_config);
-
-                for (int i_contact = 0; i_contact < n_contacts; i_contact++)
-                {
-                    int closest_part = -1;
-                    double closest_dist = 1e10;
-                    for (int i_part = 0; i_part < part_points.size(); i_part++)
-                    {
-                        double d_check = (sampled_fingertips[i_contact].p - part_points[i_part].p).norm();
-                        if (d_check < closest_dist)
-                        {
-                            // check if i_part is a valid part for all previously selected part
-                            bool is_valid_part = true;
-
-                            for (int j_contact = 0; j_contact < i_contact; j_contact++)
-                            {
-                                bool is_valid_pair = this->robot->ifConsiderPartPairs(i_part, part_idxs[j_contact], d_check);
-
-                                if (!is_valid_pair)
-                                {
-                                    is_valid_part = false;
-                                    break;
-                                }
-                            }
-                            if (is_valid_part){
-                                closest_dist = d_check;
-                                closest_part = i_part;
-                            }
-                        }
-                    }
-                    if (closest_part == -1){
-                        // start over, a new random sample config
-                        break;
-                    } else {       
-                        sampled_segments.push_back(this->robot->allowed_part_names[closest_part]);
-                        part_idxs.push_back(closest_part);
-                    }
-                }
-
-                // if find a valid config, add to sampled_actions and leave
-                if (part_idxs.size() == n_contacts){
-                    sampled_actions->push_back(ContactConfig(sampled_segments, sampled_contact_idxes));
-                    probs->push_back(1.0);
-                    break;
-                }
-            }
+            sampled_actions->push_back(ContactConfig(sampled_segments, sampled_contact_idxes));
+            probs->push_back(1.0);
         }
     }
 }
@@ -1500,22 +1386,267 @@ bool WholeHandTASK::rough_ik_check(const ContactConfig &contact_config, const Ve
 {
     // TODO: to be improved
     std::vector<int> part_p_idxes;
-    for (auto seg: contact_config.hand_segments){
-        for (int k = 0; k < this->robot->allowed_part_names.size(); k++){
-            if (seg == this->robot->allowed_part_names[k]){
+    for (auto seg : contact_config.hand_segments)
+    {
+        for (int k = 0; k < this->robot->allowed_part_names.size(); k++)
+        {
+            if (seg == this->robot->allowed_part_names[k])
+            {
                 part_p_idxes.push_back(this->robot->allowed_part_point_idxes[k]);
                 break;
             }
         }
     }
 
-    std::vector<ContactPoint> object_contact_points;
-    for (int k : contact_config.contact_idxes)
-    {
-        object_contact_points.push_back(this->object_surface_pts[k]);
-    }
+    std::vector<ContactPoint> object_contact_points = retrieve_elements<ContactPoint>(this->object_surface_pts, contact_config.contact_idxes);
 
     bool if_ik = this->robot->roughIKsolutions(contact_config.hand_segments, part_p_idxes, object_contact_points, object_pose, rough_ik_solutions);
 
     return if_ik;
+}
+
+bool WholeHandTASK::sample_hand_segments(const std::vector<ContactPoint> &fingertips, const Vector7d &object_pose, std::vector<int> *part_idxes)
+{
+    int n_contacts = fingertips.size();
+    int max_sample = 10;
+
+    int sample_option = 1;
+
+    if (sample_option == 1) // Option 1: use robot->ifConsiderPartPairs
+    {
+        for (int i_contact = part_idxes->size(); i_contact < n_contacts; i_contact++)
+        {
+            // select part for i_th object contact
+            bool is_valid_part = false;
+
+            int n_part_sample = 0;
+
+            int part_idx;
+
+            while ((!is_valid_part) && (n_part_sample < max_sample))
+            {
+                n_part_sample++;
+
+                part_idx = randi(this->robot->allowed_part_names.size());
+
+                is_valid_part = true;
+
+                // check if part_idx for ith contact is a valid pair for each previously selected part
+                for (int j_contact = 0; j_contact < i_contact; j_contact++)
+                {
+                    double d_check = (fingertips[i_contact].p - fingertips[j_contact].p).norm();
+
+                    bool is_valid_pair = this->robot->ifConsiderPartPairs(part_idx, part_idxes->at(j_contact), d_check);
+
+                    if (!is_valid_pair)
+                    {
+                        is_valid_part = false;
+                        break;
+                    }
+                }
+            }
+            if (is_valid_part)
+            {
+                part_idxes->push_back(part_idx);
+            }
+            else
+            {
+                return false;
+            }
+        }
+        if (part_idxes->size() == n_contacts)
+        {
+            return true;
+        }
+        return false;
+    }
+    else // Option 2: Sample a hand config around the object pose, find nearest hand segments; check ifConsiderPartPairs
+    {
+        int n_sample_config = 0;
+
+        while (n_sample_config < max_sample)
+        {
+            n_sample_config++;
+            VectorXd random_config = this->robot->random_sample_config();
+            random_config.head(3) = object_pose.head(3);
+            random_config.head(3) += Vector3d::Random();
+
+            std::vector<int> new_part_idxes;
+
+            new_part_idxes.insert(new_part_idxes.end(), part_idxes->begin(), part_idxes->end());
+
+            // Get points on the hand
+            std::vector<ContactPoint> part_points = this->robot->get_points_in_world(this->robot->allowed_part_names, this->robot->allowed_part_point_idxes, random_config);
+
+            for (int i_contact = part_idxes->size(); i_contact < n_contacts; i_contact++)
+            {
+                int closest_part = -1;
+                double closest_dist = 1e10;
+
+                for (int i_part = 0; i_part < part_points.size(); i_part++)
+                {
+                    double d_check = (fingertips[i_contact].p - part_points[i_part].p).norm();
+                    if (d_check < closest_dist)
+                    {
+                        // check if i_part is a valid part for all previously selected part
+                        bool is_valid_part = true;
+
+                        for (int j_contact = 0; j_contact < i_contact; j_contact++)
+                        {
+                            bool is_valid_pair = this->robot->ifConsiderPartPairs(i_part, new_part_idxes[j_contact], d_check);
+
+                            if (!is_valid_pair)
+                            {
+                                is_valid_part = false;
+                                break;
+                            }
+                        }
+                        if (is_valid_part)
+                        {
+                            closest_dist = d_check;
+                            closest_part = i_part;
+                        }
+                    }
+                }
+                if (closest_part == -1)
+                {
+                    // start over, a new random sample config
+                    break;
+                }
+                else
+                {
+                    new_part_idxes.push_back(closest_part);
+                }
+            }
+
+            if (new_part_idxes.size() == n_contacts)
+            {
+                part_idxes->insert(part_idxes->end(), new_part_idxes.begin() + part_idxes->size(), new_part_idxes.end());
+                return true;
+            }
+        }
+        return false;
+    }
+    return false;
+}
+
+void WholeHandTASK::sample_likely_actions(const WholeHandTASK::State2 &state, int max_sample,
+                                          std::vector<WholeHandTASK::State2::Action> *sampled_actions,
+                                          std::vector<double> *probs)
+{
+    // // TODO: to be implemented
+    // double prob_max = 0.5;
+
+    // int max_subsample = 10;
+
+    // for (int n_sample = 0; n_sample < max_sample; n_sample++)
+    // {
+
+    //     bool is_sampled = false;
+
+    //     // 1. Sampled the timestep t: prob_max of being t_max + 1, else (state.timestep, t_max]
+    //     int t = select_timestep_with_prob(this, state, prob_max);
+
+    //     // 2. Sample a motion type from {"relocate", "roll", "slide", "new", "release"}
+    //     // 3. Inside every motion type, select hand_segments and contact point idxes
+    //     std::string motion_type = this->motion_types[randi(this->motion_types.size())];
+
+    //     std::vector<int> contact_idxes;
+    //     std::vector<std::string> hand_segments;
+
+    //     if (motion_type == "slide")
+    //     {
+    //         // TODO: to be implemented
+    //         continue;
+    //     }
+    //     else if (motion_type == "roll")
+    //     {
+    //     }
+    //     else if (motion_type == "relocate")
+    //     {
+    //     }
+    //     else if (motion_type == "new")
+    //     {
+    //         for (int n_subsample = 0; n_subsample < max_subsample; n_subsample++)
+    //         {
+    //             // 1. number of new contacts
+    //             int n_new = 1 + randi(this->robot->maximum_simultaneous_contact - state.contact_idxes.size() - 1);
+    //             // 2. sample new contact point idxes, feasible in if_contact_valid (force, rough collision check, valid to go one timestep further)
+    //             std::vector<ContactPoint> all_fingertips;
+    //             std::vector<int> all_contact_idxes = state.contact_idxes;
+
+    //             for (auto k : state.contact_idxes)
+    //             {
+    //                 all_fingertips.push_back(this->object_surface_pts[k]);
+    //             }
+    //             std::vector<int> new_contact_idxes;
+    //             for (int i = 0; i < n_new; i++)
+    //             {
+    //                 int k = randi(this->object_surface_pts.size());
+    //                 new_contact_idxes.push_back(k);
+    //                 all_fingertips.push_back(this->object_surface_pts[k]);
+    //             }
+
+    //             bool is_close = is_too_close(all_fingertips, 2.5 * this->robot->getPatchContactRadius());
+    //             if (is_close)
+    //             {
+    //                 continue;
+    //             }
+
+    //             // TODO: add rough collision check
+
+    //             // for current t, check force_feasible
+    //             bool if_force_feasible = this->contact_force_feasible_check(all_fingertips, object_pose, cs_mode, v, envs);
+    //             if (!if_force_feasible)
+    //             {
+    //                 continue;
+    //             }
+
+    //             // 3. sample hand segments
+
+    //             std::vector<int> all_part_idxes = retrieve_idxes<std::string>(this->robot->allowed_part_names, state.hand_segments);
+
+    //             bool if_sampled_hand_segments = this->sample_hand_segments(all_fingertips, object_pose, &all_part_idxes);
+
+    //             if (!if_sampled_hand_segments)
+    //             {
+    //                 continue;
+    //             }
+
+    //             // success sampled, break
+    //             for (int i_new = 0; i_new < n_new; i_new++)
+    //             {
+    //                 contact_idxes.push_back(new_contact_idxes[i_new]);
+    //                 hand_segments.push_back(this->robot->allowed_part_names[all_part_idxes[i_new] + state.contact_idxes.size()]);
+    //             }
+    //             is_sampled = true;
+    //             break;
+    //         }
+    //     }
+    //     else if (motion_type == "release")
+    //     {
+    //         // 1. number of contacts to release
+    //         int n_release = 1 + randi(state.contact_idxes.size() - 1);
+    //         // 2. sample contact point idxes to release, feasible in force balance or force, rough collision check, not required to be valid to go one timestep further
+
+    //         // 3. sample hand segments
+    //     }
+    //     else
+    //     {
+    //         std::cout << "Unknown motion type: " << motion_type << std::endl;
+    //         exit(1);
+    //     }
+
+    //     if (is_sampled)
+    //     {
+    //         State2::Action action;
+    //         action.contact_idxes = contact_idxes;
+    //         action.hand_segments = hand_segments;
+    //         for (int kk = 0; kk < contact_idxes.size(); kk++)
+    //         {
+    //             action.motion_types.push_back(motion_type);
+    //         }
+    //         action.timestep = t;
+    //     }
+    // }
 }

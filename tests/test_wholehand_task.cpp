@@ -47,6 +47,12 @@ int main(int argc, char *argv[])
 
     task->initialize();
 
+    // --- Test rough collision check ---
+    std::vector<ContactPoint> collision_fingertips;
+    collision_fingertips.push_back(ContactPoint(Vector3d(0,0,0), Vector3d(0,0,1)));
+
+    std::cout << "Rough collision check " << task->rough_collision_check(collision_fingertips, task->start_object_pose) << std::endl;
+
     // --- Test sample likely contact configs ---
     std::vector<ContactPoint> envs;
     task->m_world->getObjectContacts(&envs,task->start_object_pose);
@@ -56,13 +62,15 @@ int main(int argc, char *argv[])
     v << 1,0,0,0,0,0;
     std::vector<WholeHandTASK::ContactConfig> sampled_actions;
     std::vector<double> probs;
-    task->sample_likely_contact_configs(task->start_object_pose, mode, v, envs, 100, &sampled_actions, &probs);
+    task->sample_likely_contact_configs(task->start_object_pose, mode, v, envs, 200, &sampled_actions, &probs);
     
     std::cout << "sampled_actions.size(): " << sampled_actions.size() << std::endl;
 
     std::vector<VectorXd> ik_solutions;
+    std::vector<WholeHandTASK::ContactConfig> contact_configs;
     for (auto contact_config: sampled_actions){
-        task->rough_ik_check(contact_config, task->start_object_pose, &ik_solutions);
+        bool if_ik = task->rough_ik_check(contact_config, task->start_object_pose, &ik_solutions);
+        contact_configs.push_back(contact_config);
     }
 
     std::vector<Vector7d> object_poses;
@@ -71,56 +79,27 @@ int main(int argc, char *argv[])
         object_poses.push_back(task->start_object_pose);
     }
 
-    for (auto contact_config: sampled_actions){
+    for (auto contact_config: contact_configs){
         std::cout << "contact_config: " << contact_config << std::endl;
     }
 
-    task->m_world->setPlaybackTrajectory(object_poses, ik_solutions);
+    std::vector<VectorXd> ik_and_sphere_solutions;
+    for (int k = 0; k < ik_solutions.size(); k++)
+    {
+
+        VectorXd ik_and_sphere_solution(ik_solutions[k].size() + 3*contact_configs[k].contact_idxes.size());
+        ik_and_sphere_solution.head(ik_solutions[k].size()) = ik_solutions[k];
+        for (int kk = 0; kk < contact_configs[k].contact_idxes.size(); kk++)
+        {
+            ik_and_sphere_solution.segment(ik_solutions[k].size() + 3*kk, 3) = task->object_surface_pts[contact_configs[k].contact_idxes[kk]].p;
+        }
+        ik_and_sphere_solutions.push_back(ik_and_sphere_solution);
+    }
+
+    // only show the hand
+    // task->m_world->setPlaybackTrajectory(object_poses, ik_solutions);
+    // show the hand and spheres for object contact points
+    task->m_world->setPlaybackTrajectory(object_poses, ik_and_sphere_solutions);
     task->m_world->startWindow(&argc, argv);
 
-
-//     int random_seed = config["random_seed"].as<int>();
-//     if (random_seed >= 0)
-//     {
-//         std::srand(random_seed);
-//     }
-//     else
-//     {
-//         std::srand(std::time(nullptr));
-//     }
-
-//     HMP::HierarchicalComputeOptions compute_options;
-//     load_mcts_options(compute_options, config);
-
-//     HMP::Level1MCTS<TASK::State, TASK::State2, TASK> tree(
-//         task, task->get_start_state(), compute_options);
-
-//     HMP::Node<TASK::State> *current_node = tree.search_tree();
-
-//     std::vector<TASK::State> object_trajectory;
-//     std::vector<TASK::State2> action_trajectory;
-
-//     tree.get_final_results(current_node, &object_trajectory, &action_trajectory);
-    
-//     VectorXd result = get_results(&tree, task, object_trajectory, action_trajectory,
-//                 current_node->m_value);
-    
-//     if (visualize_option == "show")
-//     {
-//         VisualizeStateTraj(task->m_world, task, object_trajectory, action_trajectory);
-//         task->m_world->startWindow(&argc, argv);
-//     }
-
-//     if ((visualize_option == "save") || (visualize_option == "save_n_show"))
-//     {
-//         std::remove(output_file.c_str());
-//         MatrixXd output_mat = get_output_object_centric(object_trajectory, action_trajectory, task);
-//         saveData(output_file, output_mat);
-//     }
-
-//     if (visualize_option == "save_n_show")
-//     {
-//         visualize_output_file_object_centric(task->m_world, output_file);
-//         task->m_world->startWindow(&argc, argv);
-//     }
 }

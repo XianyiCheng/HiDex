@@ -66,7 +66,16 @@ void DartWholeHandManipulator::Fingertips2PointContacts(const std::vector<Contac
 
 void DartWholeHandManipulator::setConfig(const VectorXd &config, const Vector7d &object_pose)
 {
-    this->bodies[0]->setPositions(config);
+    if (config.size() == this->getNumDofs()){
+        this->bodies[0]->setPositions(config);
+    } else if (config.size() > this->getNumDofs()){
+        this->bodies[0]->setPositions(config.head(this->getNumDofs()));
+        this->setSpheres(config.segment(this->getNumDofs(), config.size() - this->getNumDofs()), object_pose);
+    } else {
+        std::cout << "Error: config size is smaller than the number of dofs" << std::endl;
+        exit(1);
+    }
+    
 }
 
 VectorXd DartWholeHandManipulator::random_sample_config(double unbounded_max, double unbounded_min) const
@@ -106,6 +115,13 @@ void DartWholeHandManipulator::setupCollisionGroup(WorldPtr world)
     {
         this->mCollisionGroup->addShapeFramesOf(
             this->bodies[0]->getBodyNode(i));
+    }
+
+    this->sphereCollisionGroup = collisionEngine->createCollisionGroup();
+
+    for (int i = 0; i < this->maximum_simultaneous_contact; i++)
+    {
+        this->sphereCollisionGroup->addShapeFramesOf(this->bodies[i + 1].get());
     }
 }
 
@@ -151,6 +167,9 @@ bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &
     // TODO: need to add SDF in the optimization
     // object_contact: in the object frame, normals pointing inward
 
+    // TODO: change this temporary success threshold!!!
+    double success_threshold = 0.05;
+
     VectorXd initial_guess = (this->mJointLowerLimits + this->mJointUpperLimits) / 2.0;
     for (int i = 0; i < initial_guess.size(); i++)
     {
@@ -170,22 +189,23 @@ bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &
 
     // For each hand pose, compute the solution
 
-    // TODO: need to filter out optimal values that are too large.
     optimizer->solve();
     std::pair<double, VectorXd> solution = optimizer->getSolution();
     std::cout << "Value: " << solution.first << std::endl;
     std::cout << "Solution: " << solution.second.transpose() << std::endl;
+
+    // Filter out optimal values that are too large.
+    bool if_success = solution.first < success_threshold;
+
     if (rough_ik_solutions != nullptr)
     {
-        if (solution.second.norm() > 1e-6)
+        if (if_success)
         {
-            // TODO: change this temporary threshold!!!
-            // if (solution.first < 0.1)
-            // {
             rough_ik_solutions->push_back(solution.second);
-            // }
         }
     }
+
+    return if_success;
 }
 
 void DartWholeHandManipulator::preprocess(const std::vector<std::string> &allowed_part_names, const std::vector<int> &allowed_part_point_idxes, int maximum_simultaneous_contact)
@@ -226,6 +246,17 @@ void DartWholeHandManipulator::preprocess(const std::vector<std::string> &allowe
     //         std::cout << "Distance between " << allowed_part_names[i] << " and " << allowed_part_names[j] << " is " << d << std::endl;
     //     }
     // }
+
+    if (!this->if_spheres_added)
+    {
+        for (int i = 0; i < this->maximum_simultaneous_contact; i++)
+        {
+            SkeletonPtr ball = createFreeBall("ball_" + std::to_string(i), this->patch_contact_radius,
+                                              Vector3d(0.3, 0.3, 0.8));
+            this->addBody(ball);
+        }
+        this->if_spheres_added = true;
+    }
 }
 
 bool DartWholeHandManipulator::ifConsiderPartPairs(int i, int j, double contact_distance)
@@ -249,4 +280,66 @@ bool DartWholeHandManipulator::ifConsiderPartPairs(int i, int j, double contact_
         return false;
     }
     return true;
+}
+
+void DartWholeHandManipulator::setSpheres(const std::vector<ContactPoint> &fingertips, const Vector7d &object_pose)
+{
+    Eigen::Matrix4d T;
+    T = pose2SE3(object_pose);
+
+    Eigen::Matrix3d R;
+    R = T.block(0, 0, 3, 3);
+    Eigen::Vector3d p;
+    p = T.block(0, 3, 3, 1);
+
+    for (int i = 0; i < this->maximum_simultaneous_contact; i++)
+    {
+        Eigen::Vector6d pos(Eigen::Vector6d::Zero());
+        if (i < fingertips.size())
+        {
+
+            pos.tail(3) = R * fingertips[i].p + p;
+        }
+        else
+        {
+            pos << 0, 0, 0, 1000, 1000, 1000;
+        }
+        this->bodies[i + 1]->setPositions(pos);
+    }
+}
+
+void DartWholeHandManipulator::setSpheres(VectorXd positions, const Vector7d &object_pose)
+{
+    int n = positions.size() / 3;
+    Eigen::Matrix4d T;
+    T = pose2SE3(object_pose);
+
+    Eigen::Matrix3d R;
+    R = T.block(0, 0, 3, 3);
+    Eigen::Vector3d p;
+    p = T.block(0, 3, 3, 1);
+
+    for (int i = 0; i < this->maximum_simultaneous_contact; i++)
+    {
+        Eigen::Vector6d pos(Eigen::Vector6d::Zero());
+        if (i < n)
+        {
+
+            pos.tail(3) = R * positions.segment(i*3, 3) + p;
+        }
+        else
+        {
+            pos << 0, 0, 0, 1000, 1000, 1000;
+        }
+        this->bodies[i + 1]->setPositions(pos);
+    }
+}
+
+bool DartWholeHandManipulator::roughCollisionCheck(const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, std::shared_ptr<DartWorld> world)
+{
+    this->setSpheres(object_contacts, object_pose);
+
+    bool if_collide = this->sphereCollisionGroup->collide(world->getEnvironmentCollisionGroup().get());
+
+    return if_collide;
 }

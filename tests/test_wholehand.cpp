@@ -7,8 +7,10 @@
 #include "../src/mechanics/manipulators/DartWholeHand.h"
 
 #include "../src/mechanics/utilities/parser.hpp"
+#ifndef _DART_WORLD
+#define _DART_WORLD
 #include "../src/mechanics/worlds/DartWorld.h"
-
+#endif
 #include "../src/mechanics/utilities/io.h"
 
 #ifndef DART_UTILS
@@ -62,6 +64,7 @@ int main(int argc, char *argv[])
     std::vector<int> allowed_part_idxes = {8150, 2375, 4329, 2649, 2375, 4329, 2649, 2375, 4329, 2649, 2456, 3602, 2114};
 
     robot->preprocess(allowed_parts, allowed_part_idxes, 5);
+
 
     // // --- Test rough IK ---
 

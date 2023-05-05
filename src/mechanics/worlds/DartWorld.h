@@ -218,6 +218,13 @@ class DartWorld: public WorldTemplate {
           return robot_ptr;
         }
 
+        std::shared_ptr<CollisionGroup> getEnvironmentCollisionGroup() const {
+          return environmentCollisionGroup;
+        }
+
+        std::shared_ptr<CollisionGroup> getObjectCollisionGroup() const {
+          return objectCollisionGroup;
+        }
 
     protected:
         WorldPtr world;

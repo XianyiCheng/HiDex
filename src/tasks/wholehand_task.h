@@ -35,12 +35,13 @@
 
 #include "../mechanics/manipulators/DartWholeHand.h"
 
-int find_part_idx(const std::vector<std::string> &x, const std::string &y);
 
-class WholeHandTASK {
+class WholeHandTASK
+{
 public:
   // same as TASK::State
-  struct State {
+  struct State
+  {
     typedef int Action;
     Vector7d m_pose;
     std::vector<ContactPoint> envs;
@@ -50,7 +51,8 @@ public:
         m_path; // the path to this state (TODO: only save this path when
                 // m_mode_idx = -1 (node type: "pose"))
 
-    static Action action_index_to_action(int action_idx) {
+    static Action action_index_to_action(int action_idx)
+    {
       Action action = action_idx;
       return action;
     }
@@ -61,7 +63,8 @@ public:
           const std::vector<Eigen::VectorXi> &modes_)
         : m_pose(pose), envs(envs_), m_mode_idx(mode_idx), modes(modes_) {}
 
-    State(const State &state_) {
+    State(const State &state_)
+    {
       // copy constructor
       m_pose = state_.m_pose;
       m_mode_idx = state_.m_mode_idx;
@@ -72,7 +75,8 @@ public:
 
     void do_action(Action action) { m_mode_idx = action; }
 
-    State &operator=(const State &state_) {
+    State &operator=(const State &state_)
+    {
       this->m_pose = state_.m_pose;
       this->m_mode_idx = state_.m_mode_idx;
       this->modes = state_.modes;
@@ -85,8 +89,10 @@ public:
     static Action no_action() { return -1; }
   };
 
-  struct State2 {
-    struct Action {
+  struct State2
+  {
+    struct Action
+    {
       int timestep = -1;
 
       // for finger relocation
@@ -103,7 +109,8 @@ public:
           : timestep(timestep_), hand_segments(hand_segments_),
             contact_idxes(contact_idxes_), motion_types(motion_types_) {}
 
-      Action &operator=(const Action &action_) {
+      Action &operator=(const Action &action_)
+      {
         this->timestep = action_.timestep;
         this->hand_segments = action_.hand_segments;
         this->contact_idxes = action_.contact_idxes;
@@ -130,26 +137,38 @@ public:
            std::vector<int> contact_idxes_)
         : timestep(t), hand_segments(hand_segments_),
           contact_idxes(contact_idxes_) {}
-    void do_action(Action action) {
+    void do_action(Action action)
+    {
       this->timestep = action.timestep;
 
-      for (int i = 0; i < action.hand_segments.size(); ++i) {
-        if (action.motion_types[i] == "release") {
-          int k = find_part_idx(this->hand_segments, action.hand_segments[i]);
+      for (int i = 0; i < action.hand_segments.size(); ++i)
+      {
+        if (action.motion_types[i] == "release")
+        {
+          auto it = std::find(this->hand_segments.begin(),
+                              this->hand_segments.end(), action.hand_segments[i]);
+          int k = it - this->hand_segments.begin();
           this->hand_segments.erase(this->hand_segments.begin() + k);
           this->contact_idxes.erase(this->contact_idxes.begin() + k);
-        } else if (action.motion_types[i] == "new") {
+        }
+        else if (action.motion_types[i] == "new")
+        {
           this->hand_segments.push_back(action.hand_segments[i]);
           this->contact_idxes.push_back(action.contact_idxes[i]);
-        } else {
-          int k = find_part_idx(this->hand_segments, action.hand_segments[i]);
+        }
+        else
+        {
+          auto it = std::find(this->hand_segments.begin(),
+                              this->hand_segments.end(), action.hand_segments[i]);
+          int k = it - this->hand_segments.begin();
           this->contact_idxes[k] = action.contact_idxes[i];
         }
       }
     }
   };
 
-  struct ContactConfig {
+  struct ContactConfig
+  {
     std::vector<std::string> hand_segments; // which hand segment
     std::vector<int>
         contact_idxes; // touches which contact point on the object surface
@@ -159,36 +178,52 @@ public:
         : hand_segments(hand_segments_), contact_idxes(contact_idxes_) {}
     ContactConfig(State2 state)
         : ContactConfig(state.hand_segments, state.contact_idxes) {}
-    ContactConfig(const ContactConfig &contact_config_) {
+    ContactConfig(const ContactConfig &contact_config_)
+    {
       this->hand_segments = contact_config_.hand_segments;
       this->contact_idxes = contact_config_.contact_idxes;
     }
 
-    void apply_action(State2::Action action) {
-      for (int i = 0; i < action.hand_segments.size(); ++i) {
-        if (action.motion_types[i] == "release") {
-          int k = find_part_idx(this->hand_segments, action.hand_segments[i]);
+    void apply_action(State2::Action action)
+    {
+      for (int i = 0; i < action.hand_segments.size(); ++i)
+      {
+        if (action.motion_types[i] == "release")
+        {
+          auto it = std::find(this->hand_segments.begin(),
+                              this->hand_segments.end(), action.hand_segments[i]);
+          int k = it - this->hand_segments.begin();
           this->hand_segments.erase(this->hand_segments.begin() + k);
           this->contact_idxes.erase(this->contact_idxes.begin() + k);
-        } else if (action.motion_types[i] == "new") {
+        }
+        else if (action.motion_types[i] == "new")
+        {
           this->hand_segments.push_back(action.hand_segments[i]);
           this->contact_idxes.push_back(action.contact_idxes[i]);
-        } else {
-          int k = find_part_idx(this->hand_segments, action.hand_segments[i]);
+        }
+        else
+        {
+
+          auto it = std::find(this->hand_segments.begin(),
+                              this->hand_segments.end(), action.hand_segments[i]);
+          int k = it - this->hand_segments.begin();
           this->contact_idxes[k] = action.contact_idxes[i];
         }
       }
     }
 
-    friend std::ostream &operator<<(std::ostream &out, const ContactConfig &c) {
-      for (int i = 0; i < c.hand_segments.size(); ++i) {
+    friend std::ostream &operator<<(std::ostream &out, const ContactConfig &c)
+    {
+      for (int i = 0; i < c.hand_segments.size(); ++i)
+      {
         out << c.hand_segments[i] << " " << c.contact_idxes[i] << " ";
       }
       return out;
     }
   };
 
-  struct SearchOptions {
+  struct SearchOptions
+  {
     // the search options for search_a_new_path using RRT
     Eigen::Vector3d x_lb;
     Eigen::Vector3d x_ub;
@@ -211,7 +246,6 @@ public:
   void set_start_and_goal(const Vector7d &start_object_pose,
                           const Vector7d &goal_object_pose);
 
-  // TODO
   void set_task_parameters(double goal_thr, double wa, double wt,
                            double charac_len, double mu_env, double mu_mnp,
                            Matrix6d object_inertia, Vector6d f_gravity,
@@ -257,15 +291,46 @@ public:
   std::vector<double>
   get_path_features(const std::vector<State> &object_path,
                     const std::vector<State2> &robot_contact_path,
-                    const std::vector<std::string> &feature_names) {
+                    const std::vector<std::string> &feature_names)
+  {
     // TODO: to be implemented
     return std::vector<double>();
   }
 
+  // ----------------------- helper functions: checks -----------------------
+
+  // roughly check ik for a contact config
+  bool rough_ik_check(const ContactConfig &contact_config,
+                      const Vector7d &object_pose,
+                      std::vector<VectorXd> *rough_ik_solutions = nullptr);
+
+  // Rough collision check for fingertips as spheres only
+  bool rough_collision_check(const std::vector<ContactPoint> &fingertips,
+                             const Vector7d &object_pose)
+  {
+    return this->robot->roughCollisionCheck(fingertips, object_pose, this->m_world);
+  }
+
+  bool
+  contact_force_feasible_check(const std::vector<ContactPoint> &object_contact_points,
+                               const Vector7d &x, const VectorXi &cs_mode,
+                               const Vector6d &v,
+                               const std::vector<ContactPoint> &envs);
+
+  bool point_contact_feasibility_check(const std::vector<ContactPoint> &fingertips,
+                                       const Vector7d &x, const VectorXi &cs_mode,
+                                       const Vector6d &v,
+                                       const std::vector<ContactPoint> &envs);
+
+  // check if the point contacts is valid for the given timestep's motion, and
+  // if is collision good to the next timestep
+  bool is_point_contacts_valid_forward(const std::vector<ContactPoint> &fingertips, int timestep);
+
   // ----------------------- helper functions -----------------------
+
   int neighbors_on_the_same_manifold(const Vector7d &q,
-                                     std::vector<ContactPoint> envs,
-                                     std::vector<VectorXi> env_modes,
+                                     const std::vector<ContactPoint> &envs,
+                                     const std::vector<VectorXi> &env_modes,
                                      double dist_thr);
 
   bool forward_integration(const Vector7d &x_start, const Vector7d &x_goal,
@@ -273,22 +338,10 @@ public:
                            const VectorXi &env_mode_,
                            std::vector<Vector7d> *path);
 
-  // roughly check ik for a contact config
-  bool rough_ik_check(const ContactConfig &contact_config,
-                      const Vector7d &object_pose,
-                      std::vector<VectorXd> *rough_ik_solutions = nullptr);
-  // Rough collision check for fingertips as spheres only
-  bool rough_collision_check(const ContactConfig &contact_config,
-                             const Vector7d &object_pose) {
-    // TODO: to be implemented
-    return true;
-  }
-
   // check if there is a good contact config exist for the given motion, save in
   // contact_config
   bool pruning_check(const Vector7d &x, const VectorXi &cs_mode,
-                     const Vector6d &v, const std::vector<ContactPoint> &envs,
-                     ContactConfig &contact_config, int max_sample = 100);
+                     const Vector6d &v, const std::vector<ContactPoint> &envs, int max_sample = 100, std::vector<int> *sampled_idxes = nullptr);
 
   // check if there is a good contact config exist for the given motion,
   // transitioning from the previous motion, save in contact_config
@@ -299,38 +352,12 @@ public:
                                   ContactConfig &contact_config,
                                   int max_sample = 100);
 
-  bool
-  contact_force_feasible_check(std::vector<ContactPoint> object_contact_points,
-                               const Vector7d &x, const VectorXi &cs_mode,
-                               const Vector6d &v,
-                               const std::vector<ContactPoint> &envs);
+  bool sample_hand_segments(const std::vector<ContactPoint> &fingertips, const Vector7d &object_pose, std::vector<int> *part_idxes);
 
-  // check if the contact config is valid for the given motion
-  bool robot_contact_feasible_check(const ContactConfig &contact_config,
-                                    const Vector7d &x, const VectorXi &cs_mode,
-                                    const Vector6d &v,
-                                    const std::vector<ContactPoint> &envs);
-
-  // check if the contact config is valid for the given timestep's motion, and
-  // if is kinematically and collision good to the next timestep
-  bool is_contact_config_valid(const ContactConfig &contact_config,
-                               int timestep);
-
-  bool is_valid_transition(const ContactConfig &previous_contact_config,
-                           const Vector7d &x,
-                           const std::vector<ContactPoint> &envs,
-                           const State2::Action &action) {
-    // TODO: to be implemented
-    return false;
-  }
-
-  bool sample_a_feasible_action(const Vector7d &object_pose,
-                                const ContactConfig &contact_config,
-                                const Vector7d &next_object_pose,
-                                State2::Action &action, int max_sample = 100) {
-    // TODO: to be implemented
-    return false;
-  }
+  bool sample_a_feasible_point_contacts_set(
+      const Vector7d &object_pose, const VectorXi &cs_mode, const Vector6d &v,
+      const std::vector<ContactPoint> &envs, int n_contacts, 
+      std::vector<int> *sampled_idxes, double &prob, std::vector<int> *existing_idxes = nullptr);
 
   // TODO: improve this function
   // sample contact configs that satisfy the rough ik and collision check
@@ -342,12 +369,9 @@ public:
   // Sample actions that satisfy the rough ik and collision check and transition
   // condition
   void
-  sample_likely_feasible_actions(const State2 &state, int max_sample,
+  sample_likely_actions(const State2 &state, int max_sample,
                                  std::vector<State2::Action> *sampled_actions,
-                                 std::vector<double> *probs) {
-    // TODO: to be implemented
-  }
-
+                                 std::vector<double> *probs);
   // properties
   double grasp_measure_charac_length = -1.0;
 
@@ -409,4 +433,6 @@ private:
   bool refine_dist = 0.0;
 
   std::shared_ptr<DartWholeHandManipulator> robot;
+
+  std::vector<std::string> motion_types = {"relocate", "roll", "slide", "new", "release"};
 };

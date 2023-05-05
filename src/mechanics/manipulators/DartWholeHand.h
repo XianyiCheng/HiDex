@@ -3,6 +3,11 @@
 #include "DartURDFManipulatorTemplate.h"
 #endif
 
+#ifndef _DART_WORLD
+#define _DART_WORLD
+#include "../worlds/DartWorld.h"
+#endif
+
 class DartWholeHandManipulator : public virtual DartURDFManipulatorTemplate
 {
 
@@ -13,6 +18,10 @@ public:
     DartWholeHandManipulator(const std::string &manipulator_folder, double patch_contact_radius);
 
     void setConfig(const VectorXd &config, const Vector7d &object_pose) override;
+
+    void setSpheres(const std::vector<ContactPoint> &fingertips, const Vector7d &object_pose);
+
+    void setSpheres(VectorXd positions, const Vector7d &object_pose);
 
     bool resampleFingers(int n_on, const VectorXd &config, const Vector7d &object_pose, const std::vector<ContactPoint> &object_surface,
                          VectorXd &new_config, std::vector<ContactPoint> *remain_fingertips) override
@@ -64,6 +73,8 @@ public:
 
     bool roughIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, std::vector<VectorXd> *rough_ik_solutions = nullptr);
 
+    bool roughCollisionCheck(const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, std::shared_ptr<DartWorld> world);
+
     void preprocess(const std::vector<std::string> &allowed_part_names, const std::vector<int> &allowed_part_point_idxes, int maximum_simultaneous_contact=-1);
 
     bool ifConsiderPartPairs(int i, int j, double contact_distance);
@@ -81,4 +92,8 @@ private:
 
     VectorXd mJointLowerLimits;
     VectorXd mJointUpperLimits;
+
+    bool if_spheres_added = false;
+
+    std::shared_ptr<CollisionGroup> sphereCollisionGroup = 0;
 };

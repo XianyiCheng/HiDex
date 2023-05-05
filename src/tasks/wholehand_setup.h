@@ -11,8 +11,8 @@
 
 #include "../mechanics/utilities/parser.hpp"
 
-#ifndef _WORLD_TEMPLATE
-#define _WORLD_TEMPLATE
+#ifndef _DART_WORLD
+#define _DART_WORLD
 #include "../mechanics/worlds/DartWorld.h"
 #endif
 

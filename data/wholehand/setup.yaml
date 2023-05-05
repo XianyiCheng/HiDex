@@ -34,12 +34,14 @@ whole_hand:
   folder_path: "/home/xianyi/Research/MCTS/data/wholehand/AllegroHand"
   radius: 0.01
   max_num_contacts: 4
-  allowed_parts: ["base_link", "link_1", "link_2", "link_3_tip", "link_5", "link_6", "link_7_tip", "link_9", "link_10", "link_11_tip", "link_14", "link_15", "link_15_tip"]
-  allowed_part_point_idxes: [8150, 2375, 4329, 2649, 2375, 4329, 2649, 2375, 4329, 2649, 2456, 3602, 2114]
+  # allowed_parts: ["base_link", "link_1", "link_2", "link_3_tip", "link_5", "link_6", "link_7_tip", "link_9", "link_10", "link_11_tip", "link_14", "link_15", "link_15_tip"]
+  # allowed_part_point_idxes: [8150, 2375, 4329, 2649, 2375, 4329, 2649, 2375, 4329, 2649, 2456, 3602, 2114]
+  allowed_parts: ["base_link", "link_2", "link_3_tip", "link_6", "link_7_tip", "link_10", "link_11_tip", "link_15_tip"]
+  allowed_part_point_idxes: [8150, 4329, 2649, 4329, 2649, 4329, 2649, 2114]
 
 
 # ---- Start and Goal Pose ----
-object_start_pose: [0,0,0.5,0,0,0,1]
+object_start_pose: [0,0,0.05,0,0,0,1]
 object_goal_pose: [-0.5, 0, 0.5, 0, 0.7071, 0, 0.7071]
 
 # ---- Run options ----
