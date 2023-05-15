@@ -35,7 +35,6 @@
 
 #include "../mechanics/manipulators/DartWholeHand.h"
 
-
 class WholeHandTASK
 {
 public:
@@ -328,6 +327,8 @@ public:
 
   // ----------------------- helper functions -----------------------
 
+  void getSavedObjectTrajectoryInfo(int timestep, Vector7d *object_pose, VectorXi *cs_mode, Vector6d *velocity, VectorXi *relocate_cs_mode, Vector6d *relocate_velocity);
+
   int neighbors_on_the_same_manifold(const Vector7d &q,
                                      const std::vector<ContactPoint> &envs,
                                      const std::vector<VectorXi> &env_modes,
@@ -356,7 +357,7 @@ public:
 
   bool sample_a_feasible_point_contacts_set(
       const Vector7d &object_pose, const VectorXi &cs_mode, const Vector6d &v,
-      const std::vector<ContactPoint> &envs, int n_contacts, 
+      const std::vector<ContactPoint> &envs, int n_contacts,
       std::vector<int> *sampled_idxes, double &prob, std::vector<int> *existing_idxes = nullptr);
 
   // TODO: improve this function
@@ -370,8 +371,14 @@ public:
   // condition
   void
   sample_likely_actions(const State2 &state, int max_sample,
-                                 std::vector<State2::Action> *sampled_actions,
-                                 std::vector<double> *probs);
+                        std::vector<State2::Action> *sampled_actions,
+                        std::vector<double> *probs);
+
+
+  std::shared_ptr<DartWholeHandManipulator> getRobot()
+  {
+    return this->robot;
+  }
   // properties
   double grasp_measure_charac_length = -1.0;
 
@@ -436,3 +443,6 @@ private:
 
   std::vector<std::string> motion_types = {"relocate", "roll", "slide", "new", "release"};
 };
+
+template <typename T>
+std::vector<T> retrieve_elements(const std::vector<T> &x, const std::vector<int> &idxes);

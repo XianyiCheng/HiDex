@@ -80,12 +80,30 @@ set(modus_libs modus_common modus_modes)
 
 add_executable(test_wholehand test_wholehand.cpp 
     ../src/mechanics/manipulators/DartWholeHand.cpp
-    ../src/mechanics/manipulators/wholehand/optimizer.cpp)
+    ../src/mechanics/manipulators/wholehand/optimizer.cpp
+    ../src/mechanics/manipulators/wholehand/sdf.cpp)
 target_link_libraries(test_wholehand PRIVATE mcts-mechanics ${dart_libs} dart-optimizer-nlopt ${YAML_LIBRARY})
 
 add_executable(test_task_wholehand test_wholehand_task.cpp 
     ../src/mechanics/manipulators/DartWholeHand.cpp
     ../src/mechanics/manipulators/wholehand/optimizer.cpp
+    ../src/mechanics/manipulators/wholehand/sdf.cpp
     ../src/tasks/wholehand_task.cpp 
     ../src/tasks/wholehand_setup.cpp)
 target_link_libraries(test_task_wholehand PRIVATE mcts-mechanics ${dart_libs} dart-optimizer-nlopt ${YAML_LIBRARY})
+
+add_executable(test_wholehand_sdf test_wholehand_sdf.cpp 
+    ../src/mechanics/manipulators/DartWholeHand.cpp
+    ../src/mechanics/manipulators/wholehand/optimizer.cpp
+    ../src/mechanics/manipulators/wholehand/sdf.cpp
+    ../src/tasks/wholehand_task.cpp 
+    ../src/tasks/wholehand_setup.cpp)
+target_link_libraries(test_wholehand_sdf PRIVATE mcts-mechanics ${dart_libs} dart-optimizer-nlopt ${YAML_LIBRARY})
+
+add_executable(test_sdf_samples test_sdf_samples.cpp 
+    ../src/mechanics/manipulators/DartWholeHand.cpp
+    ../src/mechanics/manipulators/wholehand/optimizer.cpp
+    ../src/mechanics/manipulators/wholehand/sdf.cpp
+    ../src/tasks/wholehand_task.cpp 
+    ../src/tasks/wholehand_setup.cpp)
+target_link_libraries(test_sdf_samples PRIVATE mcts-mechanics ${dart_libs} dart-optimizer-nlopt ${YAML_LIBRARY})

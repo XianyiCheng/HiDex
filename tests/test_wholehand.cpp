@@ -65,6 +65,9 @@ int main(int argc, char *argv[])
 
     robot->preprocess(allowed_parts, allowed_part_idxes, 5);
 
+    // --- Test signed distance field ---
+    double d = robot->signedDistance("base_link", Vector3d(0.0, 0.0, 0.5));
+    std::cout << "Signed distance to base_link " << d << std::endl;
 
     // // --- Test rough IK ---
 
@@ -72,24 +75,16 @@ int main(int argc, char *argv[])
     object_pose << 0, 0, 0, 0, 0, 0, 1;
 
     std::vector<ContactPoint> contact_points;
-    contact_points.push_back(ContactPoint(Vector3d(0.0, 0.0, l / 2), Vector3d(0, 0, 1)));
-    contact_points.push_back(ContactPoint(Vector3d(l / 2, 0.0, 0.0), Vector3d(1, 0, 0)));
+    contact_points.push_back(ContactPoint(Vector3d(0.0, 0.0, l / 2), Vector3d(0, 0, -1)));
+    contact_points.push_back(ContactPoint(Vector3d(l / 2, 0.0, 0.0), Vector3d(-1, 0, 0)));
 
     double d_contact = (contact_points[0].p - contact_points[1].p).norm();
 
     std::cout << "Distance between two contact points " << d_contact << std::endl;
 
-    // std::vector<std::string> allowed_parts = {"base_link", "link_3_tip", "link_7_tip", "link_11_tip", "link_15_tip"};
-    // std::vector<int> allowed_part_idxes = {8150, 2649,2649,2649, 2114};
-
-    // // std::vector<std::string> all_parts = robot->getPartNames();
-
     std::vector<VectorXd> ik_solutions;
 
-    // // robot->roughIKsolutions({"base_link", "link_7_tip"}, {8150, 2649}, contact_points, object_pose, &ik_solutions);
-
     for (int i = 0; i < allowed_parts.size(); i++)
-
     {
         for (int j = 0; j < allowed_parts.size(); j++)
         {

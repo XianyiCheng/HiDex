@@ -922,7 +922,6 @@ void WholeHandTASK::sample_level2_action(const WholeHandTASK::State2 &state, Who
     }
     else
     {
-        // set to no action
         action = State2::no_action();
     }
     return;
@@ -1271,7 +1270,7 @@ bool WholeHandTASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode, co
         bool if_sampled = this->sample_a_feasible_point_contacts_set(x, cs_mode, v, envs, n_contacts, &idxes, prob);
         if (if_sampled)
         {
-            if(sampled_idxes != nullptr)
+            if (sampled_idxes != nullptr)
             {
                 *sampled_idxes = idxes;
             }
@@ -1534,119 +1533,179 @@ void WholeHandTASK::sample_likely_actions(const WholeHandTASK::State2 &state, in
                                           std::vector<WholeHandTASK::State2::Action> *sampled_actions,
                                           std::vector<double> *probs)
 {
-    // // TODO: to be implemented
-    // double prob_max = 0.5;
+    // TODO: to be implemented
+    double prob_max = 0.5;
 
-    // int max_subsample = 10;
+    int max_subsample = 10;
 
-    // for (int n_sample = 0; n_sample < max_sample; n_sample++)
-    // {
+    for (int n_sample = 0; n_sample < max_sample; n_sample++)
+    {
 
-    //     bool is_sampled = false;
+        bool is_sampled = false;
 
-    //     // 1. Sampled the timestep t: prob_max of being t_max + 1, else (state.timestep, t_max]
-    //     int t = select_timestep_with_prob(this, state, prob_max);
+        // 1. Sampled the timestep t: prob_max of being t_max + 1, else (state.timestep, t_max]
+        int t = select_timestep_with_prob(this, state, prob_max);
 
-    //     // 2. Sample a motion type from {"relocate", "roll", "slide", "new", "release"}
-    //     // 3. Inside every motion type, select hand_segments and contact point idxes
-    //     std::string motion_type = this->motion_types[randi(this->motion_types.size())];
+        Vector7d object_pose;
+        VectorXi cs_mode;
+        Vector6d velocity;
+        VectorXi relocate_cs_mode;
+        Vector6d relocate_velocity;
 
-    //     std::vector<int> contact_idxes;
-    //     std::vector<std::string> hand_segments;
+        this->getSavedObjectTrajectoryInfo(t, &object_pose, &cs_mode, &velocity, &relocate_cs_mode, &relocate_velocity);
 
-    //     if (motion_type == "slide")
-    //     {
-    //         // TODO: to be implemented
-    //         continue;
-    //     }
-    //     else if (motion_type == "roll")
-    //     {
-    //     }
-    //     else if (motion_type == "relocate")
-    //     {
-    //     }
-    //     else if (motion_type == "new")
-    //     {
-    //         for (int n_subsample = 0; n_subsample < max_subsample; n_subsample++)
-    //         {
-    //             // 1. number of new contacts
-    //             int n_new = 1 + randi(this->robot->maximum_simultaneous_contact - state.contact_idxes.size() - 1);
-    //             // 2. sample new contact point idxes, feasible in if_contact_valid (force, rough collision check, valid to go one timestep further)
-    //             std::vector<ContactPoint> all_fingertips;
-    //             std::vector<int> all_contact_idxes = state.contact_idxes;
+        // 2. Sample a motion type from {"relocate", "roll", "slide", "new", "release"}
+        // 3. Inside every motion type, select hand_segments and contact point idxes
+        std::string motion_type = this->motion_types[randi(this->motion_types.size())];
 
-    //             for (auto k : state.contact_idxes)
-    //             {
-    //                 all_fingertips.push_back(this->object_surface_pts[k]);
-    //             }
-    //             std::vector<int> new_contact_idxes;
-    //             for (int i = 0; i < n_new; i++)
-    //             {
-    //                 int k = randi(this->object_surface_pts.size());
-    //                 new_contact_idxes.push_back(k);
-    //                 all_fingertips.push_back(this->object_surface_pts[k]);
-    //             }
+        std::vector<int> contact_idxes;
+        std::vector<std::string> hand_segments;
+        double prob;
 
-    //             bool is_close = is_too_close(all_fingertips, 2.5 * this->robot->getPatchContactRadius());
-    //             if (is_close)
-    //             {
-    //                 continue;
-    //             }
+        if (motion_type == "slide")
+        {
+            // TODO: to be implemented
+            continue;
+        }
+        else if (motion_type == "roll")
+        {
+            // TODO: need to figure out how rolling happens
+            continue;
+        }
+        else if (motion_type == "relocate")
+        {
+            int n_relocate = 1 + randi(state.contact_idxes.size() - 1);
+        }
+        else if (motion_type == "new")
+        {
+                // 1. number of new contacts
+                int n_new = 1 + randi(this->robot->maximum_simultaneous_contact - state.contact_idxes.size() - 1);
+                // 2. sample new contact point idxes, feasible in if_contact_valid (force, rough collision check, valid to go one timestep further)
+                std::vector<int> existing_contact_idxes = state.contact_idxes;
+                bool is_subsampled = this->sample_a_feasible_point_contacts_set(object_pose, cs_mode, velocity, this->saved_object_trajectory[t].envs, n_new, &contact_idxes, prob, &existing_contact_idxes);
+                
+                if (!is_subsampled)
+                {
+                    continue;
+                }
 
-    //             // TODO: add rough collision check
+                std::vector<int> all_contact_idxes;
+                all_contact_idxes.insert(all_contact_idxes.end(), state.contact_idxes.begin(), state.contact_idxes.end());
+                all_contact_idxes.insert(all_contact_idxes.end(), contact_idxes.begin(), contact_idxes.end());
 
-    //             // for current t, check force_feasible
-    //             bool if_force_feasible = this->contact_force_feasible_check(all_fingertips, object_pose, cs_mode, v, envs);
-    //             if (!if_force_feasible)
-    //             {
-    //                 continue;
-    //             }
+                std::vector<ContactPoint> all_fingertips = retrieve_elements<ContactPoint>(this->object_surface_pts, all_contact_idxes);
 
-    //             // 3. sample hand segments
+                // 3. sample hand segments
+                std::vector<int> all_part_idxes = retrieve_idxes<std::string>(this->robot->allowed_part_names, state.hand_segments);
 
-    //             std::vector<int> all_part_idxes = retrieve_idxes<std::string>(this->robot->allowed_part_names, state.hand_segments);
+                bool if_sampled_hand_segments = this->sample_hand_segments(all_fingertips, object_pose, &all_part_idxes);
 
-    //             bool if_sampled_hand_segments = this->sample_hand_segments(all_fingertips, object_pose, &all_part_idxes);
+                if (!if_sampled_hand_segments)
+                {
+                    continue;
+                }
 
-    //             if (!if_sampled_hand_segments)
-    //             {
-    //                 continue;
-    //             }
+                // success sampled, break
+                for (int i_new = 0; i_new < n_new; i_new++)
+                {
+                    hand_segments.push_back(this->robot->allowed_part_names[all_part_idxes[i_new] + state.contact_idxes.size()]);
+                }
+                is_sampled = true;
+        }
+        else if (motion_type == "release")
+        {
+            // 1. number of contacts to release
+            int n_release = 1 + randi(state.contact_idxes.size() - 1);
+            // 2. sample contact point idxes to release, feasible in force balance or force, rough collision check, not required to be valid to go one timestep further
+            std::vector<int> left_contact_idxes = state.contact_idxes;
+            for(int i_release = 0; i_release < n_release; i_release++)
+            {
+                int idx = randi(left_contact_idxes.size());
+                left_contact_idxes.erase(left_contact_idxes.begin() + idx);
+            }
+            std::vector<ContactPoint> left_fingertips = retrieve_elements<ContactPoint>(this->object_surface_pts, left_contact_idxes);
 
-    //             // success sampled, break
-    //             for (int i_new = 0; i_new < n_new; i_new++)
-    //             {
-    //                 contact_idxes.push_back(new_contact_idxes[i_new]);
-    //                 hand_segments.push_back(this->robot->allowed_part_names[all_part_idxes[i_new] + state.contact_idxes.size()]);
-    //             }
-    //             is_sampled = true;
-    //             break;
-    //         }
-    //     }
-    //     else if (motion_type == "release")
-    //     {
-    //         // 1. number of contacts to release
-    //         int n_release = 1 + randi(state.contact_idxes.size() - 1);
-    //         // 2. sample contact point idxes to release, feasible in force balance or force, rough collision check, not required to be valid to go one timestep further
+            bool is_motion_feasible = this->point_contact_feasibility_check(left_fingertips, object_pose, cs_mode, velocity, this->saved_object_trajectory[t].envs);
+            bool is_maintain_feasible = this->point_contact_feasibility_check(left_fingertips, object_pose, relocate_cs_mode, relocate_velocity, this->saved_object_trajectory[t].envs);
+            if (!is_motion_feasible || !is_maintain_feasible)
+            {
+                continue;
+            } else {
+                is_sampled = true;
+            }
+        }
+        else
+        {
+            std::cout << "Unknown motion type: " << motion_type << std::endl;
+            exit(1);
+        }
 
-    //         // 3. sample hand segments
-    //     }
-    //     else
-    //     {
-    //         std::cout << "Unknown motion type: " << motion_type << std::endl;
-    //         exit(1);
-    //     }
+        if (is_sampled)
+        {
+            State2::Action action;
+            action.contact_idxes = contact_idxes;
+            action.hand_segments = hand_segments;
+            for (int kk = 0; kk < contact_idxes.size(); kk++)
+            {
+                action.motion_types.push_back(motion_type);
+            }
+            action.timestep = t;
+        }
+    }
+}
 
-    //     if (is_sampled)
-    //     {
-    //         State2::Action action;
-    //         action.contact_idxes = contact_idxes;
-    //         action.hand_segments = hand_segments;
-    //         for (int kk = 0; kk < contact_idxes.size(); kk++)
-    //         {
-    //             action.motion_types.push_back(motion_type);
-    //         }
-    //         action.timestep = t;
-    //     }
-    // }
+void WholeHandTASK::getSavedObjectTrajectoryInfo(int timestep, Vector7d *object_pose, VectorXi *cs_mode, Vector6d *velocity, VectorXi *relocate_cs_mode, Vector6d *relocate_velocity)
+{
+
+    // check if the finger is valid to move one timestep forward
+
+    // check for the validity of timestep and timestep+1
+
+    Vector7d x_object = this->saved_object_trajectory[timestep].m_pose;
+    Vector7d x_object_next;
+    VectorXi reference_cs_mode(
+        this->saved_object_trajectory[timestep].envs.size());
+    reference_cs_mode.setZero();
+    // update to the x in the next step if timestep < total_timesteps - 1,
+    // otherwise will check for zero velocity
+    Vector6d v;
+
+    if (timestep < this->saved_object_trajectory.size() - 1)
+    {
+
+        x_object_next = this->saved_object_trajectory[timestep + 1].m_pose;
+
+        if ((this->saved_object_trajectory[timestep].m_mode_idx != -1) &&
+            (this->saved_object_trajectory[timestep].m_mode_idx <
+             this->saved_object_trajectory[timestep].modes.size()))
+        {
+            reference_cs_mode =
+                this->saved_object_trajectory[timestep]
+                    .modes[this->saved_object_trajectory[timestep].m_mode_idx];
+            VectorXi estimate_cs_mode = cs_mode_from_contacts(
+                this->saved_object_trajectory[timestep].envs,
+                this->saved_object_trajectory[timestep + 1].envs);
+
+            reference_cs_mode =
+                conservative_cs_mode(reference_cs_mode, estimate_cs_mode);
+        }
+
+        if (this->saved_object_trajectory[timestep + 1].m_path.size() > 1)
+        {
+            v = compute_rbvel_body(
+                x_object, this->saved_object_trajectory[timestep + 1].m_path[1]);
+        }
+    }
+    else
+    {
+        x_object_next = x_object;
+        v.setZero();
+    }
+
+    *object_pose = x_object;
+    *cs_mode = this->saved_object_trajectory[timestep].modes[saved_object_trajectory[timestep].m_mode_idx];
+    *velocity = v;
+    *relocate_cs_mode = reference_cs_mode;
+    *relocate_velocity = Vector6d::Zero();
+
 }

@@ -73,11 +73,19 @@ public:
 
     bool roughIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, std::vector<VectorXd> *rough_ik_solutions = nullptr);
 
+    bool roughSDFIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, const std::vector<ContactPoint> &repell_object_contacts, Vector3d box_shape, int n_sample_points, std::vector<VectorXd> *rough_ik_solutions = nullptr);
+    
     bool roughCollisionCheck(const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, std::shared_ptr<DartWorld> world);
 
     void preprocess(const std::vector<std::string> &allowed_part_names, const std::vector<int> &allowed_part_point_idxes, int maximum_simultaneous_contact=-1);
 
     bool ifConsiderPartPairs(int i, int j, double contact_distance);
+
+    double maxPenetrationDistance(const VectorXd &config, const Vector7d & object_pose, const Vector3d &object_box_shape, int n_sample_points=100000); 
+    double averagePenetrateDistance(const VectorXd &config, const Vector7d &object_pose, const Vector3d &object_box_shape, int n_sample_points=100000);
+    double maxPenetrationDistance(const VectorXd &config, const Vector7d & object_pose, const std::vector<ContactPoint> &object_surface_points, int n_sample_points=100000);
+
+    double signedDistance(const std::string &part_name, const Vector3d &p);
 
     std::vector<std::string> allowed_part_names;
     std::vector<int> allowed_part_point_idxes;
@@ -96,4 +104,6 @@ private:
     bool if_spheres_added = false;
 
     std::shared_ptr<CollisionGroup> sphereCollisionGroup = 0;
+
+    // std::vector<std::vector<int>> sampled_idxes_for_sdf;
 };

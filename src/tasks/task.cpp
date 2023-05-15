@@ -1609,7 +1609,7 @@ bool TASK::is_finger_valid(long int finger_idx, int timestep) {
   Vector7d x_object_next;
   VectorXi reference_cs_mode(
       this->saved_object_trajectory[timestep].envs.size());
-  reference_cs_mode.setOnes();
+  reference_cs_mode.setZero();
   // update to the x in the next step if timestep < total_timesteps - 1,
   // otherwise will check for zero velocity
   Vector6d v;
