@@ -38,7 +38,6 @@ int main(int argc, char *argv[])
     Vector3d box_shape(box_l[0], box_l[1], box_l[2]);
 
     // // ---- Test rough IK SDF ----
-    int n_sample = 2;
 
     Vector7d object_pose = task->start_object_pose;
     std::vector<ContactPoint> repell_contact_points;
@@ -65,17 +64,17 @@ int main(int argc, char *argv[])
     {
         std::vector<std::string> part_names = {"base_link", "link_7_tip"};
         std::vector<int> part_p_idxes = {8150, 2649};
-        task->getRobot()->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, &sdf_ik_solutions);
+        task->getRobot()->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &sdf_ik_solutions);
     }
     {
         std::vector<std::string> part_names = {"base_link", "link_3_tip"};
         std::vector<int> part_p_idxes = {8150, 2649};
-        task->getRobot()->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, &sdf_ik_solutions);
+        task->getRobot()->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &sdf_ik_solutions);
     }
     {
         std::vector<std::string> part_names = {"link_15_tip", "link_3_tip"};
         std::vector<int> part_p_idxes = {2114, 2649};
-        task->getRobot()->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, &sdf_ik_solutions);
+        task->getRobot()->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &sdf_ik_solutions);
     }
 
     std::vector<int> n_samples = {1000000, 2000, 1000, 500, 300, 200, 100, 50, 20, 10, 5, 1};

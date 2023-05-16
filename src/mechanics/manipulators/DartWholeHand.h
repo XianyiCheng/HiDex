@@ -67,25 +67,38 @@ public:
         return this->patch_contact_radius;
     }
 
-    VectorXd random_sample_config(double unbounded_max=100, double unbounded_min=-100) const;
+    VectorXd random_sample_config(double unbounded_max = 100, double unbounded_min = -100) const;
 
-    std::vector<ContactPoint> get_points_in_world(const std::vector<std::string> &part_names, const std::vector<int> & part_point_idxes, const VectorXd &config);
+    std::vector<ContactPoint> get_points_in_world(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const VectorXd &config);
 
-    bool roughIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, std::vector<VectorXd> *rough_ik_solutions = nullptr);
+    bool roughIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, const VectorXd &initial_guess_ = VectorXd::Zero(0), std::vector<VectorXd> *rough_ik_solutions = nullptr);
 
-    bool roughSDFIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, const std::vector<ContactPoint> &repell_object_contacts, Vector3d box_shape, int n_sample_points, std::vector<VectorXd> *rough_ik_solutions = nullptr);
-    
+    bool roughSDFIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, const std::vector<ContactPoint> &repell_object_contacts, Vector3d box_shape, int n_sample_points, const VectorXd &initial_guess_ = VectorXd::Zero(0), std::vector<VectorXd> *rough_ik_solutions = nullptr);
+
     bool roughCollisionCheck(const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, std::shared_ptr<DartWorld> world);
 
-    void preprocess(const std::vector<std::string> &allowed_part_names, const std::vector<int> &allowed_part_point_idxes, int maximum_simultaneous_contact=-1);
+    void preprocess(const std::vector<std::string> &allowed_part_names, const std::vector<int> &allowed_part_point_idxes, int maximum_simultaneous_contact = -1);
 
     bool ifConsiderPartPairs(int i, int j, double contact_distance);
 
-    double maxPenetrationDistance(const VectorXd &config, const Vector7d & object_pose, const Vector3d &object_box_shape, int n_sample_points=100000); 
-    double averagePenetrateDistance(const VectorXd &config, const Vector7d &object_pose, const Vector3d &object_box_shape, int n_sample_points=100000);
-    double maxPenetrationDistance(const VectorXd &config, const Vector7d & object_pose, const std::vector<ContactPoint> &object_surface_points, int n_sample_points=100000);
+    double maxPenetrationDistance(const VectorXd &config, const Vector7d &object_pose, const Vector3d &object_box_shape, int n_sample_points = 100000);
+    double averagePenetrateDistance(const VectorXd &config, const Vector7d &object_pose, const Vector3d &object_box_shape, int n_sample_points = 100000);
+    double maxPenetrationDistance(const VectorXd &config, const Vector7d &object_pose, const std::vector<ContactPoint> &object_surface_points, int n_sample_points = 100000);
 
     double signedDistance(const std::string &part_name, const Vector3d &p);
+
+    VectorXd getMiddleJointAngles()
+    {
+        VectorXd initial_guess = (this->mJointLowerLimits + this->mJointUpperLimits) / 2.0;
+        for (int i = 0; i < initial_guess.size(); i++)
+        {
+            if (std::isinf(initial_guess[i]) || std::isnan(initial_guess[i]))
+            {
+                initial_guess[i] = 0;
+            }
+        }
+        return initial_guess;
+    }
 
     std::vector<std::string> allowed_part_names;
     std::vector<int> allowed_part_point_idxes;

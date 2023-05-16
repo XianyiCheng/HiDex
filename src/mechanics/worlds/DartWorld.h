@@ -5,22 +5,22 @@
 
 #ifndef CONTACTCONSTRAINTS_H
 #define CONTACTCONSTRAINTS_H
-    #include "../contacts/contact_constraints.h"
+#include "../contacts/contact_constraints.h"
 #endif
 
 #ifndef UTILS_H
 #define UTILS_H
-    #include "../utilities/utilities.h"
+#include "../utilities/utilities.h"
 #endif
 
 #ifndef MANIPULATORS_DARTMANIPULATORTEMPLATE
 #define MANIPULATORS_DARTMANIPULATORTEMPLATE
-    #include "../manipulators/DartManipulatorTemplate.h"
+#include "../manipulators/DartManipulatorTemplate.h"
 #endif
 
 #ifndef _WORLD_TEMPLATE
 #define _WORLD_TEMPLATE
-  #include "WorldTemplate.h"
+#include "WorldTemplate.h"
 #endif
 
 using namespace dart::dynamics;
@@ -28,30 +28,34 @@ using namespace dart::simulation;
 using namespace dart::collision;
 using namespace dart::common;
 
-
-#define NOTHING  0
-#define PLAY_BACK  1
-#define SHOW_OBJECT_ALL  2
-
+#define NOTHING 0
+#define PLAY_BACK 1
+#define SHOW_OBJECT_ALL 2
 
 class DartWorldWindow : public dart::gui::glut::SimWindow
 {
 public:
   std::vector<Eigen::Vector6d> object_positions;
   std::vector<Eigen::VectorXd> robot_configs;
+  std::vector<std::string> texts;
   std::vector<ContactPoint> pts;
   SkeletonPtr object;
-  DartManipulatorTemplate* robot;
+  DartManipulatorTemplate *robot;
   std::shared_ptr<CollisionGroup> environmentCollisionGroup = 0;
   std::shared_ptr<CollisionGroup> objectCollisionGroup = 0;
   std::shared_ptr<CollisionGroup> robotCollisionGroup = 0;
   std::size_t frameCount = 0;
 
+  std::string text;
+  double text_x;
+  double text_y;
+
   int play_mode = NOTHING;
   int mDrawPoints = false;
+  bool mDrawText = false;
 
   DartWorldWindow(
-      const WorldPtr& world)
+      const WorldPtr &world)
   {
     // Set background color and alpha
 
@@ -63,8 +67,8 @@ public:
     // White
     // mBackground[0] = 1;
     // mBackground[1] = 1;
-    // mBackground[2] = 1;    
-    
+    // mBackground[2] = 1;
+
     mBackground[3] = 1;
     setWorld(world);
   }
@@ -108,10 +112,11 @@ public:
 
   void keyboard(unsigned char key, int x, int y) override
   {
-        if (key == 'a'){
-          play_mode = SHOW_OBJECT_ALL;
-        }
-        SimWindow::keyboard(key, x, y);
+    if (key == 'a')
+    {
+      play_mode = SHOW_OBJECT_ALL;
+    }
+    SimWindow::keyboard(key, x, y);
   }
 
   void drawWorld() const override
@@ -127,14 +132,19 @@ public:
   {
     glDisable(GL_LIGHTING);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    
+
+    if (mDrawText)
+    {
+      renderText(this->text_x, this->text_y, this->text);
+    }
+
     // show object contacts with the environment
     if (mShowMarkers && objectCollisionGroup && environmentCollisionGroup)
     {
       dart::collision::CollisionOption option;
       dart::collision::CollisionResult result;
       objectCollisionGroup->collide(environmentCollisionGroup.get(), option, &result);
-      for (const auto& contact : result.getContacts())
+      for (const auto &contact : result.getContacts())
       {
         Eigen::Vector3d v = contact.point;
         Eigen::Vector3d f = contact.normal / 50.0;
@@ -151,10 +161,10 @@ public:
     }
     if (mDrawPoints)
     {
-      for (const auto& pt:pts)
+      for (const auto &pt : pts)
       {
         Eigen::Vector3d v = pt.p;
-        Eigen::Vector3d f = pt.n/100;
+        Eigen::Vector3d f = pt.n / 100;
         glBegin(GL_LINES);
         glVertex3f(v[0], v[1], v[2]);
         glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);
@@ -167,75 +177,99 @@ public:
       }
     }
     drawWorld();
-  }  
+  }
 
   void timeStepping();
 
+  void renderText(double x, double y, const std::string &text)
+  {
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, glutGet(GLUT_WINDOW_WIDTH), 0, glutGet(GLUT_WINDOW_HEIGHT));
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glRasterPos2f(x, y);
+
+    for (const char &c : text)
+    {
+      glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c); // You can change the font and size here
+    }
+
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+  }
 };
 
+class DartWorld : public WorldTemplate
+{
 
+public:
+  DartManipulatorTemplate *robot_ptr;
 
-class DartWorld: public WorldTemplate {
-    
-    public:
-        DartManipulatorTemplate* robot_ptr;
-        
-        DartWorld();
-        DartWorld(const DartWorld& dw): 
-              WorldTemplate(dw), world(dw.world), window(dw.window),
-              environment(dw.environment), object(dw.object),
-              environmentCollisionGroup(dw.environmentCollisionGroup),
-              objectCollisionGroup(dw.objectCollisionGroup),
-              robotCollisionGroup(dw.robotCollisionGroup){}
+  DartWorld();
+  DartWorld(const DartWorld &dw) : WorldTemplate(dw), world(dw.world), window(dw.window),
+                                   environment(dw.environment), object(dw.object),
+                                   environmentCollisionGroup(dw.environmentCollisionGroup),
+                                   objectCollisionGroup(dw.objectCollisionGroup),
+                                   robotCollisionGroup(dw.robotCollisionGroup) {}
 
-        void addEnvironmentComponent(const SkeletonPtr& env);
+  void addText(double x, double y, const std::string &text);
 
-        void addObject(const SkeletonPtr& the_object);
+  void addEnvironmentComponent(const SkeletonPtr &env);
 
-        void addRobot(DartManipulatorTemplate* the_robot);
+  void addObject(const SkeletonPtr &the_object);
 
-        void updateObjectPose(const Vector7d & object_pose);
+  void addRobot(DartManipulatorTemplate *the_robot);
 
-        void updateRobotConfig(const Eigen::VectorXd & robot_config);
+  void updateObjectPose(const Vector7d &object_pose);
 
-        bool isRobotCollide(const Eigen::VectorXd & robot_config);
+  void updateRobotConfig(const Eigen::VectorXd &robot_config);
 
-        void getObjectContacts(std::vector<ContactPoint>* pts);
+  bool isRobotCollide(const Eigen::VectorXd &robot_config);
 
-        void getObjectContacts(std::vector<ContactPoint>* pts, const Vector7d & object_pose);
+  void getObjectContacts(std::vector<ContactPoint> *pts);
 
-        void startWindow(int* pargc, char** argv);
+  void getObjectContacts(std::vector<ContactPoint> *pts, const Vector7d &object_pose);
 
-        void setPlaybackTrajectory(const std::vector<Vector7d>& object_traj, const std::vector<VectorXd>& robot_traj);
+  void startWindow(int *pargc, char **argv);
 
-        void setObjectTrajectory(const std::vector<Vector7d>& object_traj);
+  void setPlaybackTrajectory(const std::vector<Vector7d> &object_traj, const std::vector<VectorXd> &robot_traj);
 
-        void setRobotTrajectory(const std::vector<VectorXd>& robot_traj);
+  void setPlaybackTrajectoryWithText(const std::vector<Vector7d> &object_traj, const std::vector<VectorXd> &robot_traj, const std::vector<std::string> &texts);
 
-        void setSurfacePoints(const std::vector<ContactPoint>& pts);
+  void setObjectTrajectory(const std::vector<Vector7d> &object_traj);
 
-        ManipulatorTemplate* getRobot(){
-          return robot_ptr;
-        }
+  void setRobotTrajectory(const std::vector<VectorXd> &robot_traj);
 
-        std::shared_ptr<CollisionGroup> getEnvironmentCollisionGroup() const {
-          return environmentCollisionGroup;
-        }
+  void setSurfacePoints(const std::vector<ContactPoint> &pts);
 
-        std::shared_ptr<CollisionGroup> getObjectCollisionGroup() const {
-          return objectCollisionGroup;
-        }
+  ManipulatorTemplate *getRobot()
+  {
+    return robot_ptr;
+  }
 
-    protected:
-        WorldPtr world;
-        std::shared_ptr<DartWorldWindow> window;
-        std::vector<SkeletonPtr> environment;
-        SkeletonPtr object;
-        // SkeletonPtr robot;
-        std::shared_ptr<CollisionGroup> environmentCollisionGroup = 0; 
-        std::shared_ptr<CollisionGroup> objectCollisionGroup = 0;
-        std::shared_ptr<CollisionGroup> robotCollisionGroup = 0; 
-        
+  std::shared_ptr<CollisionGroup> getEnvironmentCollisionGroup() const
+  {
+    return environmentCollisionGroup;
+  }
 
+  std::shared_ptr<CollisionGroup> getObjectCollisionGroup() const
+  {
+    return objectCollisionGroup;
+  }
+
+protected:
+  WorldPtr world;
+  std::shared_ptr<DartWorldWindow> window;
+  std::vector<SkeletonPtr> environment;
+  SkeletonPtr object;
+  // SkeletonPtr robot;
+  std::shared_ptr<CollisionGroup> environmentCollisionGroup = 0;
+  std::shared_ptr<CollisionGroup> objectCollisionGroup = 0;
+  std::shared_ptr<CollisionGroup> robotCollisionGroup = 0;
 };
-

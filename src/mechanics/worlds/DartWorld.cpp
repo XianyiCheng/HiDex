@@ -28,14 +28,23 @@ void DartWorldWindow::timeStepping()
         }
         if (robot_configs.size() > 0)
         {
-            if (object_positions.size() > 0){
+            if (object_positions.size() > 0)
+            {
                 robot->setConfig(robot_configs[int(frameCount / N)], pose6d_to_pose7d(object_positions[int(frameCount / N)]));
-            } else {
+            }
+            else
+            {
                 Vector7d x;
-                x << 0,0,0,0,0,0,1;
+                x << 0, 0, 0, 0, 0, 0, 1;
                 robot->setConfig(robot_configs[int(frameCount / N)], x);
             }
-            
+        }
+        if (this->texts.size()>0){
+            mDrawText = true;
+            this->text = this->texts[int(frameCount / N)];
+            this->text_x = 0;
+            this->text_y = 0;
+            renderText(this->text_x, this->text_y, this->text);
         }
         frameCount++;
         // SimWindow::timeStepping();
@@ -226,6 +235,22 @@ void DartWorld::setPlaybackTrajectory(const std::vector<Vector7d> &object_traj, 
     this->window->play_mode = PLAY_BACK;
 }
 
+void DartWorld::setPlaybackTrajectoryWithText(const std::vector<Vector7d> &object_traj, const std::vector<VectorXd> &robot_traj, const std::vector<std::string> &texts)
+{
+    
+    for (auto x : object_traj)
+    {
+        this->window->object_positions.push_back(pose7d_to_pose6d(x));
+    }
+    for (auto q : robot_traj)
+    {
+        this->window->robot_configs.push_back(q);
+    }
+    this->window->texts = texts;
+    
+    this->window->play_mode = PLAY_BACK;
+}
+
 void DartWorld::setObjectTrajectory(const std::vector<Vector7d> &object_traj)
 {
 
@@ -267,4 +292,12 @@ void DartWorld::setSurfacePoints(const std::vector<ContactPoint> &pts)
 {
     this->window->pts = pts;
     this->window->mDrawPoints = true;
+}
+
+void DartWorld::addText(double x, double y, const std::string &text)
+{
+    this->window->text_x = x;
+    this->window->text_y = y;
+    this->window->text = text;
+    this->window->mDrawText = true;
 }

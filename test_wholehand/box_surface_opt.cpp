@@ -18,6 +18,8 @@
 #include "../src/mechanics/dart_utils/dart_utils.h"
 #endif
 
+#include "../src/mechanics/manipulators/wholehand/optimizer.h"
+
 // Tests
 // Loading the allegro hand & visualize
 // Visualize the rough IK solutions
@@ -27,8 +29,10 @@ int main(int argc, char *argv[])
 {
     std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
     double l = 0.1;
+
+    Vector3d box_shape(l, l, l);
     SkeletonPtr object =
-        createFreeBox("object", Vector3d(l, l, l),
+        createFreeBox("object", box_shape,
                       Vector3d(0.7, 0.3, 0.3), 0.45);
     world->addObject(object);
 
@@ -44,19 +48,6 @@ int main(int argc, char *argv[])
     world->addRobot(robot.get());
 
     std::cout << "Robot has " << robot->getNumDofs() << " dofs" << std::endl;
-
-    // --- Test visualization ---
-    // std::vector<VectorXd> ik_solutions;
-    // VectorXd initial_guess(robot->getNumDofs());
-    // initial_guess.setZero();
-    // initial_guess(0) = 2;
-    // ik_solutions.push_back(initial_guess);
-
-    // Vector7d object_pose;
-    // object_pose << 0, 0, 0, 0, 0, 0, 1;
-    // std::vector<Vector7d> object_poses;
-    // object_poses.push_back(object_pose);
-    // world->setPlaybackTrajectory(object_poses, ik_solutions);
 
     // --- Test preprocess ---
 
@@ -75,8 +66,8 @@ int main(int argc, char *argv[])
     object_pose << 0, 0, 0, 0, 0, 0, 1;
 
     std::vector<ContactPoint> contact_points;
-    contact_points.push_back(ContactPoint(Vector3d(0.0, 0.0, l / 2), Vector3d(0, 0, -1)));
-    contact_points.push_back(ContactPoint(Vector3d(l / 2, 0.0, 0.0), Vector3d(-1, 0, 0)));
+    contact_points.push_back(ContactPoint(Vector3d(-l/2, 0, l / 2), Vector3d(0, 0, -1)));
+    contact_points.push_back(ContactPoint(Vector3d(l / 2, 0, -l/2), Vector3d(-1, 0, 0)));
 
     double d_contact = (contact_points[0].p - contact_points[1].p).norm();
 
@@ -85,30 +76,10 @@ int main(int argc, char *argv[])
     std::vector<VectorXd> ik_solutions;
     std::vector<std::string> texts;
 
-    {
-        std::vector<std::string> part_names = {"base_link", "link_7_tip"};
-        std::vector<int> part_p_idxes = {8150, 2649};
-        robot->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &ik_solutions);
-        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, Vector3d(l, l, l), 50);
-        std::ostringstream oss;
-        oss << std::fixed << std::setprecision(4) << avg_d;
-        std::string text = "Average penetration distance " + oss.str();
-        texts.push_back(text);
-    }
-    {
-        std::vector<std::string> part_names = {"base_link", "link_3_tip"};
-        std::vector<int> part_p_idxes = {8150, 2649};
-        robot->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &ik_solutions);
-        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, Vector3d(l, l, l), 50);
+    std::vector<std::string> part_names = {"base_link", "link_7_tip"};
+    std::vector<int> part_p_idxes = {8150, 2649};
 
-        std::ostringstream oss;
-        oss << std::fixed << std::setprecision(4) << avg_d;
-        std::string text = "Average penetration distance " + oss.str();
-        texts.push_back(text);
-    }
     {
-        std::vector<std::string> part_names = {"link_15_tip", "link_3_tip"};
-        std::vector<int> part_p_idxes = {2114, 2649};
         robot->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &ik_solutions);
         double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, Vector3d(l, l, l), 50);
         std::ostringstream oss;
@@ -117,25 +88,27 @@ int main(int argc, char *argv[])
         texts.push_back(text);
     }
 
-    // for (int i = 0; i < allowed_parts.size(); i++)
-    // {
-    //     for (int j = 0; j < allowed_parts.size(); j++)
-    //     {
-    //         if (robot->ifConsiderPartPairs(i, j, d_contact) == false)
-    //         {
-    //             continue;
-    //         }
+    {
+        // VectorXd initial_robot_guess = ik_solutions.back(); // should not use previous solutions as initial guess, will stuck in the same local minima
+        VectorXd initial_robot_guess = robot->getMiddleJointAngles();
 
-    //         std::vector<std::string> part_names;
-    //         part_names.push_back(allowed_parts[i]);
-    //         part_names.push_back(allowed_parts[j]);
-    //         std::vector<int> part_p_idxes;
-    //         part_p_idxes.push_back(allowed_part_idxes[i]);
-    //         part_p_idxes.push_back(allowed_part_idxes[j]);
+        std::shared_ptr<BoxSurfaceOptSetup> setup = std::make_shared<BoxSurfaceOptSetup>(robot->bodies[0], part_names, part_p_idxes, contact_points, object_pose, initial_robot_guess, box_shape);
 
-    //         robot->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &ik_solutions);
-    //     }
-    // }
+        std::shared_ptr<BoxSurfaceOptimizer> optimizer = std::make_shared<BoxSurfaceOptimizer>(setup);
+
+        optimizer->solve();
+        std::pair<double, VectorXd> solution = optimizer->getSolution();
+        std::cout << "Value: " << solution.first << std::endl;
+        std::cout << "Solution: " << solution.second.transpose() << std::endl;
+
+        ik_solutions.push_back(solution.second.head(robot->getNumDofs()));
+
+        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, Vector3d(l, l, l), 50);
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(4) << avg_d;
+        std::string text = "With Box Surface Optimization: Average penetration distance " + oss.str();
+        texts.push_back(text);
+    }
 
     std::vector<Vector7d> object_poses;
     for (int k = 0; k < ik_solutions.size(); k++)

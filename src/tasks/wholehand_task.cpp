@@ -1399,7 +1399,7 @@ bool WholeHandTASK::rough_ik_check(const ContactConfig &contact_config, const Ve
 
     std::vector<ContactPoint> object_contact_points = retrieve_elements<ContactPoint>(this->object_surface_pts, contact_config.contact_idxes);
 
-    bool if_ik = this->robot->roughIKsolutions(contact_config.hand_segments, part_p_idxes, object_contact_points, object_pose, rough_ik_solutions);
+    bool if_ik = this->robot->roughIKsolutions(contact_config.hand_segments, part_p_idxes, object_contact_points, object_pose, VectorXd::Zero(0), rough_ik_solutions);
 
     return if_ik;
 }

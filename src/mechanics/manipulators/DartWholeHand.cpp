@@ -165,7 +165,7 @@ std::vector<ContactPoint> DartWholeHandManipulator::get_points_in_world(const st
 }
 
 bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes,
-                                                const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose,
+                                                const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, const VectorXd &initial_guess_,
                                                 std::vector<VectorXd> *rough_ik_solutions)
 {
 
@@ -175,12 +175,20 @@ bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &
     // TODO: change this temporary success threshold!!!
     double success_threshold = 0.1;
 
-    VectorXd initial_guess = (this->mJointLowerLimits + this->mJointUpperLimits) / 2.0;
-    for (int i = 0; i < initial_guess.size(); i++)
+    VectorXd initial_guess;
+    if (initial_guess_.size() == this->getNumDofs())
     {
-        if (std::isinf(initial_guess[i]) || std::isnan(initial_guess[i]))
+        initial_guess = initial_guess_;
+    }
+    else
+    {
+        initial_guess = (this->mJointLowerLimits + this->mJointUpperLimits) / 2.0;
+        for (int i = 0; i < initial_guess.size(); i++)
         {
-            initial_guess[i] = 0;
+            if (std::isinf(initial_guess[i]) || std::isnan(initial_guess[i]))
+            {
+                initial_guess[i] = 0;
+            }
         }
     }
 
@@ -216,7 +224,7 @@ bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &
 bool DartWholeHandManipulator::roughSDFIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes,
                                                    const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose,
                                                    const std::vector<ContactPoint> &repell_object_contacts,
-                                                   Vector3d box_shape, int n_sample_points,
+                                                   Vector3d box_shape, int n_sample_points, const VectorXd &initial_guess_,
                                                    std::vector<VectorXd> *rough_ik_solutions)
 {
 
@@ -226,13 +234,20 @@ bool DartWholeHandManipulator::roughSDFIKsolutions(const std::vector<std::string
     // TODO: change this temporary success threshold!!!
     double success_threshold = 1.0;
 
-    VectorXd initial_guess = (this->mJointLowerLimits + this->mJointUpperLimits) / 2.0;
-    for (int i = 0; i < initial_guess.size(); i++)
+    VectorXd initial_guess;
+    if (initial_guess_.size() == this->getNumDofs())
     {
-        if (std::isinf(initial_guess[i]) || std::isnan(initial_guess[i]))
+        initial_guess = initial_guess_;
+    }
+    else
+    {
+        std::vector<VectorXd> inital_ik_solutions;
+        bool if_initial_ik = this->roughIKsolutions(part_names, part_point_idxes, object_contacts, object_pose, VectorXd::Zero(0), &inital_ik_solutions);
+        if (!if_initial_ik)
         {
-            initial_guess[i] = 0;
+            return false;
         }
+        initial_guess = inital_ik_solutions[0];
     }
 
     // std::vector<std::string> repell_part_names;

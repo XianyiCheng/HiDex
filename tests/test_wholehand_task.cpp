@@ -37,7 +37,9 @@ int main(int argc, char *argv[])
         config["box_object"]["shape"].as<std::vector<double>>();
     Vector3d box_shape(box_l[0], box_l[1], box_l[2]);
 
-    std::srand(12658645);
+    // std::srand(12658645);
+    // set random seed with time
+    std::srand(std::time(nullptr));
 
     // --- Test rough collision check ---
     std::vector<ContactPoint> collision_fingertips;
@@ -55,7 +57,7 @@ int main(int argc, char *argv[])
         v << 1, 0, 0, 0, 0, 0;
         std::vector<WholeHandTASK::ContactConfig> sampled_actions;
         std::vector<double> probs;
-        task->sample_likely_contact_configs(task->start_object_pose, mode, v, envs, 300, &sampled_actions, &probs);
+        task->sample_likely_contact_configs(task->start_object_pose, mode, v, envs, 100, &sampled_actions, &probs);
 
         std::cout << "sampled_actions.size(): " << sampled_actions.size() << std::endl;
 
@@ -78,6 +80,7 @@ int main(int argc, char *argv[])
                 if ((penetrate_d < 0.03) && (average_signed_d > -0.01)){
                     contact_configs.push_back(contact_config);
                     ik_solutions.push_back(ik_solutions_raw.back());
+                    break;
                 }
             }
             else
@@ -86,26 +89,33 @@ int main(int argc, char *argv[])
             }
         }
 
-        // for (auto contact_config : contact_configs)
-        // {
-        //     std::vector<int> part_p_idxes;
-        //     for (auto seg : contact_config.hand_segments)
-        //     {
-        //         for (int k = 0; k < task->getRobot()->allowed_part_names.size(); k++)
-        //         {
-        //             if (seg == task->getRobot()->allowed_part_names[k])
-        //             {
-        //                 part_p_idxes.push_back(task->getRobot()->allowed_part_point_idxes[k]);
-        //                 break;
-        //             }
-        //         }
-        //     }
-        //     std::vector<ContactPoint> object_contact_points = retrieve_elements<ContactPoint>(task->object_surface_pts, contact_config.contact_idxes);
-        //     std::vector<ContactPoint> repell_pts;
-        //     task->getRobot()->roughSDFIKsolutions(contact_config.hand_segments, part_p_idxes, object_contact_points,
-        //                                           task->start_object_pose, repell_pts, box_shape, 10, &ik_solutions);
-        // }
-        // contact_configs.insert(contact_configs.end(), contact_configs.begin(), contact_configs.end());
+        std::vector<VectorXd> sdf_solutions;
+        for (auto contact_config : contact_configs)
+        {
+            std::vector<int> part_p_idxes;
+            for (auto seg : contact_config.hand_segments)
+            {
+                for (int k = 0; k < task->getRobot()->allowed_part_names.size(); k++)
+                {
+                    if (seg == task->getRobot()->allowed_part_names[k])
+                    {
+                        part_p_idxes.push_back(task->getRobot()->allowed_part_point_idxes[k]);
+                        break;
+                    }
+                }
+            }
+            std::vector<ContactPoint> object_contact_points = retrieve_elements<ContactPoint>(task->object_surface_pts, contact_config.contact_idxes);
+            std::vector<ContactPoint> repell_pts;
+            task->getRobot()->roughSDFIKsolutions(contact_config.hand_segments, part_p_idxes, object_contact_points,
+                                                  task->start_object_pose, repell_pts, box_shape, 20, VectorXd::Zero(0), &sdf_solutions);
+            sdf_solutions.push_back(ik_solutions[0]);
+            break;
+        }        
+        
+        ik_solutions = sdf_solutions;
+        std::cout << "ik_solutions " << std::endl;
+        std::cout << ik_solutions[0].transpose() << std::endl;
+        std::cout << ik_solutions[1].transpose() << std::endl;
         
         std::vector<Vector7d> object_poses;
         for (int k = 0; k < ik_solutions.size(); k++)
@@ -113,25 +123,26 @@ int main(int argc, char *argv[])
             object_poses.push_back(task->start_object_pose);
         }
 
-        std::vector<VectorXd> ik_and_sphere_solutions;
-        for (int k = 0; k < ik_solutions.size(); k++)
-        {
+        // std::vector<VectorXd> ik_and_sphere_solutions;
+        // for (int k = 0; k < ik_solutions.size(); k++)
+        // {
 
-            VectorXd ik_and_sphere_solution(ik_solutions[k].size() + 3 * contact_configs[k].contact_idxes.size());
-            ik_and_sphere_solution.head(ik_solutions[k].size()) = ik_solutions[k];
-            for (int kk = 0; kk < contact_configs[k].contact_idxes.size(); kk++)
-            {
-                ik_and_sphere_solution.segment(ik_solutions[k].size() + 3 * kk, 3) = task->object_surface_pts[contact_configs[k].contact_idxes[kk]].p;
-            }
-            ik_and_sphere_solutions.push_back(ik_and_sphere_solution);
-        }
+        //     VectorXd ik_and_sphere_solution(ik_solutions[k].size() + 3 * contact_configs[k].contact_idxes.size());
+        //     ik_and_sphere_solution.head(ik_solutions[k].size()) = ik_solutions[k];
+        //     for (int kk = 0; kk < contact_configs[k].contact_idxes.size(); kk++)
+        //     {
+        //         ik_and_sphere_solution.segment(ik_solutions[k].size() + 3 * kk, 3) = task->object_surface_pts[contact_configs[k].contact_idxes[kk]].p;
+        //     }
+        //     ik_and_sphere_solutions.push_back(ik_and_sphere_solution);
+        // }
 
         // Only show the hand
-        // task->m_world->setPlaybackTrajectory(object_poses, ik_solutions);
+        task->m_world->setPlaybackTrajectory(object_poses, ik_solutions);
         // show the hand and spheres for object contact points
 
         // Show the hand and the collision fingertip spheres
-        task->m_world->setPlaybackTrajectory(object_poses, ik_and_sphere_solutions);
+        // task->m_world->setPlaybackTrajectory(object_poses, ik_and_sphere_solutions);
+        
         task->m_world->startWindow(&argc, argv);
     }
 }

@@ -15,6 +15,22 @@ using namespace dart::dynamics;
 using namespace dart::optimizer;
 using namespace std;
 
+class NumericalFunction : public Function
+{
+public:
+    NumericalFunction() {}
+
+    virtual double computeObjective(const VectorXd &candidate,
+                                    bool storeResults = false) = 0;
+
+    /// _x is the DOF vector
+    double eval(const VectorXd &_x) override;
+
+    /// _x is the DOF vector, _grad will store the gradient of the objective
+    /// function after evaluation
+    void evalGradient(const VectorXd &_x, Map<VectorXd> _grad) override;
+};
+
 class OptSetup
 {
 public:
@@ -83,6 +99,19 @@ public:
         return mContactPoints_world;
     }
 
+    std::vector<ContactPoint> getObjectContactPoints()
+    {
+        return mContactPoints_local;
+    }
+    int getNumContactPoints()
+    {
+        return mContactPoints_local.size();
+    }
+    int getNumRobotDofs()
+    {
+        return mManipulator->getNumDofs();
+    }
+
 protected:
     SkeletonPtr mManipulator;
     std::vector<std::string> mPartNames;
@@ -94,20 +123,16 @@ protected:
     std::vector<ContactPoint> mContactPoints_world;
 };
 
-class OptFunction : public Function
+class OptFunction : public NumericalFunction
 {
 public:
-    OptFunction(std::shared_ptr<OptSetup> &setup);
+    OptFunction(std::shared_ptr<OptSetup> &setup)
+    {
+        mSetup = setup;
+    }
 
     double computeObjective(const VectorXd &candidate,
-                            bool storeResults = false);
-
-    /// _x is the DOF vector
-    double eval(const VectorXd &_x) override;
-
-    /// _x is the DOF vector, _grad will store the gradient of the objective
-    /// function after evaluation
-    void evalGradient(const VectorXd &_x, Map<VectorXd> _grad) override;
+                            bool storeResults = false) override;
 
 protected:
     /// Main Controller - needed to compute objective function in current
@@ -195,7 +220,7 @@ public:
     std::vector<ContactPoint> getPointsWorld(const std::string &part_name, std::vector<int> idxes)
     {
         std::vector<ContactPoint> pts;
-        
+
         BodyNodePtr mbn = mManipulator->getBodyNode(part_name);
         Isometry3d mtf = mbn->getWorldTransform();
         ShapePtr ms = mbn->getShapeNodes().front()->getShape();
@@ -304,7 +329,7 @@ protected:
     int n_sampled_points;
 };
 
-class SDFOptFunction : public Function
+class SDFOptFunction : public NumericalFunction
 {
 public:
     SDFOptFunction(std::shared_ptr<SDFOptSetup> &setup)
@@ -313,37 +338,7 @@ public:
     }
 
     double computeObjective(const VectorXd &candidate,
-                            bool storeResults = false);
-
-    /// _x is the DOF vector
-    double eval(const VectorXd &_x) override
-    {
-        return computeObjective(_x, true);
-    }
-
-    /// _x is the DOF vector, _grad will store the gradient of the objective
-    /// function after evaluation
-    void evalGradient(const VectorXd &_x, Map<VectorXd> _grad) override
-    {
-        double currentObjectiveValue = computeObjective(_x);
-
-        int dofs = _x.size();
-
-        double step = 0.0001;
-
-        // EXPENSIVE!! Currently uses forward differencing
-        for (int i = 0; i < dofs; i++)
-        {
-            VectorXd forwardDiff = _x;
-
-            forwardDiff[i] += step;
-
-            double forwardObjective = computeObjective(forwardDiff);
-            double JthetaDof = (forwardObjective - currentObjectiveValue) / step;
-
-            _grad[i] = JthetaDof;
-        }
-    }
+                            bool storeResults = false) override;
 
 protected:
     /// Main Controller - needed to compute objective function in current
@@ -369,4 +364,93 @@ protected:
 
     /// Main Setup - pass to optimization function
     std::shared_ptr<SDFOptSetup> mSetup;
+};
+
+class BoxSurfaceOptSetup : public OptSetup
+{
+public:
+    BoxSurfaceOptSetup(SkeletonPtr manipulator, const std::vector<std::string> &partNames, const std::vector<int> &partPointIdxes,
+                       const std::vector<ContactPoint> &contactPoints, const Vector7d &object_pose,
+                       const VectorXd &initial_robot_guess, const Vector3d &box_shape) : OptSetup(manipulator, partNames, partPointIdxes,
+                                                                                                  contactPoints, object_pose, initial_robot_guess),
+                                                                                         mBoxShape(box_shape)
+    {
+        int n_dofs = manipulator->getNumDofs();
+        int n_contacts = contactPoints.size();
+        n_var = n_dofs + n_contacts * 2;
+        mInitialGuess.resize(n_var);
+        mInitialGuess.head(initial_robot_guess.size()) = initial_robot_guess;
+
+        for (int i = 0; i < n_contacts; i++)
+        {
+            Vector3d n_abs = contactPoints[i].n.cwiseAbs();
+            int max_k = 0;
+            for (int k = 1; k < 3; k++)
+            {
+                if (n_abs[k] > n_abs[max_k])
+                {
+                    max_k = k;
+                }
+            }
+            std::vector<int> uv_idx;
+            for (int k = 0; k < 3; k++)
+            {
+                if (k == max_k)
+                {
+                    continue;
+                }
+                else
+                {
+                    uv_idx.push_back(k);
+                }
+            }
+            mInitialGuess[n_dofs + i * 2] = contactPoints[i].p[uv_idx[0]];
+            mInitialGuess[n_dofs + i * 2 + 1] = contactPoints[i].p[uv_idx[1]];
+
+            // mInitialGuess[n_dofs + i * 2] = 0;
+            // mInitialGuess[n_dofs + i * 2 + 1] = 0;
+            pointUVDirections.push_back(uv_idx);
+        }
+    }
+
+    std::vector<ContactPoint> getUpdatedObjectContactPointsWorld(const VectorXd &u);
+
+    // protected:
+    Vector3d mBoxShape;
+    std::vector<std::vector<int>> pointUVDirections;
+    int n_var;
+};
+
+class BoxSurfaceOptFunction : public NumericalFunction
+{
+public:
+    BoxSurfaceOptFunction(std::shared_ptr<BoxSurfaceOptSetup> &setup) : mSetup(setup) {}
+
+    double computeObjective(const VectorXd &candidate,
+                            bool storeResults = false) override;
+
+protected:
+    /// Main Controller - needed to compute objective function in current
+    /// iteration
+    std::shared_ptr<BoxSurfaceOptSetup> mSetup;
+};
+
+class BoxSurfaceOptimizer
+{
+public:
+    BoxSurfaceOptimizer(std::shared_ptr<BoxSurfaceOptSetup> &setup);
+
+    pair<double, VectorXd> getSolution();
+
+    void solve();
+
+protected:
+    /// The problem to solve
+    std::shared_ptr<Problem> mProblem;
+
+    /// The solver used to solve the problem
+    std::shared_ptr<Solver> mSolver;
+
+    /// Main Setup - pass to optimization function
+    std::shared_ptr<BoxSurfaceOptSetup> mSetup;
 };
