@@ -1,0 +1,12 @@
+folder: "/home/xianyi/Research/MCTS/data/pushing_x"
+
+number_of_experiments: 10
+
+visualize_option: none # setup, show, none. (overwrite visualize_option in setup.yaml)
+
+collect_results: false
+
+sample_start_and_goal:
+  random: false
+  position_upper_bound: [2,0,0.5]
+  position_lower_bound: [-2,0,0.5]
