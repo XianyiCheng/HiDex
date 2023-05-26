@@ -16,8 +16,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        // config_file = "/home/xianyi/Research/MCTS/general_planner/setup_template.yaml";
-        config_file = "/home/xianyi/Research/MCTS/data/wholehand/setup.yaml";
+        config_file = std::string(SRC_DIR) + "/data/wholehand/setup.yaml";
     }
 
     // should use arg to specify the path to the setup.yaml file
@@ -39,6 +38,7 @@ int main(int argc, char *argv[])
 
     // // ---- Test rough IK SDF ----
     int n_sample = 2;
+    int n_sdf_sample = 50;
     {
         Vector7d object_pose = task->start_object_pose;
         std::vector<ContactPoint> repell_contact_points;
@@ -62,53 +62,35 @@ int main(int argc, char *argv[])
         std::vector<std::string> allowed_parts = task->getRobot()->allowed_part_names;
         std::vector<int> allowed_part_idxes = task->getRobot()->allowed_part_point_idxes;
 
+        VectorXd initial_guess = task->getRobot()->getMiddleJointAngles();
+
         {
             std::vector<std::string> part_names = {"base_link", "link_7_tip"};
             std::vector<int> part_p_idxes = {8150, 2649};
-            task->getRobot()->roughSDFIKsolutions(part_names, part_p_idxes, contact_points, object_pose, repell_contact_points, box_shape, n_sample, VectorXd::Zero(0), &sdf_ik_solutions);
+            task->getRobot()->roughSDFIKsolutions(part_names, part_p_idxes, contact_points, object_pose, repell_contact_points, box_shape, n_sample, initial_guess, &sdf_ik_solutions);
             // task->getRobot()->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &sdf_ik_solutions);
-            double penetrate_d = task->getRobot()->maxPenetrationDistance(sdf_ik_solutions.back(), object_pose, box_shape);
-            double average_signed_d = task->getRobot()->averagePenetrateDistance(sdf_ik_solutions.back(), object_pose, box_shape);
+            double penetrate_d = task->getRobot()->maxPenetrationDistance(sdf_ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
+            double average_signed_d = task->getRobot()->averagePenetrateDistance(sdf_ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
             std::cout << "max penetration distance: " << penetrate_d << ", average signed distance: " << average_signed_d << std::endl;
         }
         {
             std::vector<std::string> part_names = {"base_link", "link_3_tip"};
             std::vector<int> part_p_idxes = {8150, 2649};
-            task->getRobot()->roughSDFIKsolutions(part_names, part_p_idxes, contact_points, object_pose, repell_contact_points, box_shape, n_sample, VectorXd::Zero(0), &sdf_ik_solutions);
+            task->getRobot()->roughSDFIKsolutions(part_names, part_p_idxes, contact_points, object_pose, repell_contact_points, box_shape, n_sample, initial_guess, &sdf_ik_solutions);
             // task->getRobot()->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &sdf_ik_solutions);
-            double penetrate_d = task->getRobot()->maxPenetrationDistance(sdf_ik_solutions.back(), object_pose, box_shape);
-            double average_signed_d = task->getRobot()->averagePenetrateDistance(sdf_ik_solutions.back(), object_pose, box_shape);
+            double penetrate_d = task->getRobot()->maxPenetrationDistance(sdf_ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
+            double average_signed_d = task->getRobot()->averagePenetrateDistance(sdf_ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
             std::cout << "max penetration distance: " << penetrate_d << ", average signed distance: " << average_signed_d << std::endl;
         }
         {
             std::vector<std::string> part_names = {"link_15_tip", "link_3_tip"};
             std::vector<int> part_p_idxes = {2114, 2649};
-            task->getRobot()->roughSDFIKsolutions(part_names, part_p_idxes, contact_points, object_pose, repell_contact_points,box_shape, n_sample, VectorXd::Zero(0), &sdf_ik_solutions);
+            task->getRobot()->roughSDFIKsolutions(part_names, part_p_idxes, contact_points, object_pose, repell_contact_points,box_shape, n_sample, initial_guess, &sdf_ik_solutions);
             // task->getRobot()->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &sdf_ik_solutions);
-            double penetrate_d = task->getRobot()->maxPenetrationDistance(sdf_ik_solutions.back(), object_pose, box_shape);
-            double average_signed_d = task->getRobot()->averagePenetrateDistance(sdf_ik_solutions.back(), object_pose, box_shape);
+            double penetrate_d = task->getRobot()->maxPenetrationDistance(sdf_ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
+            double average_signed_d = task->getRobot()->averagePenetrateDistance(sdf_ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
             std::cout << "max penetration distance: " << penetrate_d << ", average signed distance: " << average_signed_d << std::endl;
         }
-
-        // for (int i = 0; i < allowed_parts.size(); i++)
-        // {
-        //     for (int j = 0; j < allowed_parts.size(); j++)
-        //     {
-        //         if (task->getRobot()->ifConsiderPartPairs(i, j, d_contact) == false)
-        //         {
-        //             continue;
-        //         }
-
-        //         std::vector<std::string> part_names;
-        //         part_names.push_back(allowed_parts[i]);
-        //         part_names.push_back(allowed_parts[j]);
-        //         std::vector<int> part_p_idxes;
-        //         part_p_idxes.push_back(allowed_part_idxes[i]);
-        //         part_p_idxes.push_back(allowed_part_idxes[j]);
-        //         std::cout << "Solving SDF for part_names: " << part_names[0] << " " << part_names[1] << std::endl;
-        //         task->getRobot()->roughSDFIKsolutions(part_names, part_p_idxes, contact_points, object_pose, repell_contact_points, &sdf_ik_solutions);
-        //     }
-        // }
 
         std::vector<Vector7d> object_poses;
         for (int k = 0; k < sdf_ik_solutions.size(); k++)
@@ -116,11 +98,6 @@ int main(int argc, char *argv[])
             object_poses.push_back(object_pose);
         }
 
-        // for (int i = 0; i < sdf_ik_solutions.size(); i++)
-        // {
-        //     double penetrate_d = task->getRobot()->maxPenetrationDistance(sdf_ik_solutions[i], object_poses[i], box_shape);
-        //     std::cout << "max penetration distance: " << penetrate_d << std::endl;
-        // }
 
         task->m_world->setPlaybackTrajectory(object_poses, sdf_ik_solutions);
         task->m_world->startWindow(&argc, argv);

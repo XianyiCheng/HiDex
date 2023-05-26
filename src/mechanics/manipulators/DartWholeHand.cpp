@@ -173,7 +173,7 @@ bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &
     // object_contact: in the object frame, normals pointing inward
 
     // TODO: change this temporary success threshold!!!
-    double success_threshold = 0.1;
+    // double success_threshold = 1.0;
 
     VectorXd initial_guess;
     if (initial_guess_.size() == this->getNumDofs())
@@ -208,13 +208,67 @@ bool DartWholeHandManipulator::roughIKsolutions(const std::vector<std::string> &
     // std::cout << "Solution: " << solution.second.transpose() << std::endl;
 
     // Filter out optimal values that are too large.
-    bool if_success = solution.first < success_threshold;
+    // bool if_success = solution.first < success_threshold;
+    bool if_success = true;
 
     if (rough_ik_solutions != nullptr)
     {
         if (if_success)
         {
             rough_ik_solutions->push_back(solution.second);
+        }
+    }
+
+    return if_success;
+}
+
+bool DartWholeHandManipulator::roughIKsolutions_BoxOpt(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes,
+                                                       const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose,
+                                                       const Vector3d &box_shape,
+                                                       const VectorXd &initial_guess_,
+                                                       std::vector<VectorXd> *rough_ik_solutions)
+{
+
+    // TODO: need to add SDF in the optimization
+    // object_contact: in the object frame, normals pointing inward
+
+    // TODO: change this temporary success threshold!!!
+    // double success_threshold = 1.0;
+
+    VectorXd initial_guess;
+    if (initial_guess_.size() == this->getNumDofs())
+    {
+        initial_guess = initial_guess_;
+    }
+    else
+    {
+        initial_guess = this->getMiddleJointAngles();
+    }
+
+    // Initialize OptSetup
+    std::shared_ptr<BoxSurfaceOptSetup> setup = std::make_shared<BoxSurfaceOptSetup>(this->bodies[0], part_names, part_point_idxes, object_contacts, object_pose, initial_guess, box_shape);
+    // Initialize Optimizer
+    std::shared_ptr<BoxSurfaceOptimizer> optimizer = std::make_shared<BoxSurfaceOptimizer>(setup);
+
+    // TODO: Sample different hand poses (initial_guess)
+    // TODO: Sample part_point_idxes
+
+    // For each hand pose, compute the solution
+
+    optimizer->solve();
+    std::pair<double, VectorXd> solution = optimizer->getSolution();
+    std::cout << "Value: " << solution.first << std::endl;
+    // std::cout << "Solution: " << solution.second.transpose() << std::endl;
+
+    // Filter out optimal values that are too large.
+    // bool if_success = solution.first < success_threshold;
+    bool if_success = true;
+
+    if (rough_ik_solutions != nullptr)
+    {
+        if (if_success)
+        {
+            rough_ik_solutions->push_back(solution.second.head(this->getNumDofs()));
         }
     }
 
@@ -480,6 +534,8 @@ double DartWholeHandManipulator::maxPenetrationDistance(const VectorXd &config, 
     this->setConfig(config, object_pose);
 
     // iterate through every part
+    // sample at most n_sample_points points on each part
+    // compute their distances with the box
     double max_penetration_distance = 0;
 
     for (auto part_name : this->part_names)
@@ -528,6 +584,8 @@ double DartWholeHandManipulator::averagePenetrateDistance(const VectorXd &config
     this->setConfig(config, object_pose);
 
     // iterate through every part
+    // sample at most n_sample_points points on each part
+    // compute their distances with the box
     int n = 0;
     double sd = 0;
 
@@ -568,7 +626,7 @@ double DartWholeHandManipulator::averagePenetrateDistance(const VectorXd &config
             }
         }
     }
-    return sd / double(n);
+    return -sd / double(n);
 }
 
 double DartWholeHandManipulator::maxPenetrationDistance(const VectorXd &config, const Vector7d &object_pose, const std::vector<ContactPoint> &object_surface_points, int n_sample_points)

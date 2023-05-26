@@ -1,7 +1,7 @@
 
 #include "../src/tasks/wholehand_setup.h"
 
-// #include "../src/tasks/visualization.h"
+// test how many points are needed to sample on each finger part to get a good estimate of penetration distance
 
 int main(int argc, char *argv[])
 {

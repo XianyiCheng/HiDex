@@ -302,6 +302,8 @@ public:
   bool rough_ik_check(const ContactConfig &contact_config,
                       const Vector7d &object_pose,
                       std::vector<VectorXd> *rough_ik_solutions = nullptr);
+  
+  bool rough_ik_box_opt(const ContactConfig &contact_config, const Vector7d &object_pose, const Vector3d &box_shape, std::vector<VectorXd> *rough_ik_solutions = nullptr);
 
   // Rough collision check for fingertips as spheres only
   bool rough_collision_check(const std::vector<ContactPoint> &fingertips,

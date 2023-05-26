@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10.2)
 project(modus VERSION 1.0 LANGUAGES CXX)
 
 ################################################################################

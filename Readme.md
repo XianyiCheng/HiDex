@@ -1,8 +1,3 @@
-Test
-```
-ctest -R cxy_test
-```
-
 # Installation
 
 The following build process is tested on a clean Ubuntu 20.04 system.
@@ -12,6 +7,8 @@ Install dependent libraries
 sudo apt-get install build-essential cmake pkg-config git
 
 sudo apt-get install libglpk-dev libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-regex-dev libboost-system-dev libopenscenegraph-dev libbullet-dev libtinyxml2-dev liburdfdom-dev libxi-dev libxmu-dev freeglut3-dev
+
+sudo apt-get install libnlopt-devsudo 
 ```
 
 install qhull
@@ -28,8 +25,9 @@ sudo make install
 
 Install yaml-cpp
 ```
-git clone https://github.com/jbder/yaml-cpp.git
+git clone https://github.com/jbeder/yaml-cpp.git
 cd yaml-cpp
+mkdir build
 cd build
 cmake ..
 make
@@ -45,7 +43,7 @@ git submodule update --init --recursive --progress
 You have can build and install dart in the system or build dart in this project. 
 If you want to build and install dart:
 ```
-cd mechanics/external/dartsim
+cd ./src/mechanics/external/dartsim
 mkdir build
 cd build
 cmake ..

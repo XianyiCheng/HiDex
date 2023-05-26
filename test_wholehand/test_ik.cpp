@@ -27,8 +27,9 @@ int main(int argc, char *argv[])
 {
     std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
     double l = 0.1;
+    Vector3d box_shape(l, l, l);
     SkeletonPtr object =
-        createFreeBox("object", Vector3d(l, l, l),
+        createFreeBox("object", box_shape,
                       Vector3d(0.7, 0.3, 0.3), 0.45);
     world->addObject(object);
 
@@ -45,29 +46,11 @@ int main(int argc, char *argv[])
 
     std::cout << "Robot has " << robot->getNumDofs() << " dofs" << std::endl;
 
-    // --- Test visualization ---
-    // std::vector<VectorXd> ik_solutions;
-    // VectorXd initial_guess(robot->getNumDofs());
-    // initial_guess.setZero();
-    // initial_guess(0) = 2;
-    // ik_solutions.push_back(initial_guess);
-
-    // Vector7d object_pose;
-    // object_pose << 0, 0, 0, 0, 0, 0, 1;
-    // std::vector<Vector7d> object_poses;
-    // object_poses.push_back(object_pose);
-    // world->setPlaybackTrajectory(object_poses, ik_solutions);
-
-    // --- Test preprocess ---
-
+    // We look at the urdf and mesh files of the robot, pick parts allowed for contacts and their indices on the mesh as contact points
     std::vector<std::string> allowed_parts = {"base_link", "link_1", "link_2", "link_3_tip", "link_5", "link_6", "link_7_tip", "link_9", "link_10", "link_11_tip", "link_14", "link_15", "link_15_tip"};
     std::vector<int> allowed_part_idxes = {8150, 2375, 4329, 2649, 2375, 4329, 2649, 2375, 4329, 2649, 2456, 3602, 2114};
 
     robot->preprocess(allowed_parts, allowed_part_idxes, 5);
-
-    // --- Test signed distance field ---
-    double d = robot->signedDistance("base_link", Vector3d(0.0, 0.0, 0.5));
-    std::cout << "Signed distance to base_link " << d << std::endl;
 
     // // --- Test rough IK ---
 
@@ -85,36 +68,37 @@ int main(int argc, char *argv[])
     std::vector<VectorXd> ik_solutions;
     std::vector<std::string> texts;
 
+    int n_sdf_sample = 50;
+
     {
         std::vector<std::string> part_names = {"base_link", "link_7_tip"};
         std::vector<int> part_p_idxes = {8150, 2649};
         robot->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &ik_solutions);
-        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, Vector3d(l, l, l), 50);
+        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
+        double max_d = robot->maxPenetrationDistance(ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
         std::ostringstream oss;
-        oss << std::fixed << std::setprecision(4) << avg_d;
-        std::string text = "Average penetration distance " + oss.str();
-        texts.push_back(text);
+        oss << std::fixed << std::setprecision(4) << "Penetration distance, average " << avg_d << ", max " << max_d;
+        texts.push_back(oss.str());
     }
     {
         std::vector<std::string> part_names = {"base_link", "link_3_tip"};
         std::vector<int> part_p_idxes = {8150, 2649};
         robot->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &ik_solutions);
-        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, Vector3d(l, l, l), 50);
-
+        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
+        double max_d = robot->maxPenetrationDistance(ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
         std::ostringstream oss;
-        oss << std::fixed << std::setprecision(4) << avg_d;
-        std::string text = "Average penetration distance " + oss.str();
-        texts.push_back(text);
+        oss << std::fixed << std::setprecision(4) << "Penetration distance, average " << avg_d << ", max " << max_d;
+        texts.push_back(oss.str());
     }
     {
         std::vector<std::string> part_names = {"link_15_tip", "link_3_tip"};
         std::vector<int> part_p_idxes = {2114, 2649};
         robot->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &ik_solutions);
-        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, Vector3d(l, l, l), 50);
+        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
+        double max_d = robot->maxPenetrationDistance(ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
         std::ostringstream oss;
-        oss << std::fixed << std::setprecision(4) << avg_d;
-        std::string text = "Average penetration distance " + oss.str();
-        texts.push_back(text);
+        oss << std::fixed << std::setprecision(4) << "Penetration distance, average " << avg_d << ", max " << max_d;
+        texts.push_back(oss.str());
     }
 
     // for (int i = 0; i < allowed_parts.size(); i++)

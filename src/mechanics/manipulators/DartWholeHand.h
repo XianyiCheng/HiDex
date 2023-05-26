@@ -73,6 +73,8 @@ public:
 
     bool roughIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, const VectorXd &initial_guess_ = VectorXd::Zero(0), std::vector<VectorXd> *rough_ik_solutions = nullptr);
 
+    bool roughIKsolutions_BoxOpt(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, const Vector3d &box_shape, const VectorXd &initial_guess_ = VectorXd::Zero(0), std::vector<VectorXd> *rough_ik_solutions = nullptr);
+
     bool roughSDFIKsolutions(const std::vector<std::string> &part_names, const std::vector<int> &part_point_idxes, const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, const std::vector<ContactPoint> &repell_object_contacts, Vector3d box_shape, int n_sample_points, const VectorXd &initial_guess_ = VectorXd::Zero(0), std::vector<VectorXd> *rough_ik_solutions = nullptr);
 
     bool roughCollisionCheck(const std::vector<ContactPoint> &object_contacts, const Vector7d &object_pose, std::shared_ptr<DartWorld> world);

@@ -79,13 +79,15 @@ int main(int argc, char *argv[])
     std::vector<std::string> part_names = {"base_link", "link_7_tip"};
     std::vector<int> part_p_idxes = {8150, 2649};
 
+    int n_sdf_sample = 50;
+
     {
         robot->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &ik_solutions);
-        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, Vector3d(l, l, l), 50);
+        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose,  box_shape, n_sdf_sample);
+        double max_d = robot->maxPenetrationDistance(ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
         std::ostringstream oss;
-        oss << std::fixed << std::setprecision(4) << avg_d;
-        std::string text = "Average penetration distance " + oss.str();
-        texts.push_back(text);
+        oss << std::fixed << std::setprecision(4) << "Penetration distance, average " << avg_d << ", max " << max_d;
+        texts.push_back(oss.str());
     }
 
     {
@@ -103,11 +105,11 @@ int main(int argc, char *argv[])
 
         ik_solutions.push_back(solution.second.head(robot->getNumDofs()));
 
-        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, Vector3d(l, l, l), 50);
+        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose,  box_shape, n_sdf_sample);
+        double max_d = robot->maxPenetrationDistance(ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
         std::ostringstream oss;
-        oss << std::fixed << std::setprecision(4) << avg_d;
-        std::string text = "With Box Surface Optimization: Average penetration distance " + oss.str();
-        texts.push_back(text);
+        oss << std::fixed << std::setprecision(4) << "+BoxSurface Opt: Penetration distance, average " << avg_d << ", max " << max_d;
+        texts.push_back(oss.str());
     }
 
     std::vector<Vector7d> object_poses;
@@ -116,7 +118,6 @@ int main(int argc, char *argv[])
         object_poses.push_back(object_pose);
     }
 
-    // world->addText(0,0,"Hahaha");
     world->setPlaybackTrajectoryWithText(object_poses, ik_solutions, texts);
     world->startWindow(&argc, argv);
 }

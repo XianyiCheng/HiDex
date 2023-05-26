@@ -1404,6 +1404,30 @@ bool WholeHandTASK::rough_ik_check(const ContactConfig &contact_config, const Ve
     return if_ik;
 }
 
+bool WholeHandTASK::rough_ik_box_opt(const ContactConfig &contact_config, const Vector7d &object_pose, const Vector3d &box_shape, std::vector<VectorXd> *rough_ik_solutions){
+
+    std::vector<int> part_p_idxes;
+    for (auto seg : contact_config.hand_segments)
+    {
+        for (int k = 0; k < this->robot->allowed_part_names.size(); k++)
+        {
+            if (seg == this->robot->allowed_part_names[k])
+            {
+                part_p_idxes.push_back(this->robot->allowed_part_point_idxes[k]);
+                break;
+            }
+        }
+    }
+
+    std::vector<ContactPoint> object_contact_points = retrieve_elements<ContactPoint>(this->object_surface_pts, contact_config.contact_idxes);
+
+    VectorXd initial_guess = this->robot->getMiddleJointAngles();
+    bool if_ik = this->robot->roughIKsolutions_BoxOpt(contact_config.hand_segments, part_p_idxes, object_contact_points, object_pose, box_shape, initial_guess, rough_ik_solutions);
+
+    return if_ik;
+
+}
+
 bool WholeHandTASK::sample_hand_segments(const std::vector<ContactPoint> &fingertips, const Vector7d &object_pose, std::vector<int> *part_idxes)
 {
     int n_contacts = fingertips.size();
