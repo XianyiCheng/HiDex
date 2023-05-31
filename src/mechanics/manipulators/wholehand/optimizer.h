@@ -11,6 +11,11 @@
 #include "../../contacts/contact_constraints.h"
 #endif
 
+#ifndef EXP_MAP_H
+#define EXP_MAP_H
+#include "exp_map.h"
+#endif
+
 using namespace dart::dynamics;
 using namespace dart::optimizer;
 using namespace std;
@@ -453,4 +458,70 @@ protected:
 
     /// Main Setup - pass to optimization function
     std::shared_ptr<BoxSurfaceOptSetup> mSetup;
+};
+
+class ObjectSurfaceOptSetup : public OptSetup
+{
+public:
+    ObjectSurfaceOptSetup(SkeletonPtr manipulator, const std::vector<std::string> &partNames, const std::vector<int> &partPointIdxes,
+                       const std::vector<ContactPoint> &contactPoints, const Vector7d &object_pose,
+                       const VectorXd &initial_robot_guess, const std::string & object_mesh_file) : OptSetup(manipulator, partNames, partPointIdxes,
+                                                                                                  contactPoints, object_pose, initial_robot_guess)
+    {
+        int n_dofs = manipulator->getNumDofs();
+        int n_contacts = contactPoints.size();
+        n_var = n_dofs + n_contacts * 2;
+        mInitialGuess.resize(n_var);
+        mInitialGuess.head(initial_robot_guess.size()) = initial_robot_guess;
+
+        // load 
+        expmap_mesh = std::make_shared<ExpMapMesh>(object_mesh_file);
+
+        // for each contact point, find the closest point on the mesh
+        for (auto cp: contactPoints){
+            object_contact_idxes.push_back(expmap_mesh->find_closes_vertex(cp.p));
+        }
+
+    }
+
+    std::vector<ContactPoint> getUpdatedObjectContactPointsWorld(const VectorXd &u);
+
+    // protected:
+    int n_var;
+    std::shared_ptr<ExpMapMesh> expmap_mesh;
+    std::vector<int> object_contact_idxes;
+};
+
+class ObjectSurfaceOptFunction : public NumericalFunction
+{
+public:
+    ObjectSurfaceOptFunction(std::shared_ptr<ObjectSurfaceOptSetup> &setup) : mSetup(setup) {}
+
+    double computeObjective(const VectorXd &candidate,
+                            bool storeResults = false) override;
+
+protected:
+    /// Main Controller - needed to compute objective function in current
+    /// iteration
+    std::shared_ptr<ObjectSurfaceOptSetup> mSetup;
+};
+
+class ObjectSurfaceOptimizer
+{
+public:
+    ObjectSurfaceOptimizer(std::shared_ptr<ObjectSurfaceOptSetup> &setup);
+
+    pair<double, VectorXd> getSolution();
+
+    void solve();
+
+protected:
+    /// The problem to solve
+    std::shared_ptr<Problem> mProblem;
+
+    /// The solver used to solve the problem
+    std::shared_ptr<Solver> mSolver;
+
+    /// Main Setup - pass to optimization function
+    std::shared_ptr<ObjectSurfaceOptSetup> mSetup;
 };

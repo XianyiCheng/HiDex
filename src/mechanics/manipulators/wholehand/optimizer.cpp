@@ -523,3 +523,147 @@ pair<double, VectorXd> BoxSurfaceOptimizer::getSolution()
     std::shared_ptr<Problem> problem = mSolver->getProblem();
     return make_pair(problem->getOptimumValue(), problem->getOptimalSolution());
 }
+
+
+std::vector<ContactPoint> ObjectSurfaceOptSetup::getUpdatedObjectContactPointsWorld(const VectorXd &u){
+    int n_contacts = getNumContactPoints();
+    std::vector<ContactPoint> updatedContactPoints_local;
+    for (int i = 0; i < n_contacts; i++){
+        ContactPoint cp = this->expmap_mesh->exp_map(this->object_contact_idxes[i], u[2*i], u[2*i+1]);
+        updatedContactPoints_local.push_back(cp);
+    }
+    std::vector<ContactPoint> updatedContactPoints_world = transform_contact_points(updatedContactPoints_local, mObjectPose);
+    return updatedContactPoints_world;
+}
+
+double ObjectSurfaceOptFunction::computeObjective(const VectorXd &candidate,
+                                     bool storeResults)
+{
+
+    // Update to potential solution
+    // x: robot config, u1, v1, u2, v2, ... un, vn (for all object contact points)
+    int n_robot_dofs = mSetup->getNumRobotDofs();
+    int n_contacts = mSetup->getNumContactPoints();
+
+    mSetup->loadRobotConfig(candidate.head(n_robot_dofs));
+
+    std::vector<ContactPoint> hand_contact_points = mSetup->getManipulatorContactPointsWorld();
+    std::vector<ContactPoint> object_contact_points = mSetup->getUpdatedObjectContactPointsWorld(candidate.tail(2*n_contacts));
+
+    double distanceError = 0.0;
+    double normalError = 0.0;
+    double priorError = 0.0;
+
+    int numMappings = hand_contact_points.size();
+
+    VectorXd priorDiff = candidate - this->mSetup->getInitialGuess();
+    priorError += priorDiff.norm();
+
+    for (int i = 0; i < numMappings; i++)
+    {
+        Vector3d handPoint = hand_contact_points[i].p;
+        Vector3d objectPoint = object_contact_points[i].p;
+
+        Vector3d handNormal = hand_contact_points[i].n;     // point outward
+        Vector3d objectNormal = object_contact_points[i].n; // point inward
+
+        Vector3d distanceVec = handPoint - objectPoint;
+
+        // we want the normals to be as close to
+        // perfectly aligned as possible
+        double normalComp = 1 - handNormal.dot(objectNormal);
+
+        distanceError += distanceVec.norm();
+        normalError += normalComp * normalComp;
+    }
+
+    double wieghtedDistanceError = lambdaDistance * distanceError;
+    double wieghtedNormalError = lambdaNormal * normalError;
+    double wieghtedPriorError = lambdaPrior * priorError;
+
+    double c = wieghtedDistanceError + wieghtedNormalError + wieghtedPriorError;
+
+    return c;
+}
+
+ObjectSurfaceOptimizer::ObjectSurfaceOptimizer(std::shared_ptr<ObjectSurfaceOptSetup> &setup)
+{
+    mSetup = setup;
+
+    SkeletonPtr manipulator = setup->getManipulator();
+
+    int dofs = manipulator->getNumDofs();
+    int n_contacts = mSetup->getNumContactPoints();
+    int n_var = dofs + 2*n_contacts;
+
+    mProblem = std::make_shared<Problem>(n_var);
+
+    std::shared_ptr<ObjectSurfaceOptFunction> obj = std::make_shared<ObjectSurfaceOptFunction>(mSetup);
+
+    mProblem->setObjective(obj);
+
+    VectorXd lowerLimits(n_var);
+    VectorXd upperLimits(n_var);
+
+    for (int i = 0; i < dofs; i++)
+    {
+        DegreeOfFreedom *dof = manipulator->getDof(i);
+        lowerLimits[i] = dof->getPositionLowerLimit();
+        upperLimits[i] = dof->getPositionUpperLimit();
+    }
+
+    double max_geo_dist = 0.5;
+    VectorXd initialGuess = mSetup->getInitialGuess();
+    for (int i = 0; i < n_contacts; i++ ){
+        
+        // dist limits
+        lowerLimits[dofs + 2*i] = 1e-15;
+        upperLimits[dofs + 2*i] = max_geo_dist;
+        initialGuess[dofs + 2*i] = lowerLimits[dofs + 2*i];
+
+        // angle
+        lowerLimits[dofs + 2*i + 1] = -3.15;
+        upperLimits[dofs + 2*i + 1] = 3.15;
+        initialGuess[dofs + 2*i + 1] = 0.0;
+    }
+    mSetup->updateInitialGuess(initialGuess);
+
+    mProblem->setLowerBounds(lowerLimits);
+    mProblem->setUpperBounds(upperLimits);
+    
+}
+
+// For gradient free, use LN_COBYLA. With gradient use LD_MMA
+void ObjectSurfaceOptimizer::solve()
+{
+    mSolver = std::make_shared<NloptSolver>(mProblem, NloptSolver::LD_MMA);
+    // mSolver= std::make_shared<GradientDescentSolver>(mProblem);
+
+    mSolver->setNumMaxIterations(10000);
+
+    // Set initial guess
+    VectorXd initialGuess = mSetup->getInitialGuess();
+
+    mSolver->getProblem()->setInitialGuess(initialGuess);
+
+    auto start = chrono::steady_clock::now();
+
+    bool solved = mSolver->solve();
+
+    auto end = chrono::steady_clock::now();
+
+    int diff = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+
+    cout << "Optimization finished in: " << diff << " milliseconds" << endl;
+
+    if (!solved)
+    {
+        cout << "Unable to find solution" << endl;
+    }
+}
+
+pair<double, VectorXd> ObjectSurfaceOptimizer::getSolution()
+{
+    std::shared_ptr<Problem> problem = mSolver->getProblem();
+    return make_pair(problem->getOptimumValue(), problem->getOptimalSolution());
+}

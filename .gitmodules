@@ -1,3 +1,6 @@
 [submodule "mechanics/external/dartsim"]
 	path = mechanics/external/dartsim
 	url = https://github.com/dartsim/dart.git
+[submodule "src/mechanics/external/geometry-central"]
+	path = src/mechanics/external/geometry-central
+	url = https://github.com/lakshmipathyarjun6/geometry-central.git

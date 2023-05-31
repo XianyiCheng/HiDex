@@ -77,3 +77,12 @@ set(modus_libs modus_common modus_modes)
 
 # add_executable(test_task_inhand test_task_inhand.cpp ../tasks/task.cpp ../mechanics/manipulators/DartPointManipulator.cpp)
 # target_link_libraries(test_task_inhand PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})
+
+add_executable(test_exp_map test_exp_map.cpp 
+    ../src/mechanics/manipulators/DartWholeHand.cpp
+    ../src/mechanics/manipulators/wholehand/optimizer.cpp
+    ../src/mechanics/manipulators/wholehand/sdf.cpp
+    ../src/tasks/wholehand_task.cpp 
+    ../src/tasks/wholehand_setup.cpp
+    ../src/mechanics/manipulators/wholehand/exp_map.cpp)
+target_link_libraries(test_exp_map PRIVATE mcts-mechanics ${dart_libs} dart-optimizer-nlopt ${YAML_LIBRARY} geometry-central)
