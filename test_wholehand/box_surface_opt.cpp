@@ -28,7 +28,7 @@
 int main(int argc, char *argv[])
 {
     std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
-    double l = 0.1;
+    double l = 0.14;
 
     Vector3d box_shape(l, l, l);
     SkeletonPtr object =
@@ -110,6 +110,13 @@ int main(int argc, char *argv[])
         std::ostringstream oss;
         oss << std::fixed << std::setprecision(4) << "+BoxSurface Opt: Penetration distance, average " << avg_d << ", max " << max_d;
         texts.push_back(oss.str());
+
+        std::vector<ContactPoint> updatad_contacts_world = setup->getUpdatedObjectContactPointsWorld(solution.second.tail(contact_points.size()*2));
+        std::cout << "Updated contact point in world frame " << std::endl;
+        for(auto cp: updatad_contacts_world)
+        {
+            std::cout << cp.p.transpose() << " "<< cp.n.transpose() << std::endl;
+        }
     }
 
     std::vector<Vector7d> object_poses;

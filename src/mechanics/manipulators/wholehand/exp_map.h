@@ -15,6 +15,7 @@ class ExpMapMesh
 public:
     ExpMapMesh(std::string filename);
     ContactPoint exp_map(int v_idx, double dist, double theta);
+    ContactPoint exp_map_uv(int v_idx, double u, double v);
     int find_closes_vertex(Vector3d p);
 
 // private:

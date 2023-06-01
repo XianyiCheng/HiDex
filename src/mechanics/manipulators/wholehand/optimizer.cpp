@@ -2,8 +2,8 @@
 #include "sdf.h"
 
 const double lambdaDistance = 1.0;
-const double lambdaPrior = 0.0;
-const double lambdaNormal = 0.05;
+const double lambdaPrior = 0;
+const double lambdaNormal = 0.1;
 const double lambdaRepell = 0.01;
 
 using namespace Eigen;
@@ -525,11 +525,12 @@ pair<double, VectorXd> BoxSurfaceOptimizer::getSolution()
 }
 
 
-std::vector<ContactPoint> ObjectSurfaceOptSetup::getUpdatedObjectContactPointsWorld(const VectorXd &u){
+std::vector<ContactPoint> ObjectSurfaceOptSetup::getUpdatedObjectContactPointsWorld(const VectorXd &uv){
     int n_contacts = getNumContactPoints();
     std::vector<ContactPoint> updatedContactPoints_local;
     for (int i = 0; i < n_contacts; i++){
-        ContactPoint cp = this->expmap_mesh->exp_map(this->object_contact_idxes[i], u[2*i], u[2*i+1]);
+        // ContactPoint cp = this->expmap_mesh->exp_map(this->object_contact_idxes[i], uv[2*i], uv[2*i+1]);
+        ContactPoint cp = this->expmap_mesh->exp_map_uv(this->object_contact_idxes[i], uv[2*i], uv[2*i+1]);
         updatedContactPoints_local.push_back(cp);
     }
     std::vector<ContactPoint> updatedContactPoints_world = transform_contact_points(updatedContactPoints_local, mObjectPose);
@@ -602,6 +603,8 @@ ObjectSurfaceOptimizer::ObjectSurfaceOptimizer(std::shared_ptr<ObjectSurfaceOptS
 
     mProblem->setObjective(obj);
 
+    // set limits
+
     VectorXd lowerLimits(n_var);
     VectorXd upperLimits(n_var);
 
@@ -612,24 +615,35 @@ ObjectSurfaceOptimizer::ObjectSurfaceOptimizer(std::shared_ptr<ObjectSurfaceOptS
         upperLimits[i] = dof->getPositionUpperLimit();
     }
 
-    double max_geo_dist = 0.5;
+    double max_geo_dist = 0.1;
     VectorXd initialGuess = mSetup->getInitialGuess();
     for (int i = 0; i < n_contacts; i++ ){
         
-        // dist limits
-        lowerLimits[dofs + 2*i] = 1e-15;
-        upperLimits[dofs + 2*i] = max_geo_dist;
-        initialGuess[dofs + 2*i] = lowerLimits[dofs + 2*i];
+        // // dist limits
+        // lowerLimits[dofs + 2*i] = 1e-15;
+        // upperLimits[dofs + 2*i] = max_geo_dist;
+        // initialGuess[dofs + 2*i] = lowerLimits[dofs + 2*i];
 
-        // angle
-        lowerLimits[dofs + 2*i + 1] = -3.15;
-        upperLimits[dofs + 2*i + 1] = 3.15;
+        // // angle
+        // lowerLimits[dofs + 2*i + 1] = -3.15;
+        // upperLimits[dofs + 2*i + 1] = 3.15;
+        // initialGuess[dofs + 2*i + 1] = 0.0;
+        
+        // uv
+        lowerLimits[dofs + 2*i] = -max_geo_dist;
+        upperLimits[dofs + 2*i] = max_geo_dist;
+        lowerLimits[dofs + 2*i + 1] = -max_geo_dist;
+        upperLimits[dofs + 2*i + 1] = max_geo_dist;
+        initialGuess[dofs + 2*i] = 0.0;
         initialGuess[dofs + 2*i + 1] = 0.0;
     }
     mSetup->updateInitialGuess(initialGuess);
 
     mProblem->setLowerBounds(lowerLimits);
     mProblem->setUpperBounds(upperLimits);
+
+    double initial_obj = obj->computeObjective(initialGuess);
+    std::cout << "Initial objective: " << initial_obj << std::endl;
     
 }
 

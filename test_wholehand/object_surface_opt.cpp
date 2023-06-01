@@ -28,12 +28,11 @@
 int main(int argc, char *argv[])
 {
     std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
-    double l = 0.1;
+    double l = 0.14;
+    std::string object_mesh_file = std::string(SRC_DIR) + "/data/cube_0.1.obj";
 
     Vector3d box_shape(l, l, l);
-    SkeletonPtr object =
-        createFreeBox("object", box_shape,
-                      Vector3d(0.7, 0.3, 0.3), 0.45);
+    SkeletonPtr object = createFreeObjectfromMesh("object", object_mesh_file);
     world->addObject(object);
 
     SkeletonPtr env_block =
@@ -66,8 +65,8 @@ int main(int argc, char *argv[])
     object_pose << 0, 0, 0, 0, 0, 0, 1;
 
     std::vector<ContactPoint> contact_points;
-    contact_points.push_back(ContactPoint(Vector3d(-l/2, 0, l / 2), Vector3d(0, 0, -1)));
-    contact_points.push_back(ContactPoint(Vector3d(l / 2, 0, -l/2), Vector3d(-1, 0, 0)));
+    contact_points.push_back(ContactPoint(Vector3d(0.8*-l / 2, 0, l / 2), Vector3d(0, 0, -1)));
+    contact_points.push_back(ContactPoint(Vector3d(l / 2, 0, 0.8*-l / 2), Vector3d(-1, 0, 0)));
 
     double d_contact = (contact_points[0].p - contact_points[1].p).norm();
 
@@ -83,7 +82,7 @@ int main(int argc, char *argv[])
 
     {
         robot->roughIKsolutions(part_names, part_p_idxes, contact_points, object_pose, VectorXd::Zero(0), &ik_solutions);
-        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose,  box_shape, n_sdf_sample);
+        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
         double max_d = robot->maxPenetrationDistance(ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
         std::ostringstream oss;
         oss << std::fixed << std::setprecision(4) << "Penetration distance, average " << avg_d << ", max " << max_d;
@@ -93,17 +92,9 @@ int main(int argc, char *argv[])
     {
         // VectorXd initial_robot_guess = ik_solutions.back(); // should not use previous solutions as initial guess, will stuck in the same local minima
         VectorXd initial_robot_guess = robot->getMiddleJointAngles();
-
-        std::string object_mesh_file = std::string(SRC_DIR) + "/data/cube_0.1.obj"; 
+        initial_robot_guess.head(6) = ik_solutions.back().head(6);
 
         std::shared_ptr<ObjectSurfaceOptSetup> setup = std::make_shared<ObjectSurfaceOptSetup>(robot->bodies[0], part_names, part_p_idxes, contact_points, object_pose, initial_robot_guess, object_mesh_file);
-
-        //
-        ContactPoint tp = setup->expmap_mesh->exp_map(0,0.1,0.1);
-        std::cout << "Test expmap_mesh 1: p " << tp.p.transpose() << " n " << tp.n.transpose() << std::endl;
-
-        tp = setup->expmap_mesh->exp_map(0,1e-15,0.1);
-        std::cout << "Test expmap_mesh 2: p " << tp.p.transpose() << " n " << tp.n.transpose() << std::endl;
 
         std::shared_ptr<ObjectSurfaceOptimizer> optimizer = std::make_shared<ObjectSurfaceOptimizer>(setup);
 
@@ -114,11 +105,18 @@ int main(int argc, char *argv[])
 
         ik_solutions.push_back(solution.second.head(robot->getNumDofs()));
 
-        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose,  box_shape, n_sdf_sample);
+        double avg_d = robot->averagePenetrateDistance(ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
         double max_d = robot->maxPenetrationDistance(ik_solutions.back(), object_pose, box_shape, n_sdf_sample);
         std::ostringstream oss;
         oss << std::fixed << std::setprecision(4) << "+ObjectSurface Opt: Penetration distance, average " << avg_d << ", max " << max_d;
         texts.push_back(oss.str());
+
+        std::vector<ContactPoint> updatad_contacts_world = setup->getUpdatedObjectContactPointsWorld(solution.second.tail(contact_points.size() * 2));
+        std::cout << "Updated contact point in world frame " << std::endl;
+        for (auto cp : updatad_contacts_world)
+        {
+            std::cout << cp.p.transpose() << " " << cp.n.transpose() << std::endl;
+        }
     }
 
     std::vector<Vector7d> object_poses;

@@ -480,11 +480,12 @@ public:
         // for each contact point, find the closest point on the mesh
         for (auto cp: contactPoints){
             object_contact_idxes.push_back(expmap_mesh->find_closes_vertex(cp.p));
+            std::cout << "contact point " << cp.p.transpose() << " is closest to point " << expmap_mesh->mGeometry->inputVertexPositions[object_contact_idxes.back()] << std::endl;
         }
 
     }
 
-    std::vector<ContactPoint> getUpdatedObjectContactPointsWorld(const VectorXd &u);
+    std::vector<ContactPoint> getUpdatedObjectContactPointsWorld(const VectorXd &uv);
 
     // protected:
     int n_var;
