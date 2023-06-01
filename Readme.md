@@ -8,7 +8,7 @@ sudo apt-get install build-essential cmake pkg-config git
 
 sudo apt-get install libglpk-dev libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-regex-dev libboost-system-dev libopenscenegraph-dev libbullet-dev libtinyxml2-dev liburdfdom-dev libxi-dev libxmu-dev freeglut3-dev
 
-sudo apt-get install libnlopt-devsudo 
+sudo apt-get install libnlopt-dev
 ```
 
 install qhull
