@@ -63,6 +63,17 @@ make
 
 Add `export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"` to ~/.bashrc
 
+If you have error in finding nlopt, please install nlopt from source files
+```
+git clone https://github.com/stevengj/nlopt.git
+cd nlopt
+mkdir build
+cd build
+cmake ..
+make
+sudo make install
+```
+And then go back to rebuild dart and this probject.
 
 # Run Examples
 The setup for different tasks is in `/data/{task-name}/setup.yaml`
