@@ -87,4 +87,7 @@ int main(int argc, char *argv[])
             std::cout << "Sampled points " << n_sample << ", max penetration distance: " << penetrate_d << ", average signed distance: " << average_signed_d << std::endl;
         }
     }
+
+    // TODO: add test time
+    // TODO: add tests with the mindistance built in dart
 }

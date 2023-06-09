@@ -58,12 +58,12 @@ int main(int argc, char *argv[])
     object_pose << 0, 0, 0, 0, 0, 0, 1;
 
     std::vector<ContactPoint> contact_points;
-    contact_points.push_back(ContactPoint(Vector3d(0.0, 0.0, l / 2), Vector3d(0, 0, -1)));
-    contact_points.push_back(ContactPoint(Vector3d(l / 2, 0.0, 0.0), Vector3d(-1, 0, 0)));
-
-    double d_contact = (contact_points[0].p - contact_points[1].p).norm();
-
-    std::cout << "Distance between two contact points " << d_contact << std::endl;
+    Vector3d pos_1 = Vector3d(0.0, 0.0, l / 2);
+    Vector3d normal_1 = Vector3d(0, 0, -1);
+    Vector3d pos_2 = Vector3d(l / 2, 0.0, 0.0);
+    Vector3d normal_2 = Vector3d(-1, 0, 0);
+    contact_points.push_back(ContactPoint(pos_1, normal_1));
+    contact_points.push_back(ContactPoint(pos_2, normal_2));
 
     std::vector<VectorXd> ik_solutions;
     std::vector<std::string> texts;
