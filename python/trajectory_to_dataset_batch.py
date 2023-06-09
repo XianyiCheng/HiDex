@@ -2,7 +2,7 @@ import subprocess
 import os
 
 
-path = "/home/xianyi/Research/MCTS/data/pushing_x"
+path = "/data/pushing_x"
 setup_yaml = path + "/setup.yaml"
 run_folder = path + "/runs"
 

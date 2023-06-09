@@ -57,19 +57,19 @@ int main(int argc, char *argv[])
 
   if (argc > 1)
   {
-    batch_config_file = argv[1];
+    batch_config_file = std::string(SRC_DIR)+argv[1];
   }
   else
   {
     batch_config_file =
-        "/home/xianyi/Research/MCTS/general_planner/batch_config_template.yaml";
+        std::string(SRC_DIR)+"/general_planner/batch_config_template.yaml";
   }
 
   // should use arg to specify the path to the setup.yaml file
 
   YAML::Node batch_config = YAML::LoadFile(batch_config_file);
 
-  std::string task_folder = batch_config["folder"].as<std::string>();
+  std::string task_folder = std::string(SRC_DIR)+batch_config["folder"].as<std::string>();
   YAML::Node config = YAML::LoadFile(task_folder + "/setup.yaml");
 
   mkdir((task_folder + "/runs").c_str(), 0755);

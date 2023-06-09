@@ -3,7 +3,7 @@
 # The object can be created as a cuboid (box_object) or from mesh file (mesh_object). Comment out the one you don't need. 
 box_object:
   shape: [2,2,4]
-  contact_file: "/home/xianyi/Research/MCTS/data/peg_out_hole/unit_cube_surface_contacts.csv" # path to sampled surface points on cube of unit half length
+  contact_file: "/data/peg_out_hole/unit_cube_surface_contacts.csv" # path to sampled surface points on cube of unit half length
   negate_contact_normal: false
   disabled_normal_directions: [[0,0,1]]
 
@@ -113,4 +113,4 @@ action_probability_L2: "env"
 # "save_n_show": plan a trajectory, saved in csv, and show the results
 
 visualize_option: "save_n_show"
-save_file_path: "/home/xianyi/Research/MCTS/data/peg_out_hole/output.csv"
+save_file_path: "/data/peg_out_hole/output.csv"

@@ -1,4 +1,4 @@
-folder: "/home/xianyi/Research/MCTS/general_planner/batch_test"
+folder: "/general_planner/batch_test"
 
 number_of_experiments: 10
 visualize_option: setup # setup, show, none. (overwrite visualize_option in setup.yaml)

@@ -88,14 +88,14 @@ void load_task(std::shared_ptr<WholeHandTASK> task, const YAML::Node &config)
       }
     }
     load_surface_contacts(
-        config["box_object"]["contact_file"].as<std::string>(), &surface_pts,
+        std::string(SRC_DIR) + config["box_object"]["contact_file"].as<std::string>(), &surface_pts,
         box_l[0] / 2, box_l[1] / 2, box_l[2] / 2, disabled_dirs, negate_normal);
   }
   else if (config["mesh_object"])
   {
     double scale = config["mesh_object"]["scale"].as<double>();
     SkeletonPtr object = createFreeObjectfromMesh(
-        "mesh_object", config["mesh_object"]["mesh_file"].as<std::string>(),
+        std::string(SRC_DIR) + "mesh_object", config["mesh_object"]["mesh_file"].as<std::string>(),
         Vector3d(scale, scale, scale));
     world->addObject(object);
 
@@ -116,7 +116,7 @@ void load_task(std::shared_ptr<WholeHandTASK> task, const YAML::Node &config)
     bool negate_normal =
         config["mesh_object"]["negate_contact_normal"].as<bool>();
     load_surface_contacts(
-        config["mesh_object"]["contact_file"].as<std::string>(), &surface_pts,
+        std::string(SRC_DIR) + config["mesh_object"]["contact_file"].as<std::string>(), &surface_pts,
         scale, scale, scale, disabled_dirs, negate_normal);
   }
   else
@@ -212,7 +212,7 @@ void load_task(std::shared_ptr<WholeHandTASK> task, const YAML::Node &config)
   {
     std::cout << "No whole hand is configured in setup.yaml. Exit program." << std::endl;
   }
-  std::string robot_folder_path = config["whole_hand"]["folder_path"].as<std::string>();
+  std::string robot_folder_path = std::string(SRC_DIR) + config["whole_hand"]["folder_path"].as<std::string>();
   double robot_radius = config["whole_hand"]["radius"].as<double>();
   int n_robot_contacts = config["whole_hand"]["max_num_contacts"].as<int>();
   std::vector<std::string> robot_parts = config["whole_hand"]["allowed_parts"].as<std::vector<std::string>>();

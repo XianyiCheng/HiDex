@@ -3,7 +3,7 @@
 # The object can be created as a cuboid (box_object) or from mesh file (mesh_object). Comment out the one you don't need. 
 box_object:
   shape: [1,1,1]
-  contact_file: "/home/xianyi/Research/MCTS/data/cube_surface_contacts.csv" # path to sampled surface points on cube of unit half length
+  contact_file: "/data/cube_surface_contacts.csv" # path to sampled surface points on cube of unit half length
   negate_contact_normal: true # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
 
 maximum_surface_contact_points: 100
@@ -106,4 +106,4 @@ action_probability_L2: "env"
 # "save_n_show": plan a trajectory, saved in csv, and show the results
 
 visualize_option: "show"
-save_file_path: "/home/xianyi/Research/MCTS/data/wall/output.csv"
+save_file_path: "/data/wall/output.csv"

@@ -1,43 +1,50 @@
 #include "setup.h"
 
-
-
 void load_surface_contacts(const std::string &file_name,
                            std::vector<ContactPoint> *pts, double scale_x,
                            double scale_y, double scale_z,
                            std::vector<Vector3d> disabled_normal_directions,
-                           bool negate_normal = false) {
+                           bool negate_normal = false)
+{
   std::ifstream f(file_name);
   aria::csv::CsvParser parser(f);
 
-  if (pts->size() > 0) {
+  if (pts->size() > 0)
+  {
     pts->clear();
   }
 
   double normal_dir = 1.0;
-  if (negate_normal) {
+  if (negate_normal)
+  {
     normal_dir = -1.0;
   }
 
-  for (auto &row : parser) {
-    if (row.size() != 6) {
+  for (auto &row : parser)
+  {
+    if (row.size() != 6)
+    {
       continue;
     }
     Vector6d v;
-    for (int j = 0; j < 6; ++j) {
+    for (int j = 0; j < 6; ++j)
+    {
       v(j) = std::stod(row[j]);
     }
 
     Vector3d normal = normal_dir * v.tail(3);
     bool is_disabled = false;
-    for (auto &dir : disabled_normal_directions) {
+    for (auto &dir : disabled_normal_directions)
+    {
       double d = normal.transpose() * dir;
-      if (d > 0.9) {
+      if (d > 0.9)
+      {
         is_disabled = true;
         break;
       }
     }
-    if (is_disabled) {
+    if (is_disabled)
+    {
       continue;
     }
 
@@ -48,13 +55,15 @@ void load_surface_contacts(const std::string &file_name,
   }
 }
 
-void load_task(std::shared_ptr<TASK> task, const YAML::Node &config) {
+void load_task(std::shared_ptr<TASK> task, const YAML::Node &config)
+{
   std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
 
   // ---- Load Object ----
   std::cout << "Loading object" << std::endl;
   std::vector<ContactPoint> surface_pts;
-  if (config["box_object"]) {
+  if (config["box_object"])
+  {
     std::vector<double> box_l =
         config["box_object"]["shape"].as<std::vector<double>>();
     SkeletonPtr object =
@@ -68,32 +77,39 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config) {
         config["box_object"]["negate_contact_normal"].as<bool>();
 
     std::vector<Vector3d> disabled_dirs;
-    if (config["box_object"]["disabled_normal_directions"]) {
+    if (config["box_object"]["disabled_normal_directions"])
+    {
       std::vector<std::vector<double>> disabled_dirs_vec =
           config["box_object"]["disabled_normal_directions"]
               .as<std::vector<std::vector<double>>>();
-      for (auto &dir : disabled_dirs_vec) {
+      for (auto &dir : disabled_dirs_vec)
+      {
         disabled_dirs.push_back(Vector3d(dir[0], dir[1], dir[2]));
       }
     }
     load_surface_contacts(
-        config["box_object"]["contact_file"].as<std::string>(), &surface_pts,
+        std::string(SRC_DIR) + config["box_object"]["contact_file"].as<std::string>(), &surface_pts,
         box_l[0] / 2, box_l[1] / 2, box_l[2] / 2, disabled_dirs, negate_normal);
-  } else if (config["mesh_object"]) {
+  }
+  else if (config["mesh_object"])
+  {
     double scale = config["mesh_object"]["scale"].as<double>();
     SkeletonPtr object = createFreeObjectfromMesh(
-        "mesh_object", config["mesh_object"]["mesh_file"].as<std::string>(),
+        "mesh_object", 
+        std::string(SRC_DIR) + config["mesh_object"]["mesh_file"].as<std::string>(),
         Vector3d(scale, scale, scale));
     world->addObject(object);
 
     std::cout << "Loading contacts" << std::endl;
 
     std::vector<Vector3d> disabled_dirs;
-    if (config["mesh_object"]["disabled_normal_directions"]) {
+    if (config["mesh_object"]["disabled_normal_directions"])
+    {
       std::vector<std::vector<double>> disabled_dirs_vec =
           config["mesh_object"]["disabled_normal_directions"]
               .as<std::vector<std::vector<double>>>();
-      for (auto &dir : disabled_dirs_vec) {
+      for (auto &dir : disabled_dirs_vec)
+      {
         disabled_dirs.push_back(Vector3d(dir[0], dir[1], dir[2]));
       }
     }
@@ -101,15 +117,18 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config) {
     bool negate_normal =
         config["mesh_object"]["negate_contact_normal"].as<bool>();
     load_surface_contacts(
-        config["mesh_object"]["contact_file"].as<std::string>(), &surface_pts,
+        std::string(SRC_DIR)+config["mesh_object"]["contact_file"].as<std::string>(), &surface_pts,
         scale, scale, scale, disabled_dirs, negate_normal);
-  } else {
+  }
+  else
+  {
     std::cout << "No object is loaded. Exit program." << std::endl;
     exit(0);
   }
 
   int max_contact_points = config["maximum_surface_contact_points"].as<int>();
-  while (surface_pts.size() > max_contact_points) {
+  while (surface_pts.size() > max_contact_points)
+  {
     int idx = randi(surface_pts.size() - 1);
     surface_pts.erase(surface_pts.begin() + idx);
   }
@@ -117,11 +136,14 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config) {
             << std::endl;
 
   // ---- Load Environment ----
-  if (config["environment"]) {
+  if (config["environment"])
+  {
     std::cout << "Loading environment blocks" << std::endl;
-    for (int i = 1; i <= 20; ++i) {
+    for (int i = 1; i <= 20; ++i)
+    {
       std::string block_name = "block_" + std::to_string(i);
-      if (config["environment"][block_name.c_str()]) {
+      if (config["environment"][block_name.c_str()])
+      {
         std::vector<double> loc =
             config["environment"][block_name.c_str()]["location"]
                 .as<std::vector<double>>();
@@ -188,23 +210,29 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config) {
 
   // ---- Setup the robot ----
   int n_robot_contacts;
-  if (config["free_sphere_robot"]) {
+  if (config["free_sphere_robot"])
+  {
     n_robot_contacts =
         config["free_sphere_robot"]["number_of_contacts"].as<int>();
     double robot_radius = config["free_sphere_robot"]["radius"].as<double>();
     DartPointManipulator *rpt =
         new DartPointManipulator(n_robot_contacts, robot_radius);
-    if (config["free_sphere_robot"]["workspace_limits"]) {
+    if (config["free_sphere_robot"]["workspace_limits"])
+    {
       std::vector<Vector6d> workspace_limits;
-      for (int i = 1; i <= n_robot_contacts; ++i) {
+      for (int i = 1; i <= n_robot_contacts; ++i)
+      {
         Vector6d box_lim;
         std::string box_name = "box_" + std::to_string(i);
-        if (config["free_sphere_robot"]["workspace_limits"][box_name.c_str()]) {
+        if (config["free_sphere_robot"]["workspace_limits"][box_name.c_str()])
+        {
           std::vector<double> lim =
               config["free_sphere_robot"]["workspace_limits"][box_name.c_str()]
                   .as<std::vector<double>>();
           box_lim << lim[0], lim[1], lim[2], lim[3], lim[4], lim[5];
-        } else {
+        }
+        else
+        {
           box_lim << -1000, 1000, -1000, 1000, -1000, 1000;
         }
         workspace_limits.push_back(box_lim);
@@ -214,21 +242,28 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config) {
     rpt->is_patch_contact =
         config["free_sphere_robot"]["patch_contact"].as<bool>();
     world->addRobot(rpt);
-  } else if (config["delta_array"]) {
+  }
+  else if (config["delta_array"])
+  {
     std::vector<Vector3d> delta_locations;
-    for (int i = 1; i <= 20; ++i) {
+    for (int i = 1; i <= 20; ++i)
+    {
       std::string robot_name = "robot_" + std::to_string(i);
-      if (config["delta_array"]["locations"][robot_name.c_str()]) {
+      if (config["delta_array"]["locations"][robot_name.c_str()])
+      {
         std::vector<double> loc =
             config["delta_array"]["locations"][robot_name.c_str()]
                 .as<std::vector<double>>();
         delta_locations.push_back(Vector3d(loc[0], loc[1], loc[2]));
-      } else {
+      }
+      else
+      {
         break;
       }
     }
     n_robot_contacts = delta_locations.size();
-    if (n_robot_contacts == 0) {
+    if (n_robot_contacts == 0)
+    {
       std::cout
           << "Please specify robot locations for the delta array. Exit program."
           << std::endl;
@@ -242,12 +277,16 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config) {
                                  delta_ws_h, delta_locations);
     rpt->is_patch_contact = config["delta_array"]["patch_contact"].as<bool>();
     world->addRobot(rpt);
-  } else if (config["dexterous_direct_drive_hand"]) {
+  }
+  else if (config["dexterous_direct_drive_hand"])
+  {
     std::cout << "Dexterous direct drive hand options is to be implemented. "
                  "Exit Program."
               << std::endl;
     exit(0);
-  } else {
+  }
+  else
+  {
     std::cout << "No valid robot specified! Exit program." << std::endl;
     exit(0);
   }
@@ -262,7 +301,8 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config) {
 }
 
 void load_start_and_goal_poses(std::shared_ptr<TASK> task,
-                               const YAML::Node &config) {
+                               const YAML::Node &config)
+{
   Vector7d x_start;
   Vector7d x_goal;
   std::vector<double> start_pose =
@@ -277,7 +317,8 @@ void load_start_and_goal_poses(std::shared_ptr<TASK> task,
 }
 
 void load_reward_functions(std::shared_ptr<TASK> task,
-                           const YAML::Node &config) {
+                           const YAML::Node &config)
+{
   task->grasp_measure_charac_length =
       config["grasp_measure_charac_length"].as<double>();
   task->action_prob_L2 = config["action_probability_L2"].as<std::string>();
@@ -288,21 +329,31 @@ void load_reward_functions(std::shared_ptr<TASK> task,
   std::string l1 = config["level_1_reward"].as<std::string>();
   std::string l2 = config["level_2_reward"].as<std::string>();
 
-  if (l1 == "CMGLevel1Reward") {
+  if (l1 == "CMGLevel1Reward")
+  {
     r1 = std::make_shared<CMGLevel1Reward>();
-  } else if (l1 == "InhandLevel1Reward") {
+  }
+  else if (l1 == "InhandLevel1Reward")
+  {
     r1 = std::make_shared<InhandLevel1Reward>();
-  } else {
+  }
+  else
+  {
     std::cout << "No valid level 1 reward function specified. Exit program."
               << std::endl;
     exit(0);
   }
 
-  if (l2 == "CMGLevel2Reward") {
+  if (l2 == "CMGLevel2Reward")
+  {
     r2 = std::make_shared<CMGLevel1Reward>();
-  } else if (l2 == "InhandLevel2Reward") {
+  }
+  else if (l2 == "InhandLevel2Reward")
+  {
     r2 = std::make_shared<InhandLevel2Reward>();
-  } else {
+  }
+  else
+  {
     std::cout << "No valid level 2 reward function specified. Exit program."
               << std::endl;
     exit(0);
@@ -312,7 +363,8 @@ void load_reward_functions(std::shared_ptr<TASK> task,
 }
 
 void load_mcts_options(HMP::HierarchicalComputeOptions &compute_options,
-                       const YAML::Node &config) {
+                       const YAML::Node &config)
+{
   compute_options.l1.max_time = config["mcts_options"]["max_time"].as<double>();
   compute_options.l1_1st.max_iterations =
       config["mcts_options"]["l1_1st_max_iterations"].as<int>();

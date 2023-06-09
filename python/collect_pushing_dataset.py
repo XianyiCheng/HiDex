@@ -3,7 +3,7 @@ import os
 
 
 total_number_of_runs = 100
-path = "/home/xianyi/Research/MCTS/data/pushing_x"
+path = "/data/pushing_x"
 continue_process = True
 
 # Start the process and wait for it to complete
