@@ -7,11 +7,25 @@ box_object:
   negate_contact_normal: true # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
   # disabled_normal_directions: [[0,0,-1], [0,0,1]]
 
+ellipsoid_object:
+  semi_axis: [1,1,1]
+  contact_file: "/data/ellipsoid_unit_semi_axis.csv" # path to sampled surface points on ellipsoid of unit semi-axis
+  negate_contact_normal: true # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
+  # disabled_normal_directions: [[0,0,-1], [0,0,1]]
+
+cylinder_object:
+  radius: 1
+  height: 2
+  contact_file: "/data/cylinder_h2_r1.csv" # path to sampled surface points on cylinder of unit radius and unit half height
+  negate_contact_normal: true # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
+  # disabled_normal_directions: [[0,0,-1], [0,0,1]]
+
 # mesh_object:
 #   mesh_file: "path_to_mesh.stl"
-#   contact_file: "path_to_sampled_surface_points.csv"
-#   negate_contact_normal: false
 #   scale: 1.0
+#   contact_file: "path_to_sampled_surface_points.csv" # "none" if there is no presampled contact file, in which case the contact points will be sampled on the fly
+#   negate_contact_normal: false
+# disabled_normal_directions: [[0,0,-1], [0,0,1]]
 
 maximum_surface_contact_points: 100
 
@@ -19,9 +33,16 @@ environment: # maximum 20 blocks
   block_1:
     dimension: [20,20,1]
     location: [0,0,-0.5]
-  # block_2:
-  #   dimension: [4,5,4]
-  #   location: [-4.50001, 0, 1]
+  block_2:
+    dimension: [4,5,4]
+    location: [-4.50001, 0, 1]
+  cylinder_1:
+    radius: 1
+    height: 1
+    location: [1,0,2]
+  ellipsoid_1:
+    dimension: [1,1,1] # semi-axis
+    location: [0,0,2]
 
 characteristic_length: 1
 
@@ -125,5 +146,5 @@ action_probability_L2: "env"
 # "show": plan a trajectory and show, don't save in the csv
 # "save_n_show": plan a trajectory, saved in csv, and show the results
 
-visualize_option: "save_n_show"
+visualize_option: "setup"
 save_file_path: "/general_planner/path_to_output.csv"

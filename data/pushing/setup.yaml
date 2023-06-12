@@ -19,9 +19,7 @@ environment: # maximum 20 blocks
   block_1:
     dimension: [8,8,1]
     location: [0,0,-0.4999]
-  # block_2:
-  #   dimension: [4,5,4]
-  #   location: [-4.50001, 0, 1]
+
 
 characteristic_length: 1
 

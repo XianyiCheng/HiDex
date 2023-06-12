@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
         std::vector<WholeHandTASK::ContactConfig> sampled_actions;
         std::vector<double> probs;
 
-        int n_max_sample = 100;
+        int n_max_sample = 200;
         task->sample_likely_contact_configs(task->start_object_pose, mode, v, envs, n_max_sample, &sampled_actions, &probs);
 
         std::cout << "sampled_actions.size(): " << sampled_actions.size() << std::endl;

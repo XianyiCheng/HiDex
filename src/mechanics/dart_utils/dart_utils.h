@@ -19,6 +19,9 @@ void setBodyNodeColor(BodyNode* bn, const Eigen::Vector3d& color);
 SkeletonPtr createFreeBall(const std::string& name, double radius, 
                             const Eigen::Vector3d& color = Eigen::Vector3d(0.7,0.3,0.3));
 
+SkeletonPtr createFreeEllipsoid(const std::string &name, const Eigen::Vector3d &semi_axis,
+                           const Eigen::Vector3d &color = Eigen::Vector3d(0.7,0.3,0.3));
+
 SkeletonPtr createFreeBox(const std::string& name, const Eigen::Vector3d& dim, 
                             const Eigen::Vector3d& color = Eigen::Vector3d(0.7,0.3,0.3), double alpha = 0.85);
 
@@ -31,6 +34,10 @@ SkeletonPtr createFixedBox(const std::string& name, const Eigen::Vector3d& dim,
 SkeletonPtr createFixedCylindar(const std::string &name, double radius, double height,
                                 const Eigen::Vector3d &pos,
                                 const Eigen::Vector3d &color = Eigen::Vector3d(0.4,0.4,0.4), double alpha = 0.7);
+
+SkeletonPtr createFixedEllipsoid(const std::string &name, const Eigen::Vector3d &dim,
+                           const Eigen::Vector3d &pos,
+                           const Eigen::Vector3d &color = Eigen::Vector3d(0.4,0.4,0.4), double alpha = 0.7);
 
 SkeletonPtr createFreeObjectfromMesh(const std::string & name, const std::string & filePath, 
                                         const Eigen::Vector3d& scale = Eigen::Vector3d(1,1,1));

@@ -43,6 +43,28 @@ SkeletonPtr createFreeBall(const std::string &name, double radius,
   return ball;
 }
 
+SkeletonPtr createFreeEllipsoid(const std::string &name, const Eigen::Vector3d &semi_axis,
+                                const Eigen::Vector3d &color)
+{
+  SkeletonPtr ball = Skeleton::create(name);
+
+  BodyNode *bn = ball->createJointAndBodyNodePair<FreeJoint>().second;
+
+  std::shared_ptr<EllipsoidShape> shape = std::make_shared<EllipsoidShape>(
+      2 * semi_axis);
+  auto shapeNode = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+      shape);
+  shapeNode->getVisualAspect()->setColor(color);
+
+  shapeNode->getVisualAspect()->setAlpha(0.85);
+
+  Eigen::Vector6d positions(Eigen::Vector6d::Zero());
+
+  ball->getJoint(0)->setPositions(positions);
+
+  return ball;
+}
+
 SkeletonPtr createFreeBox(const std::string &name, const Eigen::Vector3d &dim,
                           const Eigen::Vector3d &color, double alpha)
 {
@@ -138,6 +160,32 @@ SkeletonPtr createFixedCylindar(const std::string &name, double radius, double h
   return cylinder;
 }
 
+SkeletonPtr createFixedEllipsoid(const std::string &name, const Eigen::Vector3d &dim,
+                                 const Eigen::Vector3d &pos,
+                                 const Eigen::Vector3d &color, double alpha)
+{
+  SkeletonPtr object = Skeleton::create(name);
+
+  // Create the Joint and Body pair
+  BodyNode *bn = object->createJointAndBodyNodePair<WeldJoint>().second;
+
+  // Make the shape based on the requested Shape type
+  std::shared_ptr<EllipsoidShape> shape = std::make_shared<EllipsoidShape>(
+      2 * dim);
+
+  auto shapeNode = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+      shape);
+
+  shapeNode->getVisualAspect()->setColor(color);
+  shapeNode->getVisualAspect()->setAlpha(alpha);
+
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  tf.translation() = pos;
+  bn->getParentJoint()->setTransformFromParentBodyNode(tf);
+
+  return object;
+}
+
 SkeletonPtr createFreeObjectfromMesh(const std::string &name, const std::string &filePath,
                                      const Eigen::Vector3d &scale)
 {
@@ -150,7 +198,6 @@ SkeletonPtr createFreeObjectfromMesh(const std::string &name, const std::string 
   std::shared_ptr<MeshShape> shape =
       std::make_shared<MeshShape>(scale, MeshShape::loadMesh(filePath));
 
-  
   shape->setColorMode(MeshShape::ColorMode::MATERIAL_COLOR);
   // shape->setColorMode(MeshShape::ColorMode::COLOR_INDEX);
   // shape->setColorMode(MeshShape::ColorMode::SHAPE_COLOR);
