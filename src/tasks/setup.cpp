@@ -40,6 +40,7 @@ void sample_surface_contacts(SkeletonPtr object, std::vector<ContactPoint> *pts,
     num_samples--;
   }
 }
+
 void load_surface_contacts(const std::string &file_name,
                            std::vector<ContactPoint> *pts, const Vector3d &scale,
                            std::vector<Vector3d> disabled_normal_directions,
@@ -113,7 +114,9 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config)
     object =
         createFreeBox("object", Vector3d(box_l[0], box_l[1], box_l[2]),
                       Vector3d(0.7, 0.3, 0.3), 0.45);
-    scale << box_l[0] / 2, box_l[1] / 2, box_l[2] / 2;
+    // scale << box_l[0] / 2, box_l[1] / 2, box_l[2] / 2;
+    scale << box_l[0], box_l[1], box_l[2];
+
   }
   else if (config["ellipsoid_object"])
   {

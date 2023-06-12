@@ -1,23 +1,25 @@
 # ---- Environment Setup ----
 
-# The object can be created as a cuboid (box_object) or from mesh file (mesh_object). Comment out the one you don't need. 
+# The object can be created as using primitive shapes or from mesh file (mesh_object). 
+# Keep one object only. Comment the ones you don't need. 
+
 box_object:
   shape: [1,1,1]
-  contact_file: "/data/cube_surface_contacts.csv" # path to sampled surface points on cube of unit half length
-  negate_contact_normal: true # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
+  contact_file: "/data/box_l1.csv" # path to sampled surface points on cube of unit half length
+  negate_contact_normal: false # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
   # disabled_normal_directions: [[0,0,-1], [0,0,1]]
 
 ellipsoid_object:
   semi_axis: [1,1,1]
   contact_file: "/data/ellipsoid_unit_semi_axis.csv" # path to sampled surface points on ellipsoid of unit semi-axis
-  negate_contact_normal: true # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
+  negate_contact_normal: false # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
   # disabled_normal_directions: [[0,0,-1], [0,0,1]]
 
 cylinder_object:
   radius: 1
   height: 2
-  contact_file: "/data/cylinder_h2_r1.csv" # path to sampled surface points on cylinder of unit radius and unit half height
-  negate_contact_normal: true # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
+  contact_file: "/data/cylinder_r1_h1.csv" # path to sampled surface points on cylinder of unit radius and unit height
+  negate_contact_normal: false # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
   # disabled_normal_directions: [[0,0,-1], [0,0,1]]
 
 # mesh_object:

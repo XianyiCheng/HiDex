@@ -3,8 +3,8 @@
 # The object can be created as a cuboid (box_object) or from mesh file (mesh_object). Comment out the one you don't need. 
 box_object:
   shape: [1,1,1]
-  contact_file: "/data/cube_surface_contacts.csv" # path to sampled surface points on cube of unit half length
-  negate_contact_normal: true # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
+  contact_file: "/data/box_l1.csv" # path to sampled surface points on cube of unit half length
+  negate_contact_normal: false # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
 
 maximum_surface_contact_points: 100
 
