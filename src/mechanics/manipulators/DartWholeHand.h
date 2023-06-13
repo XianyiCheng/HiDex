@@ -27,12 +27,15 @@ public:
                          VectorXd &new_config, std::vector<ContactPoint> *remain_fingertips) override
     {
         // We will not use this function in WholeHandTask
-        return false;
+        std::cout << "resampleFingers is not implemented in WholeHandTask" << std::endl;
+        exit(1);
     }
 
     // contact model
     void Fingertips2PointContacts(const std::vector<ContactPoint> &fingertips, std::vector<ContactPoint> *point_contacts) override;
 
+    void getFingertipsOnObject(const VectorXd& config, const Vector7d& object_pose, std::vector<ContactPoint>* fingertips) override;
+    
     bool ifIKsolution(const VectorXd &mnp_config, const Vector7d &object_pose) override
     {
         // This function is not used in WholeHandTask

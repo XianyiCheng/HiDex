@@ -138,6 +138,8 @@ public:
 
     bool control_neighbors = false;
 
+    bool search_with_manipulator_config = false;
+
     SearchOptions() {}
   };
 
@@ -173,7 +175,7 @@ public:
 
   State generate_state(const Vector7d &object_pose) const;
 
-  bool project_to_zero_contact_distance(const Vector7d &object_pose, Vector7d & projected_pose);
+  bool project_to_zero_contact_distance(const Vector7d &object_pose, Vector7d &projected_pose);
 
   std::vector<State> search_a_new_path(const State &start_state);
 
@@ -182,7 +184,8 @@ public:
   bool forward_integration(const Vector7d &x_start, const Vector7d &x_goal,
                            const std::vector<ContactPoint> &envs_,
                            const VectorXi &env_mode_,
-                           std::vector<Vector7d> *path);
+                           std::vector<Vector7d> *path,
+                           const VectorXd &manipulator_config = VectorXd::Zero(0));
 
   bool forward_integration_velocity(const Vector7d &x_start, const Vector6d &v_goal,
                                     const std::vector<ContactPoint> &mnps_,
@@ -358,8 +361,8 @@ public:
   void save_trajectory(const std::vector<State> &path);
 
   bool robot_contact_feasible_check(long int finger_idx, const Vector7d &x,
-                                     const VectorXi &cs_mode, const Vector6d &v,
-                                     const std::vector<ContactPoint> &envs);
+                                    const VectorXi &cs_mode, const Vector6d &v,
+                                    const std::vector<ContactPoint> &envs);
 
   bool robot_contact_feasible_check(
       const std::vector<ContactPoint> &mnps, const Vector7d &x, const VectorXi &cs_mode,
@@ -373,6 +376,14 @@ public:
                              const VectorXi &cs_mode, const Vector6d &v,
                              const std::vector<ContactPoint> &envs,
                              const std::vector<ContactPoint> &envs_pre);
+  bool randomRelocateFingers(const VectorXd &mnp_config, Vector7d x, Vector6d v,
+                             const std::vector<ContactPoint> &envs,
+                             const VectorXi &env_mode,
+                             VectorXd &new_config, int samples);
+  bool pruning_check_w_manipulator_config(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
+                                          const std::vector<ContactPoint> &envs,
+                                          const VectorXd &robot_config, VectorXd &new_robot_config,
+                                          bool if_allow_transition);
 
   void sample_likely_feasible_finger_idx(Vector7d x_object, int number,
                                          std::vector<long int> *finger_idxs,

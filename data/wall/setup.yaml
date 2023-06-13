@@ -44,10 +44,20 @@ free_sphere_robot:
 
 # ---- Start and Goal Pose ----
 # pose [x, y, z, qx, qw, qz, qw]
-object_start_pose: [-4.5,0,0.5,0,0,0,1]
-# object_goal_pose: [-7,0,4.5,0,0,0,1]
-object_goal_pose: [-6,0,4.5,0,0,0,1]
-# object_goal_pose: [-6, 0, 4.5, 0, -0.7071, 0, 0.7071]
+
+# # pushing 
+# object_start_pose: [-0.5,0,0.5,0,0,0,1]
+# object_goal_pose: [-4.5,0,0.5,0,0,0,1]
+
+# # push up
+# object_start_pose: [-4.5,0,0.5,0,0,0,1]
+# object_goal_pose: [-4.5,0,4.5,0,0,0,1]
+
+# push up to the side
+object_start_pose: [-2.5,0,0.5,0,0,0,1]
+# object_start_pose: [-5.8823,    0.0145649,      4.49294,  3.52167e-08,    -0.705356, -3.52166e-08,     0.708854]
+# object_goal_pose: [-6,0,4.5,0,0,0,1]
+object_goal_pose: [-8, 0, 4.5, 0, -0.7071, 0, 0.7071]
 # object_goal_pose: [0.5, 0, 0.5, 0, -1, 0, 0]
 
 # ---- Run options ----
@@ -62,8 +72,8 @@ refine_object_trajectory: # whether to refine the trajectory for 2nd level searc
 transition_pruning: true
 
 rrt_options:
-  max_samples: 50
-  goal_biased_prob: 0.7
+  max_samples: 20
+  goal_biased_prob: 0.9
   goal_thr: 1
   extend_epsilon:
     translation: 1
@@ -77,11 +87,12 @@ rrt_options:
     rotation: 
       SO3_enabled: true
       axis: [0,0,1] # if SO3_enabled is false, sample rotation on this axis
+  search_with_manipulator_config: true
 
 mcts_options:
   max_time: 5
-  l1_1st_max_iterations: 5
-  l1_max_iterations: 3
+  l1_1st_max_iterations: 10
+  l1_max_iterations: 5
   l2_1st_max_iterations: 20
   l2_max_iterations: 5
   final_l2_1st_max_iterations: 20
@@ -105,5 +116,5 @@ action_probability_L2: "env"
 # "show": plan a trajectory and show, no save
 # "save_n_show": plan a trajectory, saved in csv, and show the results
 
-visualize_option: "show"
+visualize_option: "save_n_show"
 save_file_path: "/data/wall/output.csv"

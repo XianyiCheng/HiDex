@@ -31,6 +31,7 @@ class ReusableRRT {
 public:
   struct Node {
     Vector7d config; // x, y, z, qx, qy, qz, qw
+    VectorXd manipulator_config; // optional: save and search the manipulator config during the rrt
     int parent = -1;
     int edge = -1; // index of edge from parent to this
     bool is_extended_to_goal = false;

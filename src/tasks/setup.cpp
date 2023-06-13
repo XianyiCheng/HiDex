@@ -298,6 +298,10 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config)
                                .as<std::vector<double>>()
                                .data());
 
+  if (config["rrt_options"]["search_with_manipulator_config"]){
+    rrt_options.search_with_manipulator_config = config["rrt_options"]["search_with_manipulator_config"].as<bool>();
+  }
+
   // Whether to refine the trajectory in level 2
   bool is_refine = config["refine_object_trajectory"]["enabled"].as<bool>();
   double refine_dist =
@@ -393,8 +397,9 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config)
   // TODO
 
   //
+  std::string task_type = config["task_dynamics"].as<std::string>();
   task->set_task_parameters(goal_thr, wa, wt, charac_len, mu_env, mu_mnp, oi,
-                            f_g, world, n_robot_contacts, "quasistatic",
+                            f_g, world, n_robot_contacts, task_type,
                             surface_pts, rrt_options, is_refine, refine_dist);
 }
 

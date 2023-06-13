@@ -42,6 +42,11 @@ std::vector<std::string> DartWholeHandManipulator::getPartNames() const
 {
     return this->part_names;
 }
+void DartWholeHandManipulator::getFingertipsOnObject(const VectorXd& config, const Vector7d& object_pose, std::vector<ContactPoint>* fingertips) {
+    // raise unimplemented error
+    std::cout << "getFingertipsOnObject is not implemented in DartWholeHandManipulator" << std::endl;
+    exit(1);
+}
 
 void DartWholeHandManipulator::Fingertips2PointContacts(const std::vector<ContactPoint> &fingertips, std::vector<ContactPoint> *point_contacts)
 {

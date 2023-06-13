@@ -120,6 +120,7 @@ rrt_options:
     rotation: 
       SO3_enabled: true
       axis: [0,0,1] # if SO3_enabled is false, sample rotation on this axis
+  search_with_manipulator_config: false # whether to save manipulator config in the search (and the search will consider manipulator config as well)
 
 mcts_options:
   max_time: 5
