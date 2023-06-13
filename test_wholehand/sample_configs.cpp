@@ -33,9 +33,9 @@ int main(int argc, char *argv[])
 
     task->initialize();
 
-    std::vector<double> box_l =
-        config["box_object"]["shape"].as<std::vector<double>>();
-    Vector3d box_shape(box_l[0], box_l[1], box_l[2]);
+    // std::vector<double> box_l =
+    //     config["box_object"]["shape"].as<std::vector<double>>();
+    // Vector3d box_shape(box_l[0], box_l[1], box_l[2]);
 
     // std::srand(12658645);
     // set random seed with time
@@ -77,16 +77,16 @@ int main(int argc, char *argv[])
 
             if (if_ik)
             {
-                double max_d = task->getRobot()->maxPenetrationDistance(ik_solutions_raw.back(), task->start_object_pose, box_shape, n_sdf_sample);
-                double avg_d = task->getRobot()->averagePenetrateDistance(ik_solutions_raw.back(), task->start_object_pose, box_shape, n_sdf_sample);
+                // double max_d = task->getRobot()->maxPenetrationDistance(ik_solutions_raw.back(), task->start_object_pose, box_shape, n_sdf_sample);
+                // double avg_d = task->getRobot()->averagePenetrateDistance(ik_solutions_raw.back(), task->start_object_pose, box_shape, n_sdf_sample);
 
                 // if ((max_d < 0.03) && (avg_d < 0.01)){
                 contact_configs.push_back(contact_config);
                 ik_solutions.push_back(ik_solutions_raw.back());
 
-                std::ostringstream oss;
-                oss << std::fixed << std::setprecision(4) << "Penetration distance, average " << avg_d << ", max " << max_d;
-                texts.push_back(oss.str());
+                // std::ostringstream oss;
+                // oss << std::fixed << std::setprecision(4) << "Penetration distance, average " << avg_d << ", max " << max_d;
+                // texts.push_back(oss.str());
                 // break;
                 // }
             }
@@ -97,19 +97,19 @@ int main(int argc, char *argv[])
 
             // add box surface opt
 
-            bool if_ik_box_opt = task->rough_ik_box_opt(contact_config, task->start_object_pose, box_shape, &ik_solutions_raw);
-            if (if_ik_box_opt)
-            {
-                double max_d = task->getRobot()->maxPenetrationDistance(ik_solutions_raw.back(), task->start_object_pose, box_shape, n_sdf_sample);
-                double avg_d = task->getRobot()->averagePenetrateDistance(ik_solutions_raw.back(), task->start_object_pose, box_shape, n_sdf_sample);
+            // bool if_ik_box_opt = task->rough_ik_box_opt(contact_config, task->start_object_pose, box_shape, &ik_solutions_raw);
+            // if (if_ik_box_opt)
+            // {
+            //     double max_d = task->getRobot()->maxPenetrationDistance(ik_solutions_raw.back(), task->start_object_pose, box_shape, n_sdf_sample);
+            //     double avg_d = task->getRobot()->averagePenetrateDistance(ik_solutions_raw.back(), task->start_object_pose, box_shape, n_sdf_sample);
 
-                contact_configs.push_back(contact_config);
-                ik_solutions.push_back(ik_solutions_raw.back());
+            //     contact_configs.push_back(contact_config);
+            //     ik_solutions.push_back(ik_solutions_raw.back());
 
-                std::ostringstream oss;
-                oss << std::fixed << std::setprecision(4) << "+BoxSurface Opt. Penetration distance, average " << avg_d << ", max " << max_d;
-                texts.push_back(oss.str());
-            }
+            //     std::ostringstream oss;
+            //     oss << std::fixed << std::setprecision(4) << "+BoxSurface Opt. Penetration distance, average " << avg_d << ", max " << max_d;
+            //     texts.push_back(oss.str());
+            // }
         }
 
         std::vector<Vector7d> object_poses;
@@ -135,10 +135,10 @@ int main(int argc, char *argv[])
         // task->m_world->setPlaybackTrajectory(object_poses, ik_solutions);
 
         // // Show the hand and the collision fingertip spheres
-        // task->m_world->setPlaybackTrajectory(object_poses, ik_and_sphere_solutions);
+        task->m_world->setPlaybackTrajectory(object_poses, ik_and_sphere_solutions);
 
         // Show the hand and the collision fingertip spheres and texts
-        task->m_world->setPlaybackTrajectoryWithText(object_poses, ik_and_sphere_solutions, texts);
+        // task->m_world->setPlaybackTrajectoryWithText(object_poses, ik_and_sphere_solutions, texts);
 
         task->m_world->startWindow(&argc, argv);
     }

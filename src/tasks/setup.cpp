@@ -1,6 +1,6 @@
 #include "setup.h"
 
-void sample_surface_contacts(SkeletonPtr object, std::vector<ContactPoint> *pts, int num_samples,
+void sample_surface_contacts(SkeletonPtr object, std::vector<ContactPoint> *pts, int num_samples, double scale,
                              std::vector<Vector3d> disabled_normal_directions)
 {
   BodyNodePtr mbn = object->getBodyNode(0);
@@ -18,7 +18,7 @@ void sample_surface_contacts(SkeletonPtr object, std::vector<ContactPoint> *pts,
     int index = randi(num_vertices);
     aiVector3D point = meshShape->getMesh()->mMeshes[0]->mVertices[index];
     aiVector3D normal = meshShape->getMesh()->mMeshes[0]->mNormals[index];
-    p << point[0], point[1], point[2];
+    p << scale*point[0], scale*point[1], scale*point[2];
     n << -normal[0], -normal[1], -normal[2];
 
     bool is_disabled = false;
@@ -116,7 +116,6 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config)
                       Vector3d(0.7, 0.3, 0.3), 0.45);
     // scale << box_l[0] / 2, box_l[1] / 2, box_l[2] / 2;
     scale << box_l[0], box_l[1], box_l[2];
-
   }
   else if (config["ellipsoid_object"])
   {
@@ -179,7 +178,7 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config)
         std::cout << "We only provide on-fly contact sampling for mesh object. Please use the provided contact file for the primitive object in /data/ folder. " << std::endl;
         exit(0);
       }
-      sample_surface_contacts(object, &surface_pts, max_contact_points, disabled_dirs);
+      sample_surface_contacts(object, &surface_pts, max_contact_points, config["mesh_object"]["scale"].as<double>(), disabled_dirs);
     }
     else
     {
@@ -248,6 +247,13 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config)
         world->addEnvironmentComponent(env_cylindar);
       }
     }
+  }
+  else
+  {
+    SkeletonPtr env_block =
+        createFixedBox("no_environment", Vector3d(0.1, 0.1, 0.1),
+                       Vector3d(0, 0, -1000));
+    world->addEnvironmentComponent(env_block);
   }
 
   double charac_len = config["characteristic_length"].as<double>();

@@ -1,8 +1,47 @@
 #include "wholehand_setup.h"
+void sample_surface_contacts(SkeletonPtr object, std::vector<ContactPoint> *pts, int num_samples, double scale,
+                             std::vector<Vector3d> disabled_normal_directions)
+{
+  BodyNodePtr mbn = object->getBodyNode(0);
+  Isometry3d mtf = mbn->getWorldTransform();
+  ShapePtr ms = mbn->getShapeNodes().front()->getShape();
+  MeshShape *meshShape =
+      dynamic_cast<MeshShape *>(ms.get());
+
+  int num_vertices = meshShape->getMesh()->mMeshes[0]->mNumVertices - 1;
+  while (num_samples > 0)
+  {
+    Vector3d p;
+    Vector3d n;
+
+    int index = randi(num_vertices);
+    aiVector3D point = meshShape->getMesh()->mMeshes[0]->mVertices[index];
+    aiVector3D normal = meshShape->getMesh()->mMeshes[0]->mNormals[index];
+    p << scale*point[0], scale*point[1], scale*point[2];
+    n << -normal[0], -normal[1], -normal[2];
+
+    bool is_disabled = false;
+    for (auto &dir : disabled_normal_directions)
+    {
+      double d = n.transpose() * dir;
+      if (d > 0.9)
+      {
+        is_disabled = true;
+        break;
+      }
+    }
+    if (is_disabled)
+    {
+      continue; // skip this point
+    }
+    ContactPoint cp(p, n);
+    pts->push_back(cp);
+    num_samples--;
+  }
+}
 
 void load_surface_contacts(const std::string &file_name,
-                           std::vector<ContactPoint> *pts, double scale_x,
-                           double scale_y, double scale_z,
+                           std::vector<ContactPoint> *pts, const Vector3d &scale,
                            std::vector<Vector3d> disabled_normal_directions,
                            bool negate_normal = false)
 {
@@ -49,7 +88,7 @@ void load_surface_contacts(const std::string &file_name,
     }
 
     Vector3d pos;
-    pos << v(0) * scale_x, v(1) * scale_y, v(2) * scale_z;
+    pos << v(0) * scale[0], v(1) * scale[1], v(2) * scale[2];
     ContactPoint p(pos, normal_dir * v.tail(3));
     pts->push_back(p);
   }
@@ -62,85 +101,109 @@ void load_task(std::shared_ptr<WholeHandTASK> task, const YAML::Node &config)
   // ---- Load Object ----
   std::cout << "Loading object" << std::endl;
   std::vector<ContactPoint> surface_pts;
+  SkeletonPtr object;
+  std::string object_type;
+  Vector3d scale;
+
   if (config["box_object"])
   {
+    object_type = "box_object";
     std::vector<double> box_l =
         config["box_object"]["shape"].as<std::vector<double>>();
-    SkeletonPtr object =
+    object =
         createFreeBox("object", Vector3d(box_l[0], box_l[1], box_l[2]),
                       Vector3d(0.7, 0.3, 0.3), 0.45);
-    world->addObject(object);
-
-    std::cout << "Loading contacts" << std::endl;
-    // The contact file for boxes is sampled on the cube of side length = 2
-    bool negate_normal =
-        config["box_object"]["negate_contact_normal"].as<bool>();
-
-    std::vector<Vector3d> disabled_dirs;
-    if (config["box_object"]["disabled_normal_directions"])
-    {
-      std::vector<std::vector<double>> disabled_dirs_vec =
-          config["box_object"]["disabled_normal_directions"]
-              .as<std::vector<std::vector<double>>>();
-      for (auto &dir : disabled_dirs_vec)
-      {
-        disabled_dirs.push_back(Vector3d(dir[0], dir[1], dir[2]));
-      }
-    }
-    load_surface_contacts(
-        std::string(SRC_DIR) + config["box_object"]["contact_file"].as<std::string>(), &surface_pts,
-        box_l[0] / 2, box_l[1] / 2, box_l[2] / 2, disabled_dirs, negate_normal);
+    // scale << box_l[0] / 2, box_l[1] / 2, box_l[2] / 2;
+    scale << box_l[0], box_l[1], box_l[2];
+  }
+  else if (config["ellipsoid_object"])
+  {
+    object_type = "ellipsoid_object";
+    std::vector<double> ellipsoid_l =
+        config["ellipsoid_object"]["semi_axis"].as<std::vector<double>>();
+    object = createFreeEllipsoid(
+        "object", Vector3d(ellipsoid_l[0], ellipsoid_l[1], ellipsoid_l[2]));
+    scale << ellipsoid_l[0], ellipsoid_l[1], ellipsoid_l[2];
+  }
+  else if (config["cylinder_object"])
+  {
+    object_type = "cylinder_object";
+    double c_radius = config["cylinder_object"]["radius"].as<double>();
+    double c_height = config["cylinder_object"]["height"].as<double>();
+    object = createFreeCylinder("object", c_radius, c_height);
+    scale << c_radius, c_radius, c_height;
   }
   else if (config["mesh_object"])
   {
-    double scale = config["mesh_object"]["scale"].as<double>();
-    SkeletonPtr object = createFreeObjectfromMesh(
-        std::string(SRC_DIR) + "mesh_object", config["mesh_object"]["mesh_file"].as<std::string>(),
-        Vector3d(scale, scale, scale));
-    world->addObject(object);
-
-    std::cout << "Loading contacts" << std::endl;
-
-    std::vector<Vector3d> disabled_dirs;
-    if (config["mesh_object"]["disabled_normal_directions"])
-    {
-      std::vector<std::vector<double>> disabled_dirs_vec =
-          config["mesh_object"]["disabled_normal_directions"]
-              .as<std::vector<std::vector<double>>>();
-      for (auto &dir : disabled_dirs_vec)
-      {
-        disabled_dirs.push_back(Vector3d(dir[0], dir[1], dir[2]));
-      }
-    }
-
-    bool negate_normal =
-        config["mesh_object"]["negate_contact_normal"].as<bool>();
-    load_surface_contacts(
-        std::string(SRC_DIR) + config["mesh_object"]["contact_file"].as<std::string>(), &surface_pts,
-        scale, scale, scale, disabled_dirs, negate_normal);
+    object_type = "mesh_object";
+    double scale_l = config["mesh_object"]["scale"].as<double>();
+    scale << scale_l, scale_l, scale_l;
+    object = createFreeObjectfromMesh(
+        "mesh_object",
+        std::string(SRC_DIR) + config["mesh_object"]["mesh_file"].as<std::string>(),
+        scale);
   }
   else
   {
     std::cout << "No object is loaded. Exit program." << std::endl;
     exit(0);
   }
+  world->addObject(object);
 
-  int max_contact_points = config["maximum_surface_contact_points"].as<int>();
-  while (surface_pts.size() > max_contact_points)
+  std::cout << "Loading contacts" << std::endl;
+
   {
-    int idx = randi(surface_pts.size() - 1);
-    surface_pts.erase(surface_pts.begin() + idx);
+    int max_contact_points = config["maximum_surface_contact_points"].as<int>();
+
+    bool negate_normal =
+        config[object_type.c_str()]["negate_contact_normal"].as<bool>();
+
+    std::vector<Vector3d> disabled_dirs;
+    if (config[object_type.c_str()]["disabled_normal_directions"])
+    {
+      std::vector<std::vector<double>> disabled_dirs_vec =
+          config[object_type.c_str()]["disabled_normal_directions"]
+              .as<std::vector<std::vector<double>>>();
+      for (auto &dir : disabled_dirs_vec)
+      {
+        disabled_dirs.push_back(Vector3d(dir[0], dir[1], dir[2]));
+      }
+    }
+    std::string contact_file = config[object_type.c_str()]["contact_file"].as<std::string>();
+    if (contact_file == "none")
+    {
+      if (object_type != "mesh_object")
+      {
+        std::cout << "We only provide on-fly contact sampling for mesh object. Please use the provided contact file for the primitive object in /data/ folder. " << std::endl;
+        exit(0);
+      }
+      sample_surface_contacts(object, &surface_pts, max_contact_points, config["mesh_object"]["scale"].as<double>(), disabled_dirs);
+    }
+    else
+    {
+      load_surface_contacts(
+          std::string(SRC_DIR) + contact_file, &surface_pts, scale, disabled_dirs, negate_normal);
+
+      while (surface_pts.size() > max_contact_points)
+      {
+        int idx = randi(surface_pts.size() - 1);
+        surface_pts.erase(surface_pts.begin() + idx);
+      }
+    }
   }
-  std::cout << "Number of surface contact points: " << surface_pts.size()
-            << std::endl;
+  std::cout << "Number of surface contacts: " << surface_pts.size() << std::endl;
 
   // ---- Load Environment ----
   if (config["environment"])
   {
-    std::cout << "Loading environment blocks" << std::endl;
-    for (int i = 1; i <= 20; ++i)
+    std::cout << "Loading environment components" << std::endl;
+    int max_env_parts = 20;
+    // load blocks
+    for (int i = 1; i <= max_env_parts; ++i)
     {
       std::string block_name = "block_" + std::to_string(i);
+      std::string ellipsoid_name = "ellipsoid_" + std::to_string(i);
+      std::string cylinder_name = "cylinder_" + std::to_string(i);
       if (config["environment"][block_name.c_str()])
       {
         std::vector<double> loc =
@@ -154,7 +217,42 @@ void load_task(std::shared_ptr<WholeHandTASK> task, const YAML::Node &config)
                            Vector3d(loc[0], loc[1], loc[2]));
         world->addEnvironmentComponent(env_block);
       }
+      if (config["environment"][ellipsoid_name.c_str()])
+      {
+        std::vector<double> loc =
+            config["environment"][ellipsoid_name.c_str()]["location"]
+                .as<std::vector<double>>();
+        std::vector<double> dim =
+            config["environment"][ellipsoid_name.c_str()]["dimension"]
+                .as<std::vector<double>>();
+        SkeletonPtr env_ellipsoid =
+            createFixedEllipsoid(ellipsoid_name, Vector3d(dim[0], dim[1], dim[2]),
+                                 Vector3d(loc[0], loc[1], loc[2]));
+        world->addEnvironmentComponent(env_ellipsoid);
+      }
+      if (config["environment"][cylinder_name.c_str()])
+      {
+        std::vector<double> loc =
+            config["environment"][cylinder_name.c_str()]["location"]
+                .as<std::vector<double>>();
+        double cylindar_r =
+            config["environment"][cylinder_name.c_str()]["radius"]
+                .as<double>();
+        double cylindar_h = config["environment"][cylinder_name.c_str()]["height"]
+                                .as<double>();
+        SkeletonPtr env_cylindar =
+            createFixedCylindar(cylinder_name, cylindar_r, cylindar_h,
+                                Vector3d(loc[0], loc[1], loc[2]));
+        world->addEnvironmentComponent(env_cylindar);
+      }
     }
+  }
+  else
+  {
+    SkeletonPtr env_block =
+        createFixedBox("no_environment", Vector3d(0.1, 0.1, 0.1),
+                       Vector3d(0, 0, -1000));
+    world->addEnvironmentComponent(env_block);
   }
 
   double charac_len = config["characteristic_length"].as<double>();
