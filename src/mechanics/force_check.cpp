@@ -198,13 +198,18 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
   } else {
     x_v = x.block(0, 0, 6, 1);
   }
+  if (v_b.norm() < 1e-6) {
+    if (x_v.norm() < 1e-3){
+      return true;
+    } 
+  }
   Vector6d x_v_normalized = x_v.normalized();
   Vector6d v_b_normalized = v_b.normalized();
   double theta = x_v_normalized.transpose() * v_b_normalized;
 
   if (theta < thr) {
-    // std::cout << "solved v too large error for quasidynamic verification!"
-    //           << std::endl;
+    std::cout << "Solved v too large error for quasidynamic verification! Current theta: " << theta 
+              << std::endl;
     // std::cout << "x_v: " << x_v.transpose() << std::endl;
     // std::cout << "v_b: " << v_b.transpose() << std::endl;
     return false;

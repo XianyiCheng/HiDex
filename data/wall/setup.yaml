@@ -21,7 +21,7 @@ characteristic_length: 1
 robot_object_friction_coefficient: 0.8
 environment_object_friction_coefficient: 0.3
 
-task_dynamics: "quasistatic" # "quasistatic", "quasidynamic", "none", "force_closure"
+task_dynamics: "quasidynamic" # "quasistatic", "quasidynamic", "none", "force_closure"
 object_weight: [0,0,-0.1,0,0,0]
 object_inertia: 
   [ 1, 0, 0, 0, 0, 0, 
@@ -67,10 +67,10 @@ refine_object_trajectory: # whether to refine the trajectory for 2nd level searc
   enabled: false
   distance: 1
 
-transition_pruning: true
+transition_pruning: false
 
 rrt_options:
-  max_samples: 20
+  max_samples: 50
   goal_biased_prob: 0.9
   goal_thr: 1
   extend_epsilon:
@@ -80,8 +80,8 @@ rrt_options:
     rotation: 0.01
     translation: 1.0
   sample:
-    position_upper_bound: [2.5,2.5,1]
-    position_lower_bound: [-2.5,-2.5,0]
+    position_upper_bound: [-2.5,2.5,5]
+    position_lower_bound: [-6,-2.5,0]
     rotation: 
       SO3_enabled: true
       axis: [0,0,1] # if SO3_enabled is false, sample rotation on this axis

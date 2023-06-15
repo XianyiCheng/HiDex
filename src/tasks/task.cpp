@@ -12,7 +12,7 @@
 #define MODE_TYPE_FULL 1
 #include "integration_utils.h"
 
-#define QUASIDYNAMIC_RANGE 1
+#define QUASIDYNAMIC_RANGE 0.3 // (-1,1) 1 exactly satisfy the accelerate direction, -1: whatever is ok
 
 bool is_contact_free(std::vector<ContactPoint> envs, double free_thr)
 {
@@ -707,7 +707,7 @@ TASK::search_a_new_path(const TASK::State &start_state)
   std::vector<int> subtree = shared_rrt->subtree_node_idxes(
       root_node_idx, start_state.modes[start_state.m_mode_idx]);
 
-  set_rand_seed();
+  // set_rand_seed();
 
   int goal_idx = -1;
 
@@ -1355,7 +1355,7 @@ bool TASK::is_valid_transition(const TASK::State2 &state,
           v_b, remain_mnps, this->saved_object_trajectory[state.timestep].envs,
           ss_mode_relocate, this->f_gravity, this->object_inertia,
           this->saved_object_trajectory[state.timestep].m_pose, this->mu_env,
-          this->mu_mnp, this->wa, this->wt, 1.0, this->cons.get(), 0.0);
+          this->mu_mnp, this->wa, this->wt, 1.0, this->cons.get(), QUASIDYNAMIC_RANGE);
       // return true;
     }
     else
@@ -1905,10 +1905,10 @@ bool TASK::randomRelocateFingers(const VectorXd &mnp_config, Vector7d x, Vector6
       else if (this->task_dynamics_type == "quasidynamic")
       {
         double h_time = 1.0;
-        Vector6d v_relocate;
-        v_relocate.setZero();
+        // Vector6d v_relocate;
+        // v_relocate.setZero();
         isremainbalance =
-            isQuasidynamic(v_relocate, remain_grasp_mnps, envs, relocate_mode, this->f_gravity,
+            isQuasidynamic(v, remain_grasp_mnps, envs, relocate_mode, this->f_gravity,
                            this->object_inertia, x, this->mu_env, this->mu_mnp,
                            this->wa, this->wt, h_time, this->cons.get(), QUASIDYNAMIC_RANGE);
       }
