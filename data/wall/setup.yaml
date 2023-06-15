@@ -45,7 +45,7 @@ free_sphere_robot:
 # ---- Start and Goal Pose ----
 # pose [x, y, z, qx, qw, qz, qw]
 
-# # pushing 
+# pushing 
 # object_start_pose: [-0.5,0,0.5,0,0,0,1]
 # object_goal_pose: [-4.5,0,0.5,0,0,0,1]
 
@@ -55,9 +55,7 @@ free_sphere_robot:
 
 # push up to the side
 object_start_pose: [-2.5,0,0.5,0,0,0,1]
-# object_start_pose: [-5.8823,    0.0145649,      4.49294,  3.52167e-08,    -0.705356, -3.52166e-08,     0.708854]
-# object_goal_pose: [-6,0,4.5,0,0,0,1]
-object_goal_pose: [-8, 0, 4.5, 0, -0.7071, 0, 0.7071]
+object_goal_pose: [-6, 0, 4.5, 0, -0.7071, 0, 0.7071]
 # object_goal_pose: [0.5, 0, 0.5, 0, -1, 0, 0]
 
 # ---- Run options ----
@@ -66,7 +64,7 @@ random_seed: -1
 # ---- Planner options ----
 
 refine_object_trajectory: # whether to refine the trajectory for 2nd level search
-  enabled: true
+  enabled: false
   distance: 1
 
 transition_pruning: true

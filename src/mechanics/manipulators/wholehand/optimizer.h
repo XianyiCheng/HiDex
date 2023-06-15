@@ -486,6 +486,7 @@ public:
     }
 
     std::vector<ContactPoint> getUpdatedObjectContactPointsWorld(const VectorXd &uv);
+    std::vector<ContactPoint> getUpdatedObjectContactPointsLocal(const VectorXd &uv);
 
     // protected:
     int n_var;

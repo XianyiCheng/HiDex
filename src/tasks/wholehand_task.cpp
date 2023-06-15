@@ -1404,7 +1404,8 @@ bool WholeHandTASK::rough_ik_check(const ContactConfig &contact_config, const Ve
     return if_ik;
 }
 
-bool WholeHandTASK::rough_ik_box_opt(const ContactConfig &contact_config, const Vector7d &object_pose, const Vector3d &box_shape, std::vector<VectorXd> *rough_ik_solutions){
+bool WholeHandTASK::rough_ik_box_opt(const ContactConfig &contact_config, const Vector7d &object_pose, const Vector3d &box_shape, std::vector<VectorXd> *rough_ik_solutions)
+{
 
     std::vector<int> part_p_idxes;
     for (auto seg : contact_config.hand_segments)
@@ -1425,7 +1426,6 @@ bool WholeHandTASK::rough_ik_box_opt(const ContactConfig &contact_config, const 
     bool if_ik = this->robot->roughIKsolutions_BoxOpt(contact_config.hand_segments, part_p_idxes, object_contact_points, object_pose, box_shape, initial_guess, rough_ik_solutions);
 
     return if_ik;
-
 }
 
 bool WholeHandTASK::sample_hand_segments(const std::vector<ContactPoint> &fingertips, const Vector7d &object_pose, std::vector<int> *part_idxes)
@@ -1602,39 +1602,39 @@ void WholeHandTASK::sample_likely_actions(const WholeHandTASK::State2 &state, in
         }
         else if (motion_type == "new")
         {
-                // 1. number of new contacts
-                int n_new = 1 + randi(this->robot->maximum_simultaneous_contact - state.contact_idxes.size() - 1);
-                // 2. sample new contact point idxes, feasible in if_contact_valid (force, rough collision check, valid to go one timestep further)
-                std::vector<int> existing_contact_idxes = state.contact_idxes;
-                bool is_subsampled = this->sample_a_feasible_point_contacts_set(object_pose, cs_mode, velocity, this->saved_object_trajectory[t].envs, n_new, &contact_idxes, prob, &existing_contact_idxes);
-                
-                if (!is_subsampled)
-                {
-                    continue;
-                }
+            // 1. number of new contacts
+            int n_new = 1 + randi(this->robot->maximum_simultaneous_contact - state.contact_idxes.size() - 1);
+            // 2. sample new contact point idxes, feasible in if_contact_valid (force, rough collision check, valid to go one timestep further)
+            std::vector<int> existing_contact_idxes = state.contact_idxes;
+            bool is_subsampled = this->sample_a_feasible_point_contacts_set(object_pose, cs_mode, velocity, this->saved_object_trajectory[t].envs, n_new, &contact_idxes, prob, &existing_contact_idxes);
 
-                std::vector<int> all_contact_idxes;
-                all_contact_idxes.insert(all_contact_idxes.end(), state.contact_idxes.begin(), state.contact_idxes.end());
-                all_contact_idxes.insert(all_contact_idxes.end(), contact_idxes.begin(), contact_idxes.end());
+            if (!is_subsampled)
+            {
+                continue;
+            }
 
-                std::vector<ContactPoint> all_fingertips = retrieve_elements<ContactPoint>(this->object_surface_pts, all_contact_idxes);
+            std::vector<int> all_contact_idxes;
+            all_contact_idxes.insert(all_contact_idxes.end(), state.contact_idxes.begin(), state.contact_idxes.end());
+            all_contact_idxes.insert(all_contact_idxes.end(), contact_idxes.begin(), contact_idxes.end());
 
-                // 3. sample hand segments
-                std::vector<int> all_part_idxes = retrieve_idxes<std::string>(this->robot->allowed_part_names, state.hand_segments);
+            std::vector<ContactPoint> all_fingertips = retrieve_elements<ContactPoint>(this->object_surface_pts, all_contact_idxes);
 
-                bool if_sampled_hand_segments = this->sample_hand_segments(all_fingertips, object_pose, &all_part_idxes);
+            // 3. sample hand segments
+            std::vector<int> all_part_idxes = retrieve_idxes<std::string>(this->robot->allowed_part_names, state.hand_segments);
 
-                if (!if_sampled_hand_segments)
-                {
-                    continue;
-                }
+            bool if_sampled_hand_segments = this->sample_hand_segments(all_fingertips, object_pose, &all_part_idxes);
 
-                // success sampled, break
-                for (int i_new = 0; i_new < n_new; i_new++)
-                {
-                    hand_segments.push_back(this->robot->allowed_part_names[all_part_idxes[i_new] + state.contact_idxes.size()]);
-                }
-                is_sampled = true;
+            if (!if_sampled_hand_segments)
+            {
+                continue;
+            }
+
+            // success sampled, break
+            for (int i_new = 0; i_new < n_new; i_new++)
+            {
+                hand_segments.push_back(this->robot->allowed_part_names[all_part_idxes[i_new] + state.contact_idxes.size()]);
+            }
+            is_sampled = true;
         }
         else if (motion_type == "release")
         {
@@ -1642,7 +1642,7 @@ void WholeHandTASK::sample_likely_actions(const WholeHandTASK::State2 &state, in
             int n_release = 1 + randi(state.contact_idxes.size() - 1);
             // 2. sample contact point idxes to release, feasible in force balance or force, rough collision check, not required to be valid to go one timestep further
             std::vector<int> left_contact_idxes = state.contact_idxes;
-            for(int i_release = 0; i_release < n_release; i_release++)
+            for (int i_release = 0; i_release < n_release; i_release++)
             {
                 int idx = randi(left_contact_idxes.size());
                 left_contact_idxes.erase(left_contact_idxes.begin() + idx);
@@ -1654,7 +1654,9 @@ void WholeHandTASK::sample_likely_actions(const WholeHandTASK::State2 &state, in
             if (!is_motion_feasible || !is_maintain_feasible)
             {
                 continue;
-            } else {
+            }
+            else
+            {
                 is_sampled = true;
             }
         }
@@ -1731,5 +1733,4 @@ void WholeHandTASK::getSavedObjectTrajectoryInfo(int timestep, Vector7d *object_
     *velocity = v;
     *relocate_cs_mode = reference_cs_mode;
     *relocate_velocity = Vector6d::Zero();
-
 }

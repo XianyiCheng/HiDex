@@ -1,14 +1,26 @@
 # ---- Environment Setup ----
 
 # The object can be created as a cuboid (box_object) or from mesh file (mesh_object). Comment out the one you don't need. 
-box_object:
-  shape: [0.075,0.075,0.075]
-  contact_file: "/data/box_l1.csv" # path to sampled surface points on cube of unit half length
+# box_object:
+#   shape: [0.075,0.075,0.075]
+#   contact_file: "/data/box_l1.csv" # path to sampled surface points on cube of unit half length
+#   negate_contact_normal: false
+
+mesh_object:
+  mesh_file: "/data/apple.obj"
+  scale: 1.0
+  contact_file: "none" # "none" if there is no presampled contact file, in which case the contact points will be sampled on the fly
   negate_contact_normal: false
 
 # mesh_object:
-#   mesh_file: "/data/apple.obj"
-#   scale: 1.0
+#   mesh_file: "/data/d_lego_duplo.obj"
+#   scale: 1
+#   contact_file: "none" # "none" if there is no presampled contact file, in which case the contact points will be sampled on the fly
+#   negate_contact_normal: false
+
+# mesh_object:
+#   mesh_file: "/data/inhand/data/tuna_fish_can.stl"
+#   scale: 0.1
 #   contact_file: "none" # "none" if there is no presampled contact file, in which case the contact points will be sampled on the fly
 #   negate_contact_normal: false
 
@@ -20,10 +32,10 @@ box_object:
 
 maximum_surface_contact_points: 100
 
-environment: # maximum 20 blocks
-  block_1:
-    dimension: [10,10,1]
-    location: [0,0,-0.537499]
+# environment: # maximum 20 blocks
+#   block_1:
+#     dimension: [10,10,1]
+#     location: [0,0,-0.537499]
 
 characteristic_length: 1
 

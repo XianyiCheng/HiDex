@@ -525,6 +525,17 @@ pair<double, VectorXd> BoxSurfaceOptimizer::getSolution()
 }
 
 
+std::vector<ContactPoint> ObjectSurfaceOptSetup::getUpdatedObjectContactPointsLocal(const VectorXd &uv){
+    int n_contacts = getNumContactPoints();
+    std::vector<ContactPoint> updatedContactPoints_local;
+    for (int i = 0; i < n_contacts; i++){
+        // ContactPoint cp = this->expmap_mesh->exp_map(this->object_contact_idxes[i], uv[2*i], uv[2*i+1]);
+        ContactPoint cp = this->expmap_mesh->exp_map_uv(this->object_contact_idxes[i], uv[2*i], uv[2*i+1]);
+        updatedContactPoints_local.push_back(cp);
+    }
+    return updatedContactPoints_local;
+}
+
 std::vector<ContactPoint> ObjectSurfaceOptSetup::getUpdatedObjectContactPointsWorld(const VectorXd &uv){
     int n_contacts = getNumContactPoints();
     std::vector<ContactPoint> updatedContactPoints_local;

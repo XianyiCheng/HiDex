@@ -45,6 +45,7 @@ public:
   std::shared_ptr<CollisionGroup> objectCollisionGroup = 0;
   std::shared_ptr<CollisionGroup> robotCollisionGroup = 0;
   std::size_t frameCount = 0;
+  int frame_rate = 200;
 
   std::string text;
   double text_x;
@@ -203,6 +204,10 @@ public:
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
   }
+
+  void set_frame_rate(int rate){
+    this->frame_rate = rate;
+  }
 };
 
 class DartWorld : public WorldTemplate
@@ -218,6 +223,9 @@ public:
                                    objectCollisionGroup(dw.objectCollisionGroup),
                                    robotCollisionGroup(dw.robotCollisionGroup) {}
 
+  void setWindowFrameRate(int rate){
+    window->set_frame_rate(rate);
+  }
   void addText(double x, double y, const std::string &text);
 
   void addEnvironmentComponent(const SkeletonPtr &env);

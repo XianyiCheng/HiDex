@@ -17,7 +17,7 @@ void DartWorldWindow::timeStepping()
     if (play_mode == PLAY_BACK)
     {
         int max_count = std::max(object_positions.size(), robot_configs.size());
-        int N = 200;
+        int N = this->frame_rate;
         if (int(frameCount / N) >= max_count)
         {
             frameCount = 0;

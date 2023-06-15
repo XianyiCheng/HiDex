@@ -38,6 +38,15 @@ add_executable(sample_configs sample_configs.cpp
     ../src/mechanics/manipulators/wholehand/exp_map.cpp)
 target_link_libraries(sample_configs PRIVATE mcts-mechanics ${dart_libs} dart-optimizer-nlopt ${YAML_LIBRARY} geometry-central)
 
+add_executable(sample_n_surface_opt sample_n_surface_opt.cpp 
+    ../src/mechanics/manipulators/DartWholeHand.cpp
+    ../src/mechanics/manipulators/wholehand/optimizer.cpp
+    ../src/mechanics/manipulators/wholehand/sdf.cpp
+    ../src/tasks/wholehand_task.cpp 
+    ../src/tasks/wholehand_setup.cpp
+    ../src/mechanics/manipulators/wholehand/exp_map.cpp)
+target_link_libraries(sample_n_surface_opt PRIVATE mcts-mechanics ${dart_libs} dart-optimizer-nlopt ${YAML_LIBRARY} geometry-central)
+
 add_executable(test_ik test_ik.cpp 
     ../src/mechanics/manipulators/DartWholeHand.cpp
     ../src/mechanics/manipulators/wholehand/optimizer.cpp

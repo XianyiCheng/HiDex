@@ -4,8 +4,14 @@
 [x] object primitive shapes
 [x] object surface point sampling on mesh
 [x] generate primitive shape contact surface files, 400 each, normal pointing inward
+[x] allow full state in Level 1
 
-[] bugs in pushing along the wall (allow full state in Level 1)
+[] bugs in pushing along the wall: 
+    [] why two fingers are worse? 
+    [] why rrt of 1 finger, no full state cannot even find solution?
+    [] so random, how to guarantee the discovery of solution
+    [] the goal must be penetrating, otherwise cannot touch the wall
+    [] it seems that previous setup can influence whether a solution can be found in a different setup... 
 [] bugs in quasidynamic 
 [] test different scenarios (objects + environment)
 [] write a robot template
@@ -15,6 +21,7 @@
 [] Better API for reward and action probability design
 
 ### WholeHand
+[] Surface Opt: cannot deal with scaling the mesh.
 [] SDF improve
 [] Calculate fast derivatives with robot Jacobian
 [] test with different setups

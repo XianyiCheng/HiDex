@@ -65,8 +65,8 @@ int main(int argc, char *argv[])
     object_pose << 0, 0, 0, 0, 0, 0, 1;
 
     std::vector<ContactPoint> contact_points;
-    contact_points.push_back(ContactPoint(Vector3d(0.8*-l / 2, 0, l / 2), Vector3d(0, 0, -1)));
-    contact_points.push_back(ContactPoint(Vector3d(l / 2, 0, 0.8*-l / 2), Vector3d(-1, 0, 0)));
+    contact_points.push_back(ContactPoint(Vector3d(0.8 * -l / 2, 0, l / 2), Vector3d(0, 0, -1)));
+    contact_points.push_back(ContactPoint(Vector3d(l / 2, 0, 0.8 * -l / 2), Vector3d(-1, 0, 0)));
 
     double d_contact = (contact_points[0].p - contact_points[1].p).norm();
 
