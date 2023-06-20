@@ -1,20 +1,15 @@
-folder: "/data/pushing"
+folder: "/data/pushing_x"
 
-number_of_experiments: 50
+number_of_experiments: 10
 
 visualize_option: none # setup, show, none. (overwrite visualize_option in setup.yaml)
 
 collect_results: false
 
-sample_start_and_goal:
-  random: true
-  position_upper_bound: [2,2,0.5]
-  position_lower_bound: [-2,-2,0.5]
-
 random_start:
-  allowed: true
-  position_upper_bound: [2,2,0.5]
-  position_lower_bound: [-2,-2,0.5]
+  allowed: false
+  position_upper_bound: [2,0,0.5]
+  position_lower_bound: [-2,0,0.5]
   random_orientation: false
 
 random_goal_position:

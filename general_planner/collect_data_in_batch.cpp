@@ -24,30 +24,30 @@ std::string get_current_time()
   return current_time_string;
 }
 
-void sample_and_load_start_and_goal(std::shared_ptr<TASK> task,
-                                    const YAML::Node &config, Vector3d ub,
-                                    Vector3d lb)
-{
-  Vector7d x_start;
-  Vector7d x_goal;
-  Vector3d p_start = sample_position(ub, lb);
-  Vector3d p_goal = sample_position(ub, lb);
-  x_start << p_start, 0, 0, 0, 1;
-  x_goal << p_goal, 0, 0, 0, 1;
-  if (config["sample_start_and_goal"]["random_orientation"])
-  {
-    if (config["sample_start_and_goal"]["random_orientation"].as<bool>())
-    {
-      Quaterniond q_start = generate_unit_quaternion();
-      Quaterniond q_goal = generate_unit_quaternion();
-      x_start << p_start, q_start.x(), q_start.y(), q_start.z(),
-          q_start.w();
-      x_goal << p_goal, q_goal.x(), q_goal.y(), q_goal.z(),
-          q_goal.w();
+Vector7d sample_a_pose(const Vector7d & original_pose, const YAML::Node &config, const std::string & name){
+    Vector7d x = original_pose;
+    if(config[name.c_str()]){
+      if(config[name.c_str()]["allowed"].as<bool>()){
+        Vector3d ub = Eigen::Map<Vector3d>(
+              config[name.c_str()]["position_upper_bound"]
+                  .as<std::vector<double>>()
+                  .data());
+        Vector3d lb = Eigen::Map<Vector3d>(
+              config[name.c_str()]["position_lower_bound"]
+                  .as<std::vector<double>>()
+                  .data());
+        Vector3d p = sample_position(ub, lb);
+        x.head(3) = p;
+        if (config[name.c_str()]["random_orientation"].as<bool>()){
+          Quaterniond q = generate_unit_quaternion();
+          x[3] = q.x();
+          x[4] = q.y();
+          x[5] = q.z();
+          x[6] = q.w();
+        }
+      }
     }
-  }
-
-  task->set_start_and_goal(x_start, x_goal);
+    return x;
 }
 
 int main(int argc, char *argv[])
@@ -93,25 +93,10 @@ int main(int argc, char *argv[])
 
     load_task(task, config);
 
-    // TODO: replace this with radomization
-    if (batch_config["sample_start_and_goal"]["random"].as<bool>())
-    {
+    load_start_and_goal_poses(task, config);
 
-      sample_and_load_start_and_goal(
-          task, batch_config,
-          Eigen::Map<Vector3d>(
-              batch_config["sample_start_and_goal"]["position_upper_bound"]
-                  .as<std::vector<double>>()
-                  .data()),
-          Eigen::Map<Vector3d>(
-              batch_config["sample_start_and_goal"]["position_lower_bound"]
-                  .as<std::vector<double>>()
-                  .data()));
-    }
-    else
-    {
-      load_start_and_goal_poses(task, config);
-    }
+    task->start_object_pose = sample_a_pose(task->start_object_pose, batch_config, "random_start");
+    task->goal_object_pose = sample_a_pose(task->goal_object_pose, batch_config, "random_goal");
 
     load_reward_functions(task, config);
 

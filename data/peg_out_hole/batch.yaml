@@ -5,8 +5,3 @@ number_of_experiments: 3
 visualize_option: setup # setup, show, none. (overwrite visualize_option in setup.yaml)
 
 collect_results: true
-
-sample_start_and_goal:
-  random: false
-  position_upper_bound: [0,0,0]
-  position_lower_bound: [0,0,0]
