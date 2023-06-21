@@ -1,4 +1,4 @@
-folder: "/data/pushing_x"
+folder: "/data/pushing_all_dir"
 
 number_of_experiments: 10
 
@@ -8,11 +8,11 @@ collect_results: false
 
 random_start:
   allowed: false
-  position_upper_bound: [2,0,0.5]
-  position_lower_bound: [-2,0,0.5]
+  position_upper_bound: [2,2,0.5]
+  position_lower_bound: [-2,2,0.5]
   random_orientation: false
 
-random_goal_position:
+random_goal:
   allowed: true
   position_upper_bound: [2,2,0.5]
   position_lower_bound: [-2,-2,0.5]

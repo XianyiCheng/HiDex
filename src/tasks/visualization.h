@@ -203,8 +203,9 @@ MatrixXd get_output_object_centric(const std::vector<State> &object_trajectory,
   std::vector<VectorXd> output;
   int t_span = 5;
 
-  for (int i = 1; i < action_trajectory.size(); ++i) {
+  for (int i = 0; i < action_trajectory.size(); ++i) {
     int t = action_trajectory[i].timestep;
+    t = std::max(t, 0);
     int t_next;
     if (i == action_trajectory.size() - 1) {
       t_next = object_trajectory.size() - 1;

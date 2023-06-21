@@ -2,7 +2,7 @@ import subprocess
 import os
 
 
-path = "/data/pushing_x"
+path = os.getcwd() + "/data/pushing_x"
 setup_yaml = path + "/setup.yaml"
 run_folder = path + "/runs"
 

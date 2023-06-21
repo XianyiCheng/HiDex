@@ -192,9 +192,9 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
 
   if (std::isinf(f)) { // if fail to solve the problem
     return false;
-  } else if (!ifConstraintsSatisfied(x, A, b, G, h)) {
+  // } else if (!ifConstraintsSatisfied(x, A, b, G, h)) {
     // std::cout << " Constraints not satisfied for qp! " << std::endl;
-    return false;
+    // return false;
   } else {
     x_v = x.block(0, 0, 6, 1);
   }
@@ -208,8 +208,8 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
   double theta = x_v_normalized.transpose() * v_b_normalized;
 
   if (theta < thr) {
-    std::cout << "Solved v too large error for quasidynamic verification! Current theta: " << theta 
-              << std::endl;
+    // std::cout << "Solved v too large error for quasidynamic verification! Current theta: " << theta 
+              // << std::endl;
     // std::cout << "x_v: " << x_v.transpose() << std::endl;
     // std::cout << "v_b: " << v_b.transpose() << std::endl;
     return false;

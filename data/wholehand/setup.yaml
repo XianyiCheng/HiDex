@@ -125,5 +125,5 @@ action_probability_L2: "env"
 # "show": plan a trajectory and show, no save
 # "save_n_show": plan a trajectory, saved in csv, and show the results
 
-visualize_option: "show"
+visualize_option: "setup"
 save_file_path: "/data/wholehand/output.csv"

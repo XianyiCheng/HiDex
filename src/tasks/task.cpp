@@ -1225,7 +1225,7 @@ bool TASK::is_valid(const TASK::State2 &state, const TASK::State2 &prev_state)
   }
   else if (this->task_dynamics_type == "quasidynamic")
   {
-    double h_time = 1.0;
+    double h_time = 10.0;
 
     VectorXi env_mode_full = mode_from_velocity(
         v, this->saved_object_trajectory[pre_timestep].envs, this->cons.get());
@@ -1348,6 +1348,7 @@ bool TASK::is_valid_transition(const TASK::State2 &state,
       {
         return true;
       }
+      double h_time = 10.0;
       Vector6d v_b = compute_rbvel_body(
           this->saved_object_trajectory[state.timestep].m_pose,
           this->saved_object_trajectory[state.timestep + 1].m_pose);
@@ -1629,7 +1630,7 @@ bool TASK::robot_contact_feasible_check(long int finger_idx, const Vector7d &x,
   }
   else if (this->task_dynamics_type == "quasidynamic")
   {
-    double h_time = 1.0;
+    double h_time = 10.0;
 
     dynamic_feasibility =
         isQuasidynamic(v, mnps, envs, env_mode, this->f_gravity,
@@ -1686,7 +1687,7 @@ bool TASK::robot_contact_feasible_check(
   }
   else if (this->task_dynamics_type == "quasidynamic")
   {
-    double h_time = 1.0;
+    double h_time = 10.0;
 
     dynamic_feasibility =
         isQuasidynamic(v, mnps, envs, env_mode, this->f_gravity,
@@ -1767,7 +1768,7 @@ long int TASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
     }
     else if (this->task_dynamics_type == "quasidynamic")
     {
-      double h_time = 1.0;
+      double h_time = 10.0;
       dynamic_feasibility =
           isQuasidynamic(v, mnps, envs, env_mode, this->f_gravity,
                          this->object_inertia, x, this->mu_env, this->mu_mnp,
@@ -1780,6 +1781,20 @@ long int TASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
     }
   }
 
+  // {
+  //   // test: delele this afterwards
+  //   std::vector<ContactPoint> fingertips;
+  //   fingertips.push_back(ContactPoint(Vector3d(-0.5,0,0), Vector3d(0,0,1)));
+  //   std::vector<ContactPoint> mnps;
+  //   this->m_world->getRobot()->Fingertips2PointContacts(fingertips, &mnps);
+  //   bool test_dynamic_feasibility =
+  //         isQuasidynamic(v, mnps, envs, env_mode, this->f_gravity,
+  //                        this->object_inertia, x, this->mu_env, this->mu_mnp,
+  //                        this->wa, this->wt, 10.0, this->cons.get(), QUASIDYNAMIC_RANGE);
+  //   std::cout << "test dynamic feasibility: " << test_dynamic_feasibility << std::endl;
+
+  // }
+
   if (dynamic_feasibility)
   {
     return finger_idx;
@@ -1789,7 +1804,6 @@ long int TASK::pruning_check(const Vector7d &x, const VectorXi &cs_mode,
     return -1;
   }
 
-  return dynamic_feasibility;
 }
 
 long int
@@ -1904,7 +1918,7 @@ bool TASK::randomRelocateFingers(const VectorXd &mnp_config, Vector7d x, Vector6
       }
       else if (this->task_dynamics_type == "quasidynamic")
       {
-        double h_time = 1.0;
+        double h_time = 10.0;
         // Vector6d v_relocate;
         // v_relocate.setZero();
         isremainbalance =
@@ -1935,7 +1949,7 @@ bool TASK::randomRelocateFingers(const VectorXd &mnp_config, Vector7d x, Vector6
       }
       else if (this->task_dynamics_type == "quasidynamic")
       {
-        double h_time = 1.0;
+        double h_time = 10.0;
         isremainbalance =
             isQuasidynamic(v, grasp_mnps, envs, env_mode, this->f_gravity,
                            this->object_inertia, x, this->mu_env, this->mu_mnp,
@@ -2012,7 +2026,7 @@ bool TASK::pruning_check_w_manipulator_config(const Vector7d &x, const VectorXi 
     }
     else if (this->task_dynamics_type == "quasidynamic")
     {
-      double h_time = 1.0;
+      double h_time = 10.0;
       dynamic_feasibility =
           isQuasidynamic(v, mnps, envs, env_mode, this->f_gravity,
                          this->object_inertia, x, this->mu_env, this->mu_mnp,
@@ -2231,7 +2245,7 @@ bool TASK::is_finger_valid(long int finger_idx, int timestep)
   }
   else if (this->task_dynamics_type == "quasidynamic")
   {
-    double h_time = 1.0;
+    double h_time = 10.0;
 
     VectorXi env_mode = mode_from_velocity(
         v, this->saved_object_trajectory[timestep].envs, this->cons.get());

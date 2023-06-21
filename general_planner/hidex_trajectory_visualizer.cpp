@@ -11,8 +11,8 @@ int main(int argc, char *argv[])
 
     if (argc > 2)
     {
-        config_file = std::string(SRC_DIR)+argv[1];
-        traj_file = std::string(SRC_DIR)+argv[2];
+        config_file = argv[1];
+        traj_file = argv[2];
     }
     else
     {

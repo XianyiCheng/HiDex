@@ -15,8 +15,7 @@
 //     TASK::State2::Action(-1, -1);
 // const TASK::State::Action TASK::State::no_action = -1;
 
-std::string get_current_time()
-{
+std::string get_current_time() {
   std::time_t t = std::time(nullptr);
   char buffer[15];
   std::strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", std::localtime(&t));
@@ -24,62 +23,62 @@ std::string get_current_time()
   return current_time_string;
 }
 
-Vector7d sample_a_pose(const Vector7d & original_pose, const YAML::Node &config, const std::string & name){
-    Vector7d x = original_pose;
-    if(config[name.c_str()]){
-      if(config[name.c_str()]["allowed"].as<bool>()){
-        Vector3d ub = Eigen::Map<Vector3d>(
-              config[name.c_str()]["position_upper_bound"]
-                  .as<std::vector<double>>()
-                  .data());
-        Vector3d lb = Eigen::Map<Vector3d>(
-              config[name.c_str()]["position_lower_bound"]
-                  .as<std::vector<double>>()
-                  .data());
-        Vector3d p = sample_position(ub, lb);
-        x.head(3) = p;
-        if (config[name.c_str()]["random_orientation"].as<bool>()){
-          Quaterniond q = generate_unit_quaternion();
-          x[3] = q.x();
-          x[4] = q.y();
-          x[5] = q.z();
-          x[6] = q.w();
-        }
+Vector7d sample_a_pose(const Vector7d &original_pose, const YAML::Node &config,
+                       const std::string &name) {
+  Vector7d x = original_pose;
+  if (config[name.c_str()]) {
+    if (config[name.c_str()]["allowed"].as<bool>()) {
+      Vector3d ub =
+          Eigen::Map<Vector3d>(config[name.c_str()]["position_upper_bound"]
+                                   .as<std::vector<double>>()
+                                   .data());
+      Vector3d lb =
+          Eigen::Map<Vector3d>(config[name.c_str()]["position_lower_bound"]
+                                   .as<std::vector<double>>()
+                                   .data());
+      Vector3d p = sample_position(ub, lb);
+      x.head(3) = p;
+      if (config[name.c_str()]["random_orientation"].as<bool>()) {
+        Quaterniond q = generate_unit_quaternion();
+        x[3] = q.x();
+        x[4] = q.y();
+        x[5] = q.z();
+        x[6] = q.w();
       }
     }
-    return x;
+  }
+  return x;
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 
   std::string batch_config_file;
 
-  if (argc > 1)
-  {
-    batch_config_file = std::string(SRC_DIR)+argv[1];
-  }
-  else
-  {
+  if (argc > 1) {
+    batch_config_file = std::string(SRC_DIR) + argv[1];
+    std::cout << "batch_config_file: " << batch_config_file << std::endl;
+  } else {
     batch_config_file =
-        std::string(SRC_DIR)+"/general_planner/batch_config_template.yaml";
+        std::string(SRC_DIR) + "/data/pushing_all_dir/batch.yaml";
+    // std::string(SRC_DIR)+"/general_planner/batch_config_template.yaml";
   }
 
   // should use arg to specify the path to the setup.yaml file
 
   YAML::Node batch_config = YAML::LoadFile(batch_config_file);
 
-  std::string task_folder = std::string(SRC_DIR)+batch_config["folder"].as<std::string>();
+  std::string task_folder =
+      std::string(SRC_DIR) + batch_config["folder"].as<std::string>();
   YAML::Node config = YAML::LoadFile(task_folder + "/setup.yaml");
 
   mkdir((task_folder + "/runs").c_str(), 0755);
 
   int number_of_experiments = batch_config["number_of_experiments"].as<int>();
 
-  std::string visualize_option = batch_config["visualize_option"].as<std::string>();
+  std::string visualize_option =
+      batch_config["visualize_option"].as<std::string>();
 
-  for (int n_exp = 0; n_exp < number_of_experiments; n_exp++)
-  {
+  for (int n_exp = 0; n_exp < number_of_experiments; n_exp++) {
 
     std::string run_name = get_current_time();
     std::cout << run_name << std::endl;
@@ -93,15 +92,18 @@ int main(int argc, char *argv[])
 
     load_task(task, config);
 
+    std::cout << "Loading start and goal poses" << std::endl;
     load_start_and_goal_poses(task, config);
 
-    task->start_object_pose = sample_a_pose(task->start_object_pose, batch_config, "random_start");
-    task->goal_object_pose = sample_a_pose(task->goal_object_pose, batch_config, "random_goal");
+    std::cout << "Sampling start and goal poses" << std::endl;
+    task->start_object_pose =
+        sample_a_pose(task->start_object_pose, batch_config, "random_start");
+    task->goal_object_pose =
+        sample_a_pose(task->goal_object_pose, batch_config, "random_goal");
 
     load_reward_functions(task, config);
 
-    if (visualize_option == "setup")
-    {
+    if (visualize_option == "setup") {
       VisualizeSG(task->m_world, task->start_object_pose,
                   task->goal_object_pose);
       task->m_world->startWindow(&argc, argv);
@@ -128,17 +130,16 @@ int main(int argc, char *argv[])
 
     // collect full trajectory
     std::string traj_file = run_folder + "/trajectory.csv";
-    save_full_output_object_centric(object_trajectory, action_trajectory, task, traj_file);
-    
-    if (batch_config["collect_results"].as<bool>())
-    {
+    save_full_output_object_centric(object_trajectory, action_trajectory, task,
+                                    traj_file);
+
+    if (batch_config["collect_results"].as<bool>()) {
       VectorXd result = get_results(&tree, task, object_trajectory,
                                     action_trajectory, current_node->m_value);
       saveData(run_folder + "/results.csv", result);
     }
 
-    if (visualize_option == "show")
-    {
+    if (visualize_option == "show") {
       visualize_full_output_file_object_centric(task->m_world, traj_file);
       task->m_world->startWindow(&argc, argv);
     }
