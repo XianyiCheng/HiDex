@@ -110,6 +110,14 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
                     double mu_env, double mu_mnp, double wa, double wt,
                     double h_time, ContactConstraints *cons, double thr) {
 
+  // Will get strange numerical errors if the precision of envs.p is too high. Fix this by rounding the values to 6 decimal places.
+  std::vector<ContactPoint> envs_round = envs;
+  for (int i = 0; i < envs.size(); i++) {
+    for(int k =0; k < 3; k++){
+      envs_round[i].p[k] = round(envs_round[i].p[k] * 1000000) / 1000000;
+    }
+  }
+
   MatrixXd A_env;
   MatrixXd G_env;
   VectorXd b_env;
@@ -124,7 +132,7 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
     f_ext_o = SE32Adj(T_).transpose() * f_ext_w;
   }
 
-  cons->ModeConstraints(envs, env_mode, mu_env, f_ext_o, &A_env, &b_env, &G_env,
+  cons->ModeConstraints(envs_round, env_mode, mu_env, f_ext_o, &A_env, &b_env, &G_env,
                         &h_env);
 
   MatrixXd A_mnp;
@@ -192,9 +200,9 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
 
   if (std::isinf(f)) { // if fail to solve the problem
     return false;
-  // } else if (!ifConstraintsSatisfied(x, A, b, G, h)) {
-    // std::cout << " Constraints not satisfied for qp! " << std::endl;
-    // return false;
+  } else if (!ifConstraintsSatisfied(x, A, b, G, h)) {
+    std::cout << " Constraints not satisfied for qp! " << std::endl;
+    return false;
   } else {
     x_v = x.block(0, 0, 6, 1);
   }

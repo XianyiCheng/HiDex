@@ -19,9 +19,9 @@ void VisualizeTraj(std::shared_ptr<WorldTemplate> world,
 
 template <class State, class State2, class Task>
 void VisualizeStateTraj(std::shared_ptr<WorldTemplate> world,
-                      std::shared_ptr<Task> task,
-                      const std::vector<State> &object_traj,
-                      const std::vector<State2> &mnp_traj) {
+                        std::shared_ptr<Task> task,
+                        const std::vector<State> &object_traj,
+                        const std::vector<State2> &mnp_traj) {
   std::vector<Vector7d> object_traj_vec;
   std::vector<VectorXd> mnp_traj_vec;
 
@@ -49,9 +49,9 @@ void VisualizeStateTraj(std::shared_ptr<WorldTemplate> world,
 
 template <class Tree, class State, class State2, class Task>
 VectorXd get_results(Tree *tree, std::shared_ptr<Task> task,
-                           const std::vector<State> &object_trajectory,
-                           const std::vector<State2> &action_trajectory,
-                           double final_value) {
+                     const std::vector<State> &object_trajectory,
+                     const std::vector<State2> &action_trajectory,
+                     double final_value) {
 
   std::cout << "Solution found time"
             << ", "
@@ -89,7 +89,8 @@ VectorXd get_results(Tree *tree, std::shared_ptr<Task> task,
   int finger_relocation = action_trajectory.size() - 1;
   double finger_change_ratio =
       task->total_finger_change_ratio(action_trajectory);
-  int num_env_change = task->number_environment_contact_changes(object_trajectory);
+  int num_env_change =
+      task->number_environment_contact_changes(object_trajectory);
 
   double grasp_measure;
   if (task->grasp_measure_charac_length > 0) {
@@ -98,7 +99,8 @@ VectorXd get_results(Tree *tree, std::shared_ptr<Task> task,
       if (s2.finger_index == -1 || s2.timestep == -1) {
         continue;
       }
-      double grasp_d = task->grasp_measure_charac_length*task->grasp_measure(s2.finger_index, s2.timestep);
+      double grasp_d = task->grasp_measure_charac_length *
+                       task->grasp_measure(s2.finger_index, s2.timestep);
       avg_grasp_d += grasp_d;
     }
     grasp_measure = avg_grasp_d / double(action_trajectory.size() - 1);
@@ -109,8 +111,9 @@ VectorXd get_results(Tree *tree, std::shared_ptr<Task> task,
   std::cout << solution_found_time << ", " << total_time << ", " << success
             << ", " << nodes_in_mcts << ", " << nodes_in_rrt << ", "
             << solution_length << ", " << total_travel_distance << ", "
-            << finger_relocation << ", " << finger_change_ratio << ", " << num_env_change << ", "
-            << grasp_measure << ", " << final_value << std::endl;
+            << finger_relocation << ", " << finger_change_ratio << ", "
+            << num_env_change << ", " << grasp_measure << ", " << final_value
+            << std::endl;
 
   VectorXd result(12);
   result << solution_found_time, total_time, success, nodes_in_mcts,
@@ -149,12 +152,12 @@ MatrixXd get_output(const std::vector<State> &object_trajectory,
     } else {
       std::vector<Vector7d> object_poses_all;
       // object_poses_all.push_back(object_trajectory[t].m_pose);
-      for (int kk = t+1; kk <= t_next; ++kk) {
+      for (int kk = t + 1; kk <= t_next; ++kk) {
         object_poses_all.insert(object_poses_all.end(),
                                 object_trajectory[kk].m_path.begin(),
                                 object_trajectory[kk].m_path.end());
       }
-      int n_span = std::max(int(object_poses_all.size())- 2, 0) / 3;
+      int n_span = std::max(int(object_poses_all.size()) - 2, 0) / 3;
       object_poses = object_poses_all;
     }
 
@@ -164,7 +167,8 @@ MatrixXd get_output(const std::vector<State> &object_trajectory,
       VectorXd mnp_config_world(6 * task->number_of_robot_contacts);
       for (int n_pt = 0; n_pt < task->number_of_robot_contacts; ++n_pt) {
         if (std::isnan(mnp_config[6 * n_pt])) {
-          mnp_config_world.segment(6 * n_pt, 6) = mnp_config.segment(6 * n_pt, 6);
+          mnp_config_world.segment(6 * n_pt, 6) =
+              mnp_config.segment(6 * n_pt, 6);
           mnp_config_world(6 * n_pt) = -7777;
           mnp_config_world(6 * n_pt + 1) = -7777;
           mnp_config_world(6 * n_pt + 2) = -7777;
@@ -196,8 +200,8 @@ MatrixXd get_output(const std::vector<State> &object_trajectory,
 
 template <class State, class State2, class Task>
 MatrixXd get_output_object_centric(const std::vector<State> &object_trajectory,
-                    const std::vector<State2> &action_trajectory,
-                    std::shared_ptr<Task> task) {
+                                   const std::vector<State2> &action_trajectory,
+                                   std::shared_ptr<Task> task) {
 
   // each row: robot contacts (p,n) in the object frame, object pose
   std::vector<VectorXd> output;
@@ -219,18 +223,20 @@ MatrixXd get_output_object_centric(const std::vector<State> &object_trajectory,
     // get the array of object pose
     std::vector<Vector7d> object_poses;
     if (t_next <= t) {
-      for (int kk = 0; kk < t_span; ++kk) {
-        object_poses.push_back(object_trajectory[t].m_pose);
+      if (t != 0) {
+        for (int kk = 0; kk < t_span; ++kk) {
+          object_poses.push_back(object_trajectory[t].m_pose);
+        }
       }
     } else {
       std::vector<Vector7d> object_poses_all;
       // object_poses_all.push_back(object_trajectory[t].m_pose);
-      for (int kk = t+1; kk <= t_next; ++kk) {
+      for (int kk = t + 1; kk <= t_next; ++kk) {
         object_poses_all.insert(object_poses_all.end(),
                                 object_trajectory[kk].m_path.begin(),
                                 object_trajectory[kk].m_path.end());
       }
-      int n_span = std::max(int(object_poses_all.size())- 2, 0) / 3;
+      int n_span = std::max(int(object_poses_all.size()) - 2, 0) / 3;
       object_poses = object_poses_all;
     }
 
@@ -238,8 +244,7 @@ MatrixXd get_output_object_centric(const std::vector<State> &object_trajectory,
 
     for (auto x : object_poses) {
       VectorXd output_row(6 * task->number_of_robot_contacts + 7);
-      output_row.segment(0, 6 * task->number_of_robot_contacts) =
-          mnp_config;
+      output_row.segment(0, 6 * task->number_of_robot_contacts) = mnp_config;
       output_row.segment(6 * task->number_of_robot_contacts, 7) = x;
       output.push_back(output_row);
     }
@@ -252,14 +257,14 @@ MatrixXd get_output_object_centric(const std::vector<State> &object_trajectory,
   return output_mat;
 }
 
-
-void visualize_output_file_object_centric(std::shared_ptr<WorldTemplate> world, std::string file_name){
+void visualize_output_file_object_centric(std::shared_ptr<WorldTemplate> world,
+                                          std::string file_name) {
   MatrixXd data = openData(file_name);
   int n_data = data.rows();
   int n_pts = (data.cols() - 7) / 6;
   std::vector<Vector7d> object_traj;
   std::vector<VectorXd> mnp_traj;
-  for (int i = 0; i < n_data; ++i){
+  for (int i = 0; i < n_data; ++i) {
     VectorXd mnp_config = data.row(i).segment(0, 6 * n_pts);
     Vector7d object_pose = data.row(i).segment(6 * n_pts, 7);
     object_traj.push_back(object_pose);
@@ -269,23 +274,25 @@ void visualize_output_file_object_centric(std::shared_ptr<WorldTemplate> world, 
 }
 
 template <class State, class State2, class Task>
-void save_full_output_object_centric(const std::vector<State> &object_trajectory,
-                    const std::vector<State2> &action_trajectory,
-                    std::shared_ptr<Task> task, const std::string &file_name) {
+void save_full_output_object_centric(
+    const std::vector<State> &object_trajectory,
+    const std::vector<State2> &action_trajectory, std::shared_ptr<Task> task,
+    const std::string &file_name) {
 
   // first row: number of robot contacts
   MatrixXd output_mat(1, 1);
-  output_mat(0,0) = task->number_of_robot_contacts;
+  output_mat(0, 0) = task->number_of_robot_contacts;
   appendData(file_name, output_mat);
 
-  // each row: object pose (7), robot contacts (p,n) in the object frame, env contacts (p,n) in the object frame, env_cs_mode
+  // each row: object pose (7), robot contacts (p,n) in the object frame, env
+  // contacts (p,n) in the object frame, env_cs_mode
 
   int t_span = 5;
 
   for (int i = 1; i < action_trajectory.size(); ++i) {
 
     std::vector<VectorXd> output;
-    
+
     int t = action_trajectory[i].timestep;
     int t_next;
     if (i == action_trajectory.size() - 1) {
@@ -306,62 +313,68 @@ void save_full_output_object_centric(const std::vector<State> &object_trajectory
       for (int kk = 0; kk < t_span; ++kk) {
         object_poses.push_back(object_trajectory[t].m_pose);
         envs_all.push_back(object_trajectory[t].envs);
-        modes_all.push_back(object_trajectory[t].modes[object_trajectory[t].m_mode_idx]);
+        modes_all.push_back(
+            object_trajectory[t].modes[object_trajectory[t].m_mode_idx]);
       }
     } else {
       std::vector<Vector7d> object_poses_all;
       // object_poses_all.push_back(object_trajectory[t].m_pose);
-      for (int kk = t+1; kk <= t_next; ++kk) {
+      for (int kk = t + 1; kk <= t_next; ++kk) {
         object_poses_all.insert(object_poses_all.end(),
                                 object_trajectory[kk].m_path.begin(),
                                 object_trajectory[kk].m_path.end());
-        for (int nk = 0; nk < object_trajectory[kk].m_path.size(); nk++){
+        for (int nk = 0; nk < object_trajectory[kk].m_path.size(); nk++) {
           envs_all.push_back(object_trajectory[kk].envs);
-          if (object_trajectory[kk].m_mode_idx == -1){
+          if (object_trajectory[kk].m_mode_idx == -1) {
             VectorXi mode = VectorXi::Zero(object_trajectory[kk].envs.size());
             modes_all.push_back(mode);
           } else {
-            modes_all.push_back(object_trajectory[kk].modes[object_trajectory[kk].m_mode_idx]);
+            modes_all.push_back(
+                object_trajectory[kk].modes[object_trajectory[kk].m_mode_idx]);
           }
         }
       }
-      int n_span = std::max(int(object_poses_all.size())- 2, 0) / 3;
+      int n_span = std::max(int(object_poses_all.size()) - 2, 0) / 3;
       object_poses = object_poses_all;
     }
 
     // for each object pose, get the array of mnp config
 
     for (int nk = 0; nk < object_poses.size(); nk++) {
-      int n_cols = 7 + 6 * task->number_of_robot_contacts + 6 * envs_all[nk].size() + envs_all[nk].size();
+      int n_cols = 7 + 6 * task->number_of_robot_contacts +
+                   6 * envs_all[nk].size() + envs_all[nk].size();
 
       VectorXd output_row(n_cols);
       output_row.segment(0, 7) = object_poses[nk];
-      output_row.segment(7, 6 * task->number_of_robot_contacts) =
-          mnp_config;
-      for (int k = 0; k < envs_all[nk].size(); k++){
-        output_row.segment(7 + 6 * task->number_of_robot_contacts + 6 * k, 3) = envs_all[nk][k].p;
-        output_row.segment(7 + 6 * task->number_of_robot_contacts + 6 * k + 3, 3) = envs_all[nk][k].n;
-        output_row(7 + 6 * task->number_of_robot_contacts + 6 * envs_all[nk].size()+k) = double(modes_all[nk][k]);
+      output_row.segment(7, 6 * task->number_of_robot_contacts) = mnp_config;
+      for (int k = 0; k < envs_all[nk].size(); k++) {
+        output_row.segment(7 + 6 * task->number_of_robot_contacts + 6 * k, 3) =
+            envs_all[nk][k].p;
+        output_row.segment(7 + 6 * task->number_of_robot_contacts + 6 * k + 3,
+                           3) = envs_all[nk][k].n;
+        output_row(7 + 6 * task->number_of_robot_contacts +
+                   6 * envs_all[nk].size() + k) = double(modes_all[nk][k]);
       }
       // output.push_back(output_row);
       MatrixXd output_data(1, n_cols);
       output_data.row(0) = output_row;
       appendData(file_name, output_data);
     }
-    
   }
 }
 
-
-void visualize_full_output_file_object_centric(std::shared_ptr<WorldTemplate> world, std::string file_name){
+void visualize_full_output_file_object_centric(
+    std::shared_ptr<WorldTemplate> world, std::string file_name) {
   std::vector<std::vector<double>> data = openVectorData(file_name);
   int n_data = data.size();
   int n_robot_pts = int(data[1][0]);
   std::vector<Vector7d> object_traj;
   std::vector<VectorXd> mnp_traj;
-  for (int i = 2; i < n_data; ++i){
-    std::vector<double> data_row(data[i].begin(), data[i].begin()+7+6*n_robot_pts);
-    VectorXd v_row = Eigen::Map<VectorXd, Eigen::Unaligned>(data_row.data(), data_row.size());
+  for (int i = 2; i < n_data; ++i) {
+    std::vector<double> data_row(data[i].begin(),
+                                 data[i].begin() + 7 + 6 * n_robot_pts);
+    VectorXd v_row = Eigen::Map<VectorXd, Eigen::Unaligned>(data_row.data(),
+                                                            data_row.size());
     VectorXd mnp_config = v_row.segment(7, 6 * n_robot_pts);
     Vector7d object_pose = v_row.segment(0, 7);
     object_traj.push_back(object_pose);

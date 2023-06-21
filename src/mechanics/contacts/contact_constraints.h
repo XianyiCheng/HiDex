@@ -31,6 +31,12 @@ struct ContactPoint {
     {
         return (((p - pt.p).norm() < 1e-4) && ((n - pt.n).norm() < 1e-4));
     }
+
+    friend std::ostream& operator<<(std::ostream& os, const ContactPoint& pt)
+    {
+        os << "ContactPoint(Vector3d(" << pt.p.transpose() << "),Vector3d(" << pt.n.transpose() << "), " << pt.d << "))";
+        return os;
+    }
 };
 
 
