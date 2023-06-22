@@ -1,18 +1,34 @@
 #include "force_check.h"
 #include "../mechanics/utilities/eiquadprog.hpp"
 
+template <typename T>
+T round_elements(const T &x, int digit)
+{
+  int N = pow(10, digit);
+  T x_ = x;
+  for (int i = 0; i < x_.size(); i++)
+  {
+    x_(i) = round(x_(i) * N) / N;
+  }
+  return x_;
+}
+
 bool ifConstraintsSatisfied(const VectorXd &x, const MatrixXd A,
                             const VectorXd &b, const MatrixXd G,
-                            const VectorXd &h) {
+                            const VectorXd &h)
+{
 
   double Ax_b = (A * x - b).cwiseAbs().sum();
-  if (Ax_b > 1e-3) {
+  if (Ax_b > 1e-3)
+  {
     return false;
   }
 
   VectorXd g = G * x - h;
-  for (int i = 0; i < g.size(); i++) {
-    if (g[i] < -1e-3) {
+  for (int i = 0; i < g.size(); i++)
+  {
+    if (g[i] < -1e-3)
+    {
       return false;
     }
   }
@@ -20,16 +36,17 @@ bool ifConstraintsSatisfied(const VectorXd &x, const MatrixXd A,
   return true;
 }
 
-
 bool isQuasistatic(const std::vector<ContactPoint> &mnps,
                    const std::vector<ContactPoint> &envs,
                    const VectorXi &env_mode, const Vector6d &f_ext_w,
                    const Vector7d object_pose, double mu_env, double mu_mnp,
-                   ContactConstraints *cons) {
+                   ContactConstraints *cons)
+{
 
   // force check
 
-  if (mnps.size() + envs.size() == 0) {
+  if (mnps.size() + envs.size() == 0)
+  {
     return false;
   }
 
@@ -55,7 +72,8 @@ bool isQuasistatic(const std::vector<ContactPoint> &mnps,
   VectorXd b;
   VectorXd h;
 
-  if (mnps.size() > 0) {
+  if (mnps.size() > 0)
+  {
 
     MatrixXd A_mnp;
     MatrixXd G_mnp;
@@ -71,7 +89,9 @@ bool isQuasistatic(const std::vector<ContactPoint> &mnps,
 
     mergeManipulatorandEnvironmentConstraints(
         A_mnp, b_mnp, G_mnp, h_mnp, A_env, b_env, G_env, h_env, &A, &b, &G, &h);
-  } else {
+  }
+  else
+  {
     A = A_env;
     b = b_env;
     G = G_env;
@@ -79,7 +99,8 @@ bool isQuasistatic(const std::vector<ContactPoint> &mnps,
   }
 
   int n_var = A.cols() - 6;
-  if (n_var == 0) {
+  if (n_var == 0)
+  {
     return false;
   }
   A = A.block(0, 6, A.rows(), n_var);
@@ -108,14 +129,14 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
                     const VectorXi &env_mode, const Vector6d &f_ext_w,
                     const Matrix6d &object_inertia, const Vector7d object_pose,
                     double mu_env, double mu_mnp, double wa, double wt,
-                    double h_time, ContactConstraints *cons, double thr) {
+                    double h_time, ContactConstraints *cons, double thr)
+{
 
   // Will get strange numerical errors if the precision of envs.p is too high. Fix this by rounding the values to 6 decimal places.
   std::vector<ContactPoint> envs_round = envs;
-  for (int i = 0; i < envs.size(); i++) {
-    for(int k =0; k < 3; k++){
-      envs_round[i].p[k] = round(envs_round[i].p[k] * 1000000) / 1000000;
-    }
+  for (int i = 0; i < envs.size(); i++)
+  {
+    envs_round[i].p = round_elements<Vector3d>(envs_round[i].p, 6);
   }
 
   MatrixXd A_env;
@@ -160,7 +181,8 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
   int n_var = A.cols();
 
   int G_rows = G.rows();
-  if (G_rows < 12) {
+  if (G_rows < 12)
+  {
 
     G.conservativeResize(12 + G_rows, n_var);
     h.conservativeResize(12 + G_rows);
@@ -196,28 +218,43 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
 
   // std::cout << "f: " <<
 
+  // P = round_elements<MatrixXd>(P, 6);
+  // p = round_elements<VectorXd>(p, 6);
+  // A = round_elements<MatrixXd>(A, 6);
+  // b = round_elements<VectorXd>(b, 6);
+  // G = round_elements<MatrixXd>(G, 6);
+  // h = round_elements<VectorXd>(h, 6);
+
   double f = solve_quadprog(P, p, A.transpose(), -b, G.transpose(), -h, x);
 
-  if (std::isinf(f)) { // if fail to solve the problem
+  if (std::isinf(f))
+  { // if fail to solve the problem
     return false;
-  } else if (!ifConstraintsSatisfied(x, A, b, G, h)) {
+  }
+  else if (!ifConstraintsSatisfied(x, A, b, G, h))
+  {
     // std::cout << " Constraints not satisfied for qp! " << std::endl;
     return false;
-  } else {
+  }
+  else
+  {
     x_v = x.block(0, 0, 6, 1);
   }
-  if (v_b.norm() < 1e-6) {
-    if (x_v.norm() < 1e-3){
+  if (v_b.norm() < 1e-6)
+  {
+    if (x_v.norm() < 1e-3)
+    {
       return true;
-    } 
+    }
   }
   Vector6d x_v_normalized = x_v.normalized();
   Vector6d v_b_normalized = v_b.normalized();
   double theta = x_v_normalized.transpose() * v_b_normalized;
 
-  if (theta < thr) {
-    // std::cout << "Solved v too large error for quasidynamic verification! Current theta: " << theta 
-              // << std::endl;
+  if (theta < thr)
+  {
+    // std::cout << "Solved v too large error for quasidynamic verification! Current theta: " << theta
+    // << std::endl;
     // std::cout << "x_v: " << x_v.transpose() << std::endl;
     // std::cout << "v_b: " << v_b.transpose() << std::endl;
     return false;
@@ -226,7 +263,8 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
 }
 
 bool is_force_closure(Vector7d x, const std::vector<ContactPoint> &mnps,
-                   double friction_coeff) {
+                      double friction_coeff)
+{
   Matrix4d T_x = pose2SE3(x);
 
   Matrix3d R_wo = T_x.block(0, 0, 3, 3);
@@ -246,7 +284,8 @@ bool is_force_closure(Vector7d x, const std::vector<ContactPoint> &mnps,
   // define the friction cone in contact frame and in object frame
   MatrixXd w_c(6, 4 * num_of_contacts);
 
-  for (int j = 0; j < num_of_contacts; j++) {
+  for (int j = 0; j < num_of_contacts; j++)
+  {
 
     // find the finger position and norm from surface
     Vector3d fp_o;
@@ -279,14 +318,16 @@ bool is_force_closure(Vector7d x, const std::vector<ContactPoint> &mnps,
   VectorXd avg_w_c = sum_2_w_c / w_c.cols(); // get average
   VectorXd T_0 = -avg_w_c;
   MatrixXd T(6, 4 * num_of_contacts);
-  for (int i = 0; i < w_c.cols(); i++) {
+  for (int i = 0; i < w_c.cols(); i++)
+  {
     T.col(i) = w_c.col(i) - avg_w_c;
   }
 
   // check if T is full rank
   Eigen::FullPivLU<Eigen::MatrixXd> lu_decomp(T);
   int rank_T = lu_decomp.rank();
-  if (rank_T < 6) {
+  if (rank_T < 6)
+  {
     // std::cout << "T is not full rank" << std::endl;
     return false;
   }
@@ -312,18 +353,21 @@ bool is_force_closure(Vector7d x, const std::vector<ContactPoint> &mnps,
 
   bool result = lp(C, A, b, Ae, be, xl, xu, &xs, &optimal_cost);
 
-  if (-optimal_cost <= 1) {
+  if (-optimal_cost <= 1)
+  {
     return true;
-  } else {
+  }
+  else
+  {
     return false;
   }
 }
 
-
 Vector6d EnvironmentConstrainedVelocity(const Vector6d &v_goal,
                                         const std::vector<ContactPoint> &envs,
                                         const VectorXi &env_mode,
-                                        ContactConstraints &cons) {
+                                        ContactConstraints &cons)
+{
 
   MatrixXd A_env;
   MatrixXd G_env;
@@ -354,16 +398,20 @@ Vector6d EnvironmentConstrainedVelocity(const Vector6d &v_goal,
   // x.setZero();
   x = v_goal;
 
-  if (A.rows() > n_var) {
+  if (A.rows() > n_var)
+  {
     FullPivLU<MatrixXd> lu_decomp(A.transpose());
 
-    if (lu_decomp.rank() >= n_var) {
+    if (lu_decomp.rank() >= n_var)
+    {
       // if A fully constrainted the velocity
       x.setZero();
       // double f = solve_quadprog(P, p, A.transpose(), -b,  G.transpose(), -h,
       // x);
       return x;
-    } else {
+    }
+    else
+    {
       A = (lu_decomp.image(A.transpose())).transpose();
       b = VectorXd::Zero(A.rows());
     }
@@ -377,7 +425,8 @@ Vector6d EnvironmentConstrainedVelocity(const Vector6d &v_goal,
   //     x.setZero();
   // }
   if (std::isinf(f) || (!ifConstraintsSatisfied(
-                           x, A, b, G, h))) { // if fail to solve the problem
+                           x, A, b, G, h)))
+  { // if fail to solve the problem
     x.setZero();
   }
 
@@ -390,7 +439,8 @@ Vector6d EnvironmentConstrainedVelocity(const Vector6d &v_goal,
 
 Vector6d EnvironmentConstrainedVelocity_CSModeOnly(
     const Vector6d &v_goal, const std::vector<ContactPoint> &envs,
-    const VectorXi &mode, ContactConstraints &cons) {
+    const VectorXi &mode, ContactConstraints &cons)
+{
 
   int n_pts = envs.size();
   const int n = cons.friction_cone->number_of_sliding_planes;
@@ -398,7 +448,8 @@ Vector6d EnvironmentConstrainedVelocity_CSModeOnly(
   int n_var = 6;
   int n_sep = 0;
   int n_con = 0;
-  for (int i = 0; i < n_pts; i++) {
+  for (int i = 0; i < n_pts; i++)
+  {
     (mode[i] == 0) ? n_con++ : n_sep++;
   }
 
@@ -413,7 +464,8 @@ Vector6d EnvironmentConstrainedVelocity_CSModeOnly(
   int counter_G = 0;
   int counter_A = 0;
 
-  for (int i = 0; i < n_pts; i++) {
+  for (int i = 0; i < n_pts; i++)
+  {
 
     int cs_mode = mode[i];
 
@@ -421,10 +473,13 @@ Vector6d EnvironmentConstrainedVelocity_CSModeOnly(
 
     // std::cout << "Adgco\n" << Adgco << std::endl;
 
-    if (cs_mode == 1) { // separate
+    if (cs_mode == 1)
+    { // separate
       G.block(counter_G, 0, 1, 6) = cons.basis.row(2) * Adgco;
       counter_G += 1;
-    } else { // contacting
+    }
+    else
+    { // contacting
       A.block(counter_A, 0, 1, 6) = cons.basis.row(2) * Adgco;
       counter_A += 1;
     }
@@ -439,16 +494,20 @@ Vector6d EnvironmentConstrainedVelocity_CSModeOnly(
   // x.setZero();
   x = v_goal;
 
-  if (A.rows() > n_var) {
+  if (A.rows() > n_var)
+  {
     FullPivLU<MatrixXd> lu_decomp(A.transpose());
 
-    if (lu_decomp.rank() >= n_var) {
+    if (lu_decomp.rank() >= n_var)
+    {
       // if A fully constrainted the velocity
       x.setZero();
       // double f = solve_quadprog(P, p, A.transpose(), -b,  G.transpose(), -h,
       // x);
       return x;
-    } else {
+    }
+    else
+    {
       A = (lu_decomp.image(A.transpose())).transpose();
       b = VectorXd::Zero(A.rows());
     }
@@ -462,7 +521,8 @@ Vector6d EnvironmentConstrainedVelocity_CSModeOnly(
   //     x.setZero();
   // }
   if (std::isinf(f) || (!ifConstraintsSatisfied(
-                           x, A, b, G, h))) { // if fail to solve the problem
+                           x, A, b, G, h)))
+  { // if fail to solve the problem
     x.setZero();
   }
 
@@ -472,4 +532,3 @@ Vector6d EnvironmentConstrainedVelocity_CSModeOnly(
 
   return x;
 }
-

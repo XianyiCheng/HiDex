@@ -6,7 +6,8 @@
 #include "../src/mechanics/utilities/combinatorics.h"
 #include "../src/mechanics/utilities/eiquadprog.hpp"
 
-void drop() {
+void drop()
+{
   std::cout << "Test drop" << std::endl;
   Vector6d v_b = Vector6d::Zero();
   v_b[2] = -0.1;
@@ -32,7 +33,8 @@ void drop() {
   std::cout << "drop result: " << result << std::endl;
 }
 
-void rotate() {
+void rotate()
+{
   std::cout << "Test rotate" << std::endl;
   Vector6d v_goal = Vector6d::Zero();
   v_goal[2] = -0.1;
@@ -67,7 +69,8 @@ void rotate() {
   std::cout << "rotate result: " << result << std::endl;
 }
 
-void slide() {
+void slide()
+{
 
   Vector6d v;
   v << 0.7, 0, 0, 0, 0, 0;
@@ -157,8 +160,75 @@ void slide() {
             << std::endl;
 }
 
-int main() {
+void pivot()
+{
+
+  Vector6d v1; // feasible
+  v1 << 0.182365, 1.44412e-19, 0.526385, -1.11022e-16, 1.18509, -2.08167e-17;
+  Vector6d v2; // shoud be feasible, but not now
+  v2 << 0.693052, 8.53208e-19, 0.599891, -1.38778e-16, 1.1394, -4.16334e-17;
+
+  DartPointManipulator robot(1, 0.1);
+  robot.is_patch_contact = true;
+
+  std::vector<ContactPoint> fingertips;
+  fingertips.push_back(ContactPoint(Vector3d(-0.5, 0.0489681, 0.45935144), Vector3d(1, 0, 0)));
+  std::vector<ContactPoint> mnps;
+  robot.Fingertips2PointContacts(fingertips, &mnps);
+
+  std::vector<ContactPoint> envs;
+  envs.push_back(
+      ContactPoint(Vector3d(0.5, 0.5, -0.5), Vector3d(0, 0, 1), 9.99868e-05));
+  envs.push_back(
+      ContactPoint(Vector3d(0.5, -0.5, -0.5), Vector3d(0, 0, 1), 9.99868e-05));
+  envs.push_back(
+      ContactPoint(Vector3d(-0.5, -0.5, -0.5), Vector3d(0, 0, 1), 9.99868e-05));
+  envs.push_back(
+      ContactPoint(Vector3d(-0.5, 0.5, -0.5), Vector3d(0, 0, 1), 9.99868e-05));
+
+  VectorXi cs_mode(4);
+  cs_mode << 0, 0, 1, 1;
+
+  Vector6d f_ext_w = Vector6d::Zero();
+  f_ext_w[2] = -1;
+  Matrix6d object_inertia = Matrix6d::Identity();
+  object_inertia(3, 3) = 0.167;
+  object_inertia(4, 4) = 0.167;
+  object_inertia(5, 5) = 0.167;
+  Vector7d object_pose;
+  object_pose << -0.1, 0, 0.5, 0, 0, 0, 1;
+  double mu_env = 0.8;
+  double mu_mnp = 0.8;
+  double wa = 1;
+  double wt = 1;
+  double h_time = 10;
+  ContactConstraints cons(2);
+
+  VectorXi env_mode_1 = mode_from_velocity(v1, envs, &cons);
+  env_mode_1.head(envs.size()) = cs_mode;
+  std::cout << "env_mode_1: " << env_mode_1.transpose() << std::endl;
+
+  VectorXi env_mode_2 = mode_from_velocity(v2, envs, &cons);
+  env_mode_2.head(envs.size()) = cs_mode;
+  std::cout << "env_mode_2: " << env_mode_2.transpose() << std::endl;
+
+
+  bool result_1 =
+      isQuasidynamic(v1, mnps, envs, env_mode_2, f_ext_w, object_inertia,
+                     object_pose, mu_env, mu_mnp, wa, wt, h_time, &cons, 0.3);
+  
+  bool result_2 = isQuasidynamic(v2, mnps, envs, env_mode_2, f_ext_w, object_inertia,
+                     object_pose, mu_env, mu_mnp, wa, wt, h_time, &cons, 0.3);
+
+  std::cout << "pivot result_1: " << result_1 << std::endl;
+  std::cout << "pivot result_2: " << result_2 << std::endl;
+
+}
+
+int main()
+{
   // drop();
   // rotate();
-  slide();
+  // slide();
+  pivot();
 }

@@ -239,6 +239,7 @@ bool TASK::forward_integration(const Vector7d &x_start, const Vector7d &x_goal,
       bool pass_pruning_check = pruning_check_w_manipulator_config(
           x, env_mode.head(envs.size()), v_b, envs, selected_mnp_config,
           new_robot_config, false);
+      // std::cout << "v_b " << v_b.transpose() << std::endl;
       if (!pass_pruning_check){
         break;
       }
@@ -279,7 +280,7 @@ bool TASK::forward_integration(const Vector7d &x_start, const Vector7d &x_goal,
       this->m_world->getObjectContacts(&envs, x_new);
       if ((!if_projected) || (envs.size() != pre_env_size))
       {
-        std::cout << "Velocity correction failed! " << std::endl;
+        // std::cout << "Velocity correction failed! " << std::endl;
         break;
       }
     }
@@ -304,7 +305,7 @@ bool TASK::forward_integration(const Vector7d &x_start, const Vector7d &x_goal,
       VectorXi remain_idx = track_contacts_remain(envs_pre, envs);
       if (envs.size() != 0 && remain_idx.size() == 0)
       {
-        printf("contact track fails.\n");
+        // printf("contact track fails.\n");
         break;
       }
       if (ifContactingModeDeleted(env_mode, remain_idx, envs_pre.size()))
@@ -315,7 +316,7 @@ bool TASK::forward_integration(const Vector7d &x_start, const Vector7d &x_goal,
           // delete_c++;
           // if (delete_c > 4)
           //   break;
-          printf("Collision Detection delelte contacting mode \n");
+          // printf("Collision Detection delelte contacting mode \n");
           Vector6d v_corr =
               recoverContactingContacts(envs_pre, env_mode, remain_idx);
 
