@@ -24,7 +24,7 @@ environment: # maximum 20 blocks
 characteristic_length: 1
 
 robot_object_friction_coefficient: 0.8
-environment_object_friction_coefficient: 0.4
+environment_object_friction_coefficient: 0.8
 
 task_dynamics: "quasidynamic" # "quasistatic", "quasidynamic", "none", "force_closure"
 object_weight: [0,0,-1,0,0,0]
@@ -65,8 +65,8 @@ free_sphere_robot:
 
 # ---- Start and Goal Pose ----
 # pose [x, y, z, qx, qw, qz, qw]
-object_start_pose: [-0.1,0,0.5,0,0,0,1]
-object_goal_pose: [2,0,0.5,0,0,0,1]
+object_start_pose: [-0,0,0.5,0,0,0,1]
+object_goal_pose: [1,0,0.5,0,0,0,1]
 
 # ---- Run options ----
 random_seed: -1
@@ -81,7 +81,7 @@ transition_pruning: false
 
 rrt_options:
   max_samples: 50
-  goal_biased_prob: 0.99
+  goal_biased_prob: 0.9
   goal_thr: 0.1
   extend_epsilon:
     translation: 0.7
@@ -95,6 +95,7 @@ rrt_options:
     rotation: 
       SO3_enabled: true
       axis: [0,0,1] # if SO3_enabled is false, sample rotation on this axis
+  search_with_manipulator_config: true
 
 mcts_options:
   max_time: 5

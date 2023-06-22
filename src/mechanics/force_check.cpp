@@ -201,7 +201,7 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
   if (std::isinf(f)) { // if fail to solve the problem
     return false;
   } else if (!ifConstraintsSatisfied(x, A, b, G, h)) {
-    std::cout << " Constraints not satisfied for qp! " << std::endl;
+    // std::cout << " Constraints not satisfied for qp! " << std::endl;
     return false;
   } else {
     x_v = x.block(0, 0, 6, 1);

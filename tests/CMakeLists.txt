@@ -69,7 +69,7 @@ set(modus_libs modus_common modus_modes)
 
 # add_executable(test_discrete_sample test_discrete_sample.cpp)
 
-add_executable(test_quasidynamic test_quasidynamic.cpp ../src/tasks/cmg_task.cpp ../src/mechanics/manipulators/DartPointManipulator.cpp)
+add_executable(test_quasidynamic test_quasidynamic.cpp ../src/tasks/task.cpp ../src/mechanics/manipulators/DartPointManipulator.cpp)
 target_link_libraries(test_quasidynamic PRIVATE mcts-mechanics ${dart_libs})
 
 # add_executable(test_task_class test_task_class.cpp ../tasks/task.cpp ../src/mechanics/manipulators/DartPointManipulator.cpp)
@@ -86,3 +86,11 @@ add_executable(test_exp_map test_exp_map.cpp
     ../src/tasks/wholehand_setup.cpp
     ../src/mechanics/manipulators/wholehand/exp_map.cpp)
 target_link_libraries(test_exp_map PRIVATE mcts-mechanics ${dart_libs} dart-optimizer-nlopt ${YAML_LIBRARY} geometry-central)
+
+add_executable(test_forward_integration test_forward_integration.cpp 
+    ../src/tasks/task.cpp 
+    ../src/tasks/setup.cpp
+    ../src/mechanics/manipulators/DartPointManipulator.cpp 
+    ../src/mechanics/manipulators/DartDeltaManipulator.cpp )
+
+target_link_libraries(test_forward_integration PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})

@@ -367,6 +367,8 @@ public:
   bool robot_contact_feasible_check(
       const std::vector<ContactPoint> &mnps, const Vector7d &x, const VectorXi &cs_mode,
       const Vector6d &v, const std::vector<ContactPoint> &envs);
+  
+  bool robot_collision_n_ik_check(const Vector7d &x, const VectorXd & mnp_config);
 
   long int pruning_check(const Vector7d &x, const VectorXi &cs_mode, const Vector6d &v,
                          const std::vector<ContactPoint> &envs);
