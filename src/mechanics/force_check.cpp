@@ -124,7 +124,7 @@ bool isQuasistatic(const std::vector<ContactPoint> &mnps,
   return result;
 }
 
-bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
+bool isQuasidynamic_LP(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
                     const std::vector<ContactPoint> &envs,
                     const VectorXi &env_mode, const Vector6d &f_ext_w,
                     const Matrix6d &object_inertia, const Vector7d object_pose,
@@ -190,7 +190,100 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
     G.block(G_rows, 0, 12, n_var).setZero();
     h.block(G_rows, 0, 12, 1).setZero();
 
-    VectorXd sigma = VectorXd::Constant(f_ext_o.size(), 1e-4);
+    VectorXd sigma = VectorXd::Constant(f_ext_o.size(), 0.1);
+    h.block(G_rows, 0, 6, 1) = -f_ext_o - sigma + object_inertia * 1 / (h_time) * v_b;
+    h.block(G_rows + 6, 0, 6, 1) = f_ext_o - sigma - object_inertia * 1 / (h_time) * v_b;
+  }
+
+  VectorXd
+      xl; // = VectorXd::Constant(n_var, std::numeric_limits<double>::min());
+  VectorXd
+      xu; // = VectorXd::Constant(n_var, std::numeric_limits<double>::max());
+
+  VectorXd C = VectorXd::Constant(n_var, 0);
+  C.head(6) = -v_b;
+  VectorXd x(n_var);
+  x.setZero();
+  double optimal_cost;
+
+  bool result = lp(C, -G, -h, A, b, xl, xu, &x, &optimal_cost);
+
+  return result;
+}
+
+bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
+                    const std::vector<ContactPoint> &envs,
+                    const VectorXi &env_mode, const Vector6d &f_ext_w,
+                    const Matrix6d &object_inertia, const Vector7d object_pose,
+                    double mu_env, double mu_mnp, double wa, double wt,
+                    double h_time, ContactConstraints *cons, double thr)
+{
+
+  // Will get strange numerical errors if the precision of envs.p is too high. Fix this by rounding the values to 6 decimal places.
+  std::vector<ContactPoint> envs_round = envs;
+  for (int i = 0; i < envs.size(); i++)
+  {
+    envs_round[i].p = round_elements<Vector3d>(envs_round[i].p, 6);
+  }
+
+  if (isQuasidynamic_LP(v_b, mnps, envs_round, env_mode, f_ext_w, object_inertia,
+                        object_pose, mu_env, mu_mnp, wa, wt, h_time, cons, thr))
+  {
+    return true;
+  }
+
+  MatrixXd A_env;
+  MatrixXd G_env;
+  VectorXd b_env;
+  VectorXd h_env;
+
+  Vector6d f_ext_o;
+  {
+    Matrix4d T = pose2SE3(object_pose);
+    Matrix4d T_;
+    T_.setIdentity();
+    T_.block(0, 0, 3, 3) = T.block(0, 0, 3, 3);
+    f_ext_o = SE32Adj(T_).transpose() * f_ext_w;
+  }
+
+  cons->ModeConstraints(envs_round, env_mode, mu_env, f_ext_o, &A_env, &b_env, &G_env,
+                        &h_env);
+
+  MatrixXd A_mnp;
+  MatrixXd G_mnp;
+  VectorXd b_mnp;
+  VectorXd h_mnp;
+
+  VectorXi mmode;
+  mmode.resize(3 * mnps.size());
+  mmode.setZero(); // all fixed manipulator contacts
+
+  cons->ModeConstraints(mnps, mmode, mu_mnp, f_ext_o, &A_mnp, &b_mnp, &G_mnp,
+                        &h_mnp);
+
+  MatrixXd A;
+  MatrixXd G;
+  VectorXd b;
+  VectorXd h;
+
+  mergeManipulatorandEnvironmentConstraints_relax(
+      A_mnp, b_mnp, G_mnp, h_mnp, A_env, b_env, G_env, h_env, &A, &b, &G, &h);
+
+  // add quasidynamic condition
+
+  int n_var = A.cols();
+
+  int G_rows = G.rows();
+  if (G_rows < 12)
+  {
+
+    G.conservativeResize(12 + G_rows, n_var);
+    h.conservativeResize(12 + G_rows);
+
+    G.block(G_rows, 0, 12, n_var).setZero();
+    h.block(G_rows, 0, 12, 1).setZero();
+
+    VectorXd sigma = VectorXd::Constant(f_ext_o.size(), 1e-3);
     h.block(G_rows, 0, 6, 1) = -f_ext_o - sigma;
     h.block(G_rows + 6, 0, 6, 1) = -(-f_ext_o + sigma);
   }
@@ -205,11 +298,14 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
   VectorXd p(n_var);
   p.setZero();
   P.setIdentity();
-  P.block(0, 0, 3, 3) = wt * P.block(0, 0, 3, 3);
-  P.block(3, 3, 3, 3) = wa * P.block(3, 3, 3, 3);
+  Matrix6d W;
+  W.setIdentity();
+  W.block(0,0,3,3) *= wt;
+  W.block(3,3,3,3) *= wa;
+  P.block(0, 0, 6, 6) = W;
   P.block(6, 6, n_var - 6, n_var - 6) =
       0.01 * P.block(6, 6, n_var - 6, n_var - 6);
-  p.block(0, 0, 6, 1) = -v_b;
+  p.block(0, 0, 6, 1) = -W*v_b;
 
   VectorXd x(n_var);
   x.setZero();
@@ -224,7 +320,8 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
   // b = round_elements<VectorXd>(b, 6);
   // G = round_elements<MatrixXd>(G, 6);
   // h = round_elements<VectorXd>(h, 6);
-
+  
+  // min 0.5 x'Px + p'x; st. Ax = b, Gx >= h
   double f = solve_quadprog(P, p, A.transpose(), -b, G.transpose(), -h, x);
 
   if (std::isinf(f))
@@ -233,7 +330,10 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
   }
   else if (!ifConstraintsSatisfied(x, A, b, G, h))
   {
-    // std::cout << " Constraints not satisfied for qp! " << std::endl;
+    std::cout << "x " << x.transpose() << std::endl;
+    std::cout << " Constraints not satisfied for qp! " << std::endl;
+    std::cout << (A * x - b).transpose() << std::endl;
+    std::cout << (G * x - h).transpose() << std::endl;
     return false;
   }
   else

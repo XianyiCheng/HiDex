@@ -21,7 +21,7 @@ characteristic_length: 1
 robot_object_friction_coefficient: 0.8
 environment_object_friction_coefficient: 0.3
 
-task_dynamics: "quasidynamic" # "quasistatic", "quasidynamic", "none", "force_closure"
+task_dynamics: "quasistatic" # "quasistatic", "quasidynamic", "none", "force_closure"
 object_weight: [0,0,-0.1,0,0,0]
 object_inertia: 
   [ 1, 0, 0, 0, 0, 0, 
@@ -50,12 +50,12 @@ free_sphere_robot:
 # object_goal_pose: [-4.5,0,0.5,0,0,0,1]
 
 # # push up
-# object_start_pose: [-4.5,0,0.5,0,0,0,1]
-# object_goal_pose: [-4.5,0,4.5,0,0,0,1]
+object_start_pose: [-0.5,0,0.5,0,0,0,1]
+object_goal_pose: [-4.5,0,4.5,0,0,0,1]
 
 # push up to the side
-object_start_pose: [-2.5,0,0.5,0,0,0,1]
-object_goal_pose: [-6, 0, 4.5, 0, -0.7071, 0, 0.7071]
+# object_start_pose: [-2.5,0,0.5,0,0,0,1]
+# object_goal_pose: [-6, 0, 4.5, 0, -0.7071, 0, 0.7071]
 # object_goal_pose: [0.5, 0, 0.5, 0, -1, 0, 0]
 
 # ---- Run options ----

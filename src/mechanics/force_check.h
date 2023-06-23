@@ -33,6 +33,13 @@ bool isQuasidynamic(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
                     double mu_env, double mu_mnp, double wa, double wt,
                     double h_time, ContactConstraints *cons, double thr);
 
+bool isQuasidynamic_LP(const Vector6d &v_b, const std::vector<ContactPoint> &mnps,
+                    const std::vector<ContactPoint> &envs,
+                    const VectorXi &env_mode, const Vector6d &f_ext_w,
+                    const Matrix6d &object_inertia, const Vector7d object_pose,
+                    double mu_env, double mu_mnp, double wa, double wt,
+                    double h_time, ContactConstraints *cons, double thr);
+
 bool is_force_closure(Vector7d x, const std::vector<ContactPoint> &mnps,
                    double friction_coeff);
 

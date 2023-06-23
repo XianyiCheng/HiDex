@@ -852,6 +852,17 @@ TASK::search_a_new_path(const TASK::State &start_state) {
                                     &path, new_manipulator_configs[k_mode]);
         }
 
+        // std::cout << "Envs "<< std::endl;
+        // for (auto pt: shared_rrt->nodes[near_idx].envs){
+        //   std::cout << pt << std::endl;
+        // }
+
+        // std::cout << "Mnp" << std::endl;
+        // std::cout << new_manipulator_configs[k_mode] << std::endl;
+
+        // std::cout << "Mode" << std::endl;
+        // std::cout << mode.transpose() << std::endl;
+
         // If integration is successful
         if (path.size() > 2) {
           ReusableRRT::Node new_node(path.back());
@@ -1841,6 +1852,10 @@ bool TASK::pruning_check_w_manipulator_config(
     if (!dynamic_feasibility) {
       current_valid = false;
     }
+  }
+
+  if (!current_valid) {
+    std::cout << "Debug here" << std::endl;
   }
 
   // Randomly choose relocate even if current config is valid
