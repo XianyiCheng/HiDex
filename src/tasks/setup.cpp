@@ -98,6 +98,7 @@ void load_surface_contacts(const std::string &file_name,
 void load_task(std::shared_ptr<TASK> task, const YAML::Node &config)
 {
   std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
+  world->setWindowFrameRate(50);
 
   // ---- Load Object ----
   std::cout << "Loading object" << std::endl;

@@ -49,16 +49,21 @@ free_sphere_robot:
 # object_start_pose: [-0.5,0,0.5,0,0,0,1]
 # object_goal_pose: [-4.5,0,0.5,0,0,0,1]
 
-# # # push up
+# push up
 # object_start_pose: [-0.5,0,0.5,0,0,0,1]
 # object_goal_pose: [-4.6,0,4.5,0,0,0,1]
 
 # push up to the side
-object_start_pose: [-4.5,0,0.5,0,0,0,1]
-object_goal_pose: [-6, 0, 4.5, 0, -0.7071, 0, 0.7071]
+# object_start_pose: [-4.5,0,0.5,0,0,0,1]
+# object_goal_pose: [-6, 0, 4.5, 0, -0.7071, 0, 0.7071]
+
+# push up to the side, no rotation
+# object_start_pose: [-4.5,0,0.5,0,0,0,1]
 # object_goal_pose: [-6, 0, 4.5, 0, 0, 0, 1]
 
-# object_goal_pose: [0.5, 0, 0.5, 0, -1, 0, 0]
+# # full problem 
+object_start_pose: [-0.5,0,0.5,0,0,0,1]
+object_goal_pose: [-6, 0, 4.5, 0, -0.7071, 0, 0.7071]
 
 # ---- Run options ----
 random_seed: -1
@@ -76,7 +81,7 @@ rrt_options:
   goal_biased_prob: 0.999
   goal_thr: 1
   extend_epsilon:
-    translation: 1
+    translation: 2
     rotation_degree: 120
   weight:
     rotation: 0.01

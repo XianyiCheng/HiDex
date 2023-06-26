@@ -270,6 +270,7 @@ void visualize_output_file_object_centric(std::shared_ptr<WorldTemplate> world,
     object_traj.push_back(object_pose);
     mnp_traj.push_back(mnp_config);
   }
+  
   world->setPlaybackTrajectory(object_traj, mnp_traj);
 }
 

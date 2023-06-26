@@ -66,6 +66,10 @@ int main(int argc, char *argv[])
         task, task->get_start_state(), compute_options);
 
     HMP::Node<TASK::State> *current_node = tree.search_tree();
+    if (current_node->m_value <= 0.0){
+        std::cout << "No solution found" << std::endl;
+        return 0;
+    }
 
     std::vector<TASK::State> object_trajectory;
     std::vector<TASK::State2> action_trajectory;
