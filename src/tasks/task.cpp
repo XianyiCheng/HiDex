@@ -1854,10 +1854,6 @@ bool TASK::pruning_check_w_manipulator_config(
     }
   }
 
-  if (!current_valid) {
-    std::cout << "Debug here" << std::endl;
-  }
-
   // Randomly choose relocate even if current config is valid
   bool random_relocate = randd() < 0.3;
   if (current_valid && !random_relocate) {

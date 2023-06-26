@@ -270,7 +270,7 @@ void push_up() {
   robot.Fingertips2PointContacts(fingertips, &mnps);
 
   Vector6d v;
-  v << 0, 0, 0.1, 0, 0, 0;
+  v << 0, 0, 0.9, 0, 0, 0;
   //   v << 0,0,0,0,0,0;
 
   VectorXi cs_mode(8);
