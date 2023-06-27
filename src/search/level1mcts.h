@@ -38,6 +38,9 @@ namespace HMP
 
     HierarchicalComputeOptions compute_options;
 
+    std::shared_ptr<Level2MCTS<State2, Task>> m_best_L2_tree;
+    double m_best_L2_value = -1.0;
+
     Level1MCTS() {}
     Level1MCTS(std::shared_ptr<Task> task, State start_state,
                HierarchicalComputeOptions compute_options_)
@@ -207,25 +210,20 @@ namespace HMP
 
       std::reverse(state_path.begin(), state_path.end());
 
-      // pass this state path to m_task->saved_object_trajectory
+      // Pass this state path to m_task
       this->m_task->save_trajectory(state_path);
 
-      // std::cout << "Start level 2 search" << std::endl;
+      std::shared_ptr<Level2MCTS<State2, Task>> tree2 =
+          std::make_shared<Level2MCTS<State2, Task>>(
+              this->m_task, this->m_task->get_start_state2());
 
-      // for (auto s : this->m_task->saved_object_trajectory)
-      // {
-      //   std::cout << s.m_pose.transpose() << std::endl;
-      // }
-
-      // Level2Tree<State2, Task> tree2(this->m_task,
+      // Level2MCTS<State2, Task> tree2(this->m_task,
       //                                this->m_task->get_start_state2());
-      Level2MCTS<State2, Task> tree2(this->m_task,
-                                     this->m_task->get_start_state2());
       // tree2.ita = 2.0;
-      tree2.ita = 0.1;
+      tree2->ita = 0.1;
 
-      Node<State2> *final_node_2 = tree2.search_tree(this->compute_options.l2_1st,
-                                                     this->compute_options.l2);
+      Node<State2> *final_node_2 = tree2->search_tree(this->compute_options.l2_1st,
+                                                      this->compute_options.l2);
 
       // pass the heuristic value back to the tree 1
       int t_max = final_node_2->m_state.t_max;
@@ -241,8 +239,6 @@ namespace HMP
         {
           for (int i = 0; i <= t_max; ++i)
           {
-            // if (this->m_task->shared_rrt->dist(node_->m_state.m_pose,
-            //                                    state_path[i].m_pose) < 1e-6)
             if ((node_->m_state.m_pose - state_path[i].m_pose).norm() < 1e-6)
             {
               flag = true;
@@ -271,7 +267,13 @@ namespace HMP
       }
       else
       {
-        path_score = this->m_task->evaluate_path_level_1(state_path, tree2.backtrack_state_path(final_node_2));
+        path_score = this->m_task->evaluate_path_level_1(state_path, tree2->backtrack_state_path(final_node_2));
+      }
+
+      if (path_score > this->m_best_L2_value)
+      {
+        this->m_best_L2_value = path_score;
+        this->m_best_L2_tree = tree2;
       }
 
       this->m_task->clear_saved_object_trajectory();
@@ -562,17 +564,26 @@ namespace HMP
       // Level2Tree<State2, Task> tree2(this->m_task,
       //                                this->m_task->get_start_state2());
       // tree2.ita = 0.1;
-      Level2MCTS<State2, Task> tree2(this->m_task,
-                                     this->m_task->get_start_state2());
-      // tree2.ita = 2.0;
-      tree2.ita = 0.1;
+      if (this->m_best_L2_tree)
+      {
+        std::cout << "Improve the best L2 tree through more searches." << std::endl;
+        Node<State2> *final_node_2 = this->m_best_L2_tree->search_tree(compute_options.final_l2_1st,
+                                                                       compute_options.final_l2);
+        *action_trajectory = this->m_best_L2_tree->backtrack_state_path(final_node_2);
+        *object_trajectory = this->m_best_L2_tree->m_task->get_saved_object_trajectory();
+      }
+      else
+      {
+        Level2MCTS<State2, Task> tree2(this->m_task,
+                                       this->m_task->get_start_state2());
+        // tree2.ita = 2.0;
+        tree2.ita = 0.1;
 
-      Node<State2> *final_node_2 = tree2.search_tree(compute_options.final_l2_1st,
-                                                     compute_options.final_l2);
-
-      *action_trajectory = tree2.backtrack_state_path(final_node_2);
-      *object_trajectory = this->m_task->get_saved_object_trajectory();
-
+        Node<State2> *final_node_2 = tree2.search_tree(compute_options.final_l2_1st,
+                                                       compute_options.final_l2);
+        *action_trajectory = tree2.backtrack_state_path(final_node_2);
+        *object_trajectory = this->m_task->get_saved_object_trajectory();
+      }
       return;
     }
   };
