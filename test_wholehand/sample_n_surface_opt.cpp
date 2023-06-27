@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     std::string visualize_option = config["visualize_option"].as<std::string>();
     std::string output_file = path_join(task_folder, "output.csv");
     
-    load_task(task, config);
+    load_task(task, config, task_folder);
     load_start_and_goal_poses(task, config);
     load_reward_functions(task, config);
 

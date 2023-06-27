@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
                        Vector3d(0, 0, -1000));
     world->addEnvironmentComponent(env_block);
 
-    std::string folder_path = path_join(std::string(SRC_DIR), "/data/wholehand/AllegroHand");
+    std::string folder_path = path_join(std::string(SRC_DIR), "/data/wholehand/assets/AllegroHand");
 
     std::shared_ptr<DartWholeHandManipulator> robot = std::make_shared<DartWholeHandManipulator>(folder_path, 0.01);
 

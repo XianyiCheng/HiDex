@@ -7,7 +7,7 @@ int main(int argc, char *argv[]) {
   if (argc > 1) {
     mesh_file = argv[1];
   } else {
-    mesh_file = std::string(SRC_DIR) + "/data/wholehand/AllegroHand/ManifoldAllegroHand.obj";
+    mesh_file = std::string(SRC_DIR) + "/data/wholehand/assets/AllegroHand/ManifoldAllegroHand.obj";
   }
   ExpMapMesh expMapMesh(mesh_file);
 

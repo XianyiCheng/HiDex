@@ -1,35 +1,38 @@
-# ---- Environment Setup ----
-
-# The object can be created as using primitive shapes or from mesh file (mesh_object). 
-# Keep one object only. Comment the ones you don't need. 
+# ---- Object Setup ----
+# The object can be created as using primitive shapes from box_object, ellipsoid_object, cylinder_object, or from a mesh file (mesh_object). 
+# For each task setup.yaml, keep one object only. Delete the others
 
 box_object:
   shape: [1,1,1]
-  contact_file: "/data/box_l1.csv" # path to sampled surface points on cube of unit half length
-  negate_contact_normal: false # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
-  # disabled_normal_directions: [[0,0,-1], [0,0,1]]
+  contact_file: "assets/box_l1.csv" # Relative path in the task folder to the file of sampled surface points on a cube of unit length. We will automatically scale the contact points according to the shape.
+  negate_contact_normal: false # Contact normals should point inwards. Compare this with the contact_file and decide whether to negate the contact normal.
+  disabled_normal_directions: [[0,0,-1], [0,0,1]] # If you want to disable some contact points on the object using contact normal directions (pointing inward to the object surface), specify them here. 
 
 ellipsoid_object:
   semi_axis: [1,1,1]
-  contact_file: "/data/ellipsoid_unit_semi_axis.csv" # path to sampled surface points on ellipsoid of unit semi-axis
-  negate_contact_normal: false # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
-  # disabled_normal_directions: [[0,0,-1], [0,0,1]]
+  contact_file: "assets/ellipsoid_unit_semi_axis.csv" # Relative path in the task folder to the file of sampled surface points on ellipsoid of unit semi-axis. We will automatically scale the contact points according to the semi-axis values
+  negate_contact_normal: false # Contact normals should point inwards. Compare this with the contact_file and decide whether to negate the contact normal.
+  # disabled_normal_directions: [[0,0,-1], [0,0,1]] # If you want to disable some contact points on the object using contact normal directions (pointing inward to the object surface), specify them here. 
+
 
 cylinder_object:
   radius: 1
   height: 2
-  contact_file: "/data/cylinder_r1_h1.csv" # path to sampled surface points on cylinder of unit radius and unit height
+  contact_file: "assets/cylinder_r1_h1.csv" # Relative path in the task folder to the file of sampled surface points on cylinder of unit radius and unit height
   negate_contact_normal: false # contact normals should point inwards, compare this with the contact_file and decide whether to negate the contact normal
-  # disabled_normal_directions: [[0,0,-1], [0,0,1]]
+  # disabled_normal_directions: [[0,0,-1], [0,0,1]] # If you want to disable some contact points on the object using contact normal directions (pointing inward to the object surface), specify them here. 
 
-# mesh_object:
-#   mesh_file: "path_to_mesh.stl"
-#   scale: 1.0
-#   contact_file: "path_to_sampled_surface_points.csv" # "none" if there is no presampled contact file, in which case the contact points will be sampled on the fly
-#   negate_contact_normal: false
-# disabled_normal_directions: [[0,0,-1], [0,0,1]]
+
+mesh_object:
+  mesh_file: "assets/d_lego_duplo.obj" # Relative path in the task folder to the file of the mesh object
+  scale: 1.0
+  contact_file: "none" # "none" if there is no presampled contact file, in which case the contact points will be sampled on the fly. Otherwise specify a relative path in the task folder to the file of sampled surface points on the mesh object.
+  negate_contact_normal: false
+  # disabled_normal_directions: [[0,0,-1], [0,0,1]] # If you want to disable some contact points on the object using contact normal directions (pointing inward to the object surface), specify them here. 
 
 maximum_surface_contact_points: 100
+
+# ---- Environment Setup ----
 
 environment: # maximum 20 blocks
   block_1:
@@ -143,11 +146,10 @@ action_probability_L2: "env"
 # ---- Output and Visualization ----
 
 # visualization options: 
-# "csv": show the trajecotry in the result csv file in save_file_path
+# "csv": show the trajecotry in the result csv file in output.csv under the task folder
 # "setup": show the task setup
-# "save": plan a trajectory, saved in csv, no visualization
+# "save": plan a trajectory, saved in output.csv, no visualization
 # "show": plan a trajectory and show, don't save in the csv
-# "save_n_show": plan a trajectory, saved in csv, and show the results
+# "save_n_show": plan a trajectory, saved in output.csv, and show the results
 
 visualize_option: "setup"
-save_file_path: "/general_planner/path_to_output.csv"

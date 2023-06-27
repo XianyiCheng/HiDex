@@ -7,7 +7,7 @@
 #   negate_contact_normal: false
 
 mesh_object:
-  mesh_file: "/data/apple.obj"
+  mesh_file: "assets/apple.obj"
   scale: 1.0
   contact_file: "none" # "none" if there is no presampled contact file, in which case the contact points will be sampled on the fly
   negate_contact_normal: false
@@ -55,7 +55,7 @@ object_inertia:
 # ---- Robot ----
 # TODO: change this
 whole_hand: 
-  folder_path: "/data/wholehand/AllegroHand"
+  folder_path: "assets/AllegroHand"
   radius: 0.01
   max_num_contacts: 4
   # allowed_parts: ["base_link", "link_1", "link_2", "link_3_tip", "link_5", "link_6", "link_7_tip", "link_9", "link_10", "link_11_tip", "link_14", "link_15", "link_15_tip"]
@@ -126,4 +126,3 @@ action_probability_L2: "env"
 # "save_n_show": plan a trajectory, saved in csv, and show the results
 
 visualize_option: "setup"
-save_file_path: "/data/wholehand/output.csv"

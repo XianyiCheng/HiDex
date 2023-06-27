@@ -3,9 +3,9 @@
 # The object can be created as a cuboid (box_object) or from mesh file (mesh_object). Comment out the one you don't need. 
 box_object:
   shape: [1,1,1]
-  contact_file: "/general_planner/cube_surface_contacts.csv" # (in project source folder) path to sampled surface points on cube of unit half length
-  negate_contact_normal: true
-  disabled_normal_directions: [[0,0,-1]]
+  contact_file: "assets/box_l1.csv" # path to sampled surface points on cube of unit length
+  negate_contact_normal: false
+  disabled_normal_directions: [[0,0,-1],[0,0,1]]
 
 # mesh_object:
 #   mesh_file: "path_to_mesh.stl"
@@ -13,22 +13,20 @@ box_object:
 #   negate_contact_normal: false
 #   scale: 1.0
 
-maximum_surface_contact_points: 200
+maximum_surface_contact_points: 100
 
 environment: # maximum 20 blocks
   block_1:
     dimension: [8,8,1]
     location: [0,0,-0.4999]
-  # block_2:
-  #   dimension: [4,5,4]
-  #   location: [-4.50001, 0, 1]
+
 
 characteristic_length: 1
 
 robot_object_friction_coefficient: 0.8
-environment_object_friction_coefficient: 0.4
+environment_object_friction_coefficient: 0.8
 
-task_dynamics: "quasistatic" # "quasistatic", "quasidynamic", "none", "force_closure"
+task_dynamics: "quasidynamic" # "quasistatic", "quasidynamic", "none", "force_closure"
 object_weight: [0,0,-1,0,0,0]
 object_inertia: 
   [ 1, 0, 0, 0, 0, 0, 
@@ -67,8 +65,8 @@ free_sphere_robot:
 
 # ---- Start and Goal Pose ----
 # pose [x, y, z, qx, qw, qz, qw]
-object_start_pose: [-0.1,0,0.5,0,0,0,1]
-object_goal_pose: [1,0,0.5,0,0,0,1]
+object_start_pose: [-0,0,0.5,0,0,0,1]
+object_goal_pose: [1, 0, 0.5, 0, 0.7071, 0, 0.7071]
 
 # ---- Run options ----
 random_seed: -1
@@ -97,6 +95,7 @@ rrt_options:
     rotation: 
       SO3_enabled: true
       axis: [0,0,1] # if SO3_enabled is false, sample rotation on this axis
+  search_with_manipulator_config: true
 
 mcts_options:
   max_time: 5
@@ -125,4 +124,4 @@ action_probability_L2: "env"
 # "show": plan a trajectory and show, no save
 # "save_n_show": plan a trajectory, saved in csv, and show the results
 
-visualize_option: "show"
+visualize_option: "save_n_show"

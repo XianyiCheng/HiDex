@@ -27,7 +27,7 @@
 
 
 
-void load_task(std::shared_ptr<TASK> task, const YAML::Node &config);
+void load_task(std::shared_ptr<TASK> task, const YAML::Node &config, const std::string &task_folder);
 
 void load_start_and_goal_poses(std::shared_ptr<TASK> task, const YAML::Node &config);
 

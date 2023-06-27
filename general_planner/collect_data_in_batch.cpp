@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
 
     std::string run_folder = task_folder + "/runs/" + run_name;
 
-    load_task(task, config);
+    load_task(task, config, task_folder);
 
     std::cout << "Loading start and goal poses" << std::endl;
     load_start_and_goal_poses(task, config);

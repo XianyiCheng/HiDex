@@ -91,7 +91,7 @@ void save_contact_points(const std::vector<ContactPoint> &pts,
 
 int main(int argc, char *argv[])
 {
-  std::string config_file;
+  std::string task_folder;
   std::string traj_file;
 
   std::string output_folder;
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 
   if (argc > 4)
   {
-    config_file = argv[1];
+    task_folder = argv[1];
     traj_file = argv[2];
     output_folder = argv[3];
     mkdir(output_folder.c_str(), 0755);
@@ -129,6 +129,8 @@ int main(int argc, char *argv[])
               << std::endl;
     return 0;
   }
+
+  std::string config_file = path_join(task_folder, "setup.yaml");
 
   YAML::Node config = YAML::LoadFile(config_file);
 
@@ -208,7 +210,7 @@ int main(int argc, char *argv[])
         config["mesh_object"]["negate_contact_normal"].as<bool>();
 
     load_surface_contacts(
-        config["mesh_object"]["contact_file"].as<std::string>(), &surface_pts,
+        path_join(task_folder, config["mesh_object"]["contact_file"].as<std::string>()), &surface_pts,
         scale, scale, scale, disabled_dirs, negate_normal);
   }
   else

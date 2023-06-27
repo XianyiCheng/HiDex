@@ -3,7 +3,7 @@
 # The object can be created as a cuboid (box_object) or from mesh file (mesh_object). Comment out the one you don't need. 
 box_object:
   shape: [0.5,2,2]
-  contact_file: "/data/box_l1.csv" # path to sampled surface points on cube of unit half length
+  contact_file: "assets/box_l1.csv" # path to sampled surface points on cube of unit half length
   negate_contact_normal: false
   disabled_normal_directions: [[0,1,0],[0,-1,0]]
 
@@ -102,4 +102,3 @@ action_probability_L2: "env"
 # "save_n_show": plan a trajectory, saved in csv, and show the results
 
 visualize_option: "save_n_show"
-save_file_path: "/data/placedown/output.csv"

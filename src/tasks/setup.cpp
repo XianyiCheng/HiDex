@@ -18,7 +18,7 @@ void sample_surface_contacts(SkeletonPtr object, std::vector<ContactPoint> *pts,
     int index = randi(num_vertices);
     aiVector3D point = meshShape->getMesh()->mMeshes[0]->mVertices[index];
     aiVector3D normal = meshShape->getMesh()->mMeshes[0]->mNormals[index];
-    p << scale*point[0], scale*point[1], scale*point[2];
+    p << scale * point[0], scale * point[1], scale * point[2];
     n << -normal[0], -normal[1], -normal[2];
 
     bool is_disabled = false;
@@ -95,7 +95,7 @@ void load_surface_contacts(const std::string &file_name,
   }
 }
 
-void load_task(std::shared_ptr<TASK> task, const YAML::Node &config)
+void load_task(std::shared_ptr<TASK> task, const YAML::Node &config, const std::string &task_folder)
 {
   std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
   world->setWindowFrameRate(50);
@@ -184,7 +184,7 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config)
     else
     {
       load_surface_contacts(
-          path_join(std::string(SRC_DIR), contact_file), &surface_pts, scale, disabled_dirs, negate_normal);
+          path_join(task_folder, contact_file), &surface_pts, scale, disabled_dirs, negate_normal);
 
       while (surface_pts.size() > max_contact_points)
       {
@@ -299,7 +299,8 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config)
                                .as<std::vector<double>>()
                                .data());
 
-  if (config["rrt_options"]["search_with_manipulator_config"]){
+  if (config["rrt_options"]["search_with_manipulator_config"])
+  {
     rrt_options.search_with_manipulator_config = config["rrt_options"]["search_with_manipulator_config"].as<bool>();
   }
 
