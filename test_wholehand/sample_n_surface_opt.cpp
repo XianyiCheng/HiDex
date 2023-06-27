@@ -26,19 +26,20 @@ int main(int argc, char *argv[])
 
     std::shared_ptr<WholeHandTASK> task = std::make_shared<WholeHandTASK>();
 
-    std::string config_file;
+    std::string task_folder;
 
     if (argc > 1)
     {
-        config_file = argv[1];
+        task_folder = argv[1];
     }
     else
     {
         // config_file = "/home/xianyi/Research/MCTS/general_planner/setup_template.yaml";
-        config_file = path_join(std::string(SRC_DIR), "/data/wholehand/setup.yaml");
+        task_folder = path_join(std::string(SRC_DIR), "/data/wholehand");
     }
 
     // should use arg to specify the path to the setup.yaml file
+    std::string config_file = path_join(task_folder, "setup.yaml");
 
     YAML::Node config = YAML::LoadFile(config_file);
 
@@ -54,8 +55,8 @@ int main(int argc, char *argv[])
     }
 
     std::string visualize_option = config["visualize_option"].as<std::string>();
-    std::string output_file = config["save_file_path"].as<std::string>();
-
+    std::string output_file = path_join(task_folder, "output.csv");
+    
     load_task(task, config);
     load_start_and_goal_poses(task, config);
     load_reward_functions(task, config);
