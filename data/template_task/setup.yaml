@@ -30,11 +30,12 @@ mesh_object:
   negate_contact_normal: false
   # disabled_normal_directions: [[0,0,-1], [0,0,1]] # If you want to disable some contact points on the object using contact normal directions (pointing inward to the object surface), specify them here. 
 
-maximum_surface_contact_points: 100
+maximum_surface_contact_points: 100 # Maximum number of contact points to sample on the object surface
 
 # ---- Environment Setup ----
 
-environment: # maximum 20 blocks
+# The environment can be created using primitive shapes. We allow maximum 20 shapes for each primitive category.
+environment: 
   block_1:
     dimension: [20,20,1]
     location: [0,0,-0.5]
@@ -92,7 +93,7 @@ free_sphere_robot:
  
 
 # ---- Start and Goal Pose ----
-# pose [x, y, z, qx, qw, qz, qw]
+# A pose is specified by the position and quaternion: [x, y, z, qx, qy, qz, qw].
 object_start_pose: [-0.1,0,0.5,0,0,0,1]
 object_goal_pose: [0.7,0,0.5,0,0.7071,0,0.7071]
 
@@ -145,11 +146,11 @@ action_probability_L2: "env"
 
 # ---- Output and Visualization ----
 
-# visualization options: 
-# "csv": show the trajecotry in the result csv file in output.csv under the task folder
-# "setup": show the task setup
+# Visualization options: 
+# "csv": show the trajecotry in the in output.csv under the task folder. Press space to play the trajectory.
+# "setup": show the task setup. Press space to show start and goal poses.
 # "save": plan a trajectory, saved in output.csv, no visualization
-# "show": plan a trajectory and show, don't save in the csv
-# "save_n_show": plan a trajectory, saved in output.csv, and show the results
+# "show": plan a trajectory and show, don't save in the csv.
+# "save_n_show": plan a trajectory, saved in output.csv, and show the results. Press space to play the trajectory.
 
 visualize_option: "setup"

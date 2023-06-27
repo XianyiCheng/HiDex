@@ -1,0 +1,17 @@
+number_of_experiments: 10
+
+visualize_option: none # setup, show, none. (Overwrite visualize_option in setup.yaml)
+
+collect_results: false
+
+random_start:
+  allowed: false
+  position_upper_bound: [2,2,0.5]
+  position_lower_bound: [-2,2,0.5]
+  random_orientation: false
+
+random_goal:
+  allowed: true
+  position_upper_bound: [2,2,0.5]
+  position_lower_bound: [-2,-2,0.5]
+  random_orientation: false

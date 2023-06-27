@@ -52,26 +52,26 @@ Vector7d sample_a_pose(const Vector7d &original_pose, const YAML::Node &config,
 
 int main(int argc, char *argv[]) {
 
-  std::string batch_config_file;
+  
+
+  std::string task_folder;
 
   if (argc > 1) {
-    batch_config_file = path_join(std::string(SRC_DIR),argv[1]);
-    std::cout << "batch_config_file: " << batch_config_file << std::endl;
+    task_folder = path_join(std::string(SRC_DIR),argv[1]);
+    std::cout << "Task_folder: " << task_folder << std::endl;
   } else {
-    batch_config_file =
-        path_join(std::string(SRC_DIR), "/data/pushing_all_dir/batch.yaml");
-    // std::string(SRC_DIR)+"/general_planner/batch_config_template.yaml";
+    task_folder =
+        path_join(std::string(SRC_DIR), "/data/pushing_all_dir");
   }
 
-  // should use arg to specify the path to the setup.yaml file
+  std::string batch_config_file = path_join(task_folder, "batch.yaml");
 
   YAML::Node batch_config = YAML::LoadFile(batch_config_file);
 
-  std::string task_folder =
-      path_join(std::string(SRC_DIR), batch_config["folder"].as<std::string>());
-  YAML::Node config = YAML::LoadFile(task_folder + "/setup.yaml");
+  YAML::Node config = YAML::LoadFile(path_join(task_folder, "/setup.yaml"));
 
-  mkdir((task_folder + "/runs").c_str(), 0755);
+  std::string run_folder = path_join(task_folder, "runs");
+  mkdir(run_folder.c_str(), 0755);
 
   int number_of_experiments = batch_config["number_of_experiments"].as<int>();
 
@@ -81,14 +81,14 @@ int main(int argc, char *argv[]) {
   for (int n_exp = 0; n_exp < number_of_experiments; n_exp++) {
 
     std::string run_name = get_current_time();
-    std::cout << run_name << std::endl;
+    std::cout << "Run name " << run_name << std::endl;
 
     // set random seed
     std::srand(std::stoll(run_name));
 
     std::shared_ptr<TASK> task = std::make_shared<TASK>();
 
-    std::string run_folder = task_folder + "/runs/" + run_name;
+    std::string instance_folder = path_join(run_folder, run_name);
 
     load_task(task, config, task_folder);
 
@@ -126,17 +126,17 @@ int main(int argc, char *argv[]) {
     tree.get_final_results(current_node, &object_trajectory,
                            &action_trajectory);
 
-    mkdir(run_folder.c_str(), 0755);
+    mkdir(instance_folder.c_str(), 0755);
 
     // collect full trajectory
-    std::string traj_file = run_folder + "/trajectory.csv";
+    std::string traj_file = path_join(instance_folder, "/trajectory.csv");
     save_full_output_object_centric(object_trajectory, action_trajectory, task,
                                     traj_file);
 
     if (batch_config["collect_results"].as<bool>()) {
       VectorXd result = get_results(&tree, task, object_trajectory,
                                     action_trajectory, current_node->m_value);
-      saveData(run_folder + "/results.csv", result);
+      saveData(path_join(instance_folder,"/results.csv"), result);
     }
 
     if (visualize_option == "show") {
