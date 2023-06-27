@@ -140,7 +140,7 @@ void load_task(std::shared_ptr<WholeHandTASK> task, const YAML::Node &config)
     scale << scale_l, scale_l, scale_l;
     object = createFreeObjectfromMesh(
         "mesh_object",
-        std::string(SRC_DIR) + config["mesh_object"]["mesh_file"].as<std::string>(),
+        path_join(std::string(SRC_DIR), config["mesh_object"]["mesh_file"].as<std::string>()),
         scale);
   }
   else
@@ -182,7 +182,7 @@ void load_task(std::shared_ptr<WholeHandTASK> task, const YAML::Node &config)
     else
     {
       load_surface_contacts(
-          std::string(SRC_DIR) + contact_file, &surface_pts, scale, disabled_dirs, negate_normal);
+          path_join(std::string(SRC_DIR), contact_file), &surface_pts, scale, disabled_dirs, negate_normal);
 
       while (surface_pts.size() > max_contact_points)
       {
@@ -310,7 +310,7 @@ void load_task(std::shared_ptr<WholeHandTASK> task, const YAML::Node &config)
   {
     std::cout << "No whole hand is configured in setup.yaml. Exit program." << std::endl;
   }
-  std::string robot_folder_path = std::string(SRC_DIR) + config["whole_hand"]["folder_path"].as<std::string>();
+  std::string robot_folder_path = path_join(std::string(SRC_DIR), config["whole_hand"]["folder_path"].as<std::string>());
   double robot_radius = config["whole_hand"]["radius"].as<double>();
   int n_robot_contacts = config["whole_hand"]["max_num_contacts"].as<int>();
   std::vector<std::string> robot_parts = config["whole_hand"]["allowed_parts"].as<std::vector<std::string>>();

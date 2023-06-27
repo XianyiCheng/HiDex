@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 {
     std::shared_ptr<DartWorld> world = std::make_shared<DartWorld>();
     double l = 0.14;
-    std::string object_mesh_file = std::string(SRC_DIR) + "/data/cube_0.1.obj";
+    std::string object_mesh_file = path_join(std::string(SRC_DIR), "/data/cube_0.1.obj");
 
     Vector3d box_shape(l, l, l);
     SkeletonPtr object = createFreeObjectfromMesh("object", object_mesh_file);
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
                        Vector3d(0, 0, -1000));
     world->addEnvironmentComponent(env_block);
 
-    std::string folder_path = std::string(SRC_DIR) + "/data/wholehand/AllegroHand";
+    std::string folder_path = path_join(std::string(SRC_DIR), "/data/wholehand/AllegroHand");
 
     std::shared_ptr<DartWholeHandManipulator> robot = std::make_shared<DartWholeHandManipulator>(folder_path, 0.01);
 

@@ -94,3 +94,11 @@ add_executable(test_forward_integration test_forward_integration.cpp
     ../src/mechanics/manipulators/DartDeltaManipulator.cpp )
 
 target_link_libraries(test_forward_integration PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})
+
+add_executable(test_path_join test_path_join.cpp 
+    ../src/tasks/task.cpp 
+    ../src/tasks/setup.cpp
+    ../src/mechanics/manipulators/DartPointManipulator.cpp 
+    ../src/mechanics/manipulators/DartDeltaManipulator.cpp )
+
+target_link_libraries(test_path_join PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})

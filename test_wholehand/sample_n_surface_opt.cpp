@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     else
     {
         // config_file = "/home/xianyi/Research/MCTS/general_planner/setup_template.yaml";
-        config_file = std::string(SRC_DIR) + "/data/wholehand/setup.yaml";
+        config_file = path_join(std::string(SRC_DIR), "/data/wholehand/setup.yaml");
     }
 
     // should use arg to specify the path to the setup.yaml file
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     std::string object_mesh_file;
     if (config["mesh_object"]["mesh_file"])
     {
-        object_mesh_file = std::string(SRC_DIR) + config["mesh_object"]["mesh_file"].as<std::string>();
+        object_mesh_file = path_join(std::string(SRC_DIR), config["mesh_object"]["mesh_file"].as<std::string>());
     }
     else
     {

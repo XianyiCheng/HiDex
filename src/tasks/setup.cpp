@@ -142,7 +142,7 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config)
     scale << scale_l, scale_l, scale_l;
     object = createFreeObjectfromMesh(
         "mesh_object",
-        std::string(SRC_DIR) + config["mesh_object"]["mesh_file"].as<std::string>(),
+        path_join(std::string(SRC_DIR), config["mesh_object"]["mesh_file"].as<std::string>()),
         scale);
   }
   else
@@ -184,7 +184,7 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config)
     else
     {
       load_surface_contacts(
-          std::string(SRC_DIR) + contact_file, &surface_pts, scale, disabled_dirs, negate_normal);
+          path_join(std::string(SRC_DIR), contact_file), &surface_pts, scale, disabled_dirs, negate_normal);
 
       while (surface_pts.size() > max_contact_points)
       {

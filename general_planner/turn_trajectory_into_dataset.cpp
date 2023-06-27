@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 
   // This file has normal pointing outwards, need negate them when loading
   std::string unit_cube_file =
-      std::string(SRC_DIR) + "/data/cube_surface_contacts.csv";
+      path_join(std::string(SRC_DIR),"/data/cube_surface_contacts.csv");
 
   std::vector<Vector3d> disabled_dirs;
 

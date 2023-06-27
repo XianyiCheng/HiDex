@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     else
     {
         // config_file = "/home/xianyi/Research/MCTS/general_planner/setup_template.yaml";
-        config_file = std::string(SRC_DIR) + "/data/wholehand/setup.yaml";
+        config_file = path_join(std::string(SRC_DIR), "/data/wholehand/setup.yaml");
     }
 
     // should use arg to specify the path to the setup.yaml file

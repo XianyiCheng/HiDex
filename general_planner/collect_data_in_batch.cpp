@@ -55,11 +55,11 @@ int main(int argc, char *argv[]) {
   std::string batch_config_file;
 
   if (argc > 1) {
-    batch_config_file = std::string(SRC_DIR) + argv[1];
+    batch_config_file = path_join(std::string(SRC_DIR),argv[1]);
     std::cout << "batch_config_file: " << batch_config_file << std::endl;
   } else {
     batch_config_file =
-        std::string(SRC_DIR) + "/data/pushing_all_dir/batch.yaml";
+        path_join(std::string(SRC_DIR), "/data/pushing_all_dir/batch.yaml");
     // std::string(SRC_DIR)+"/general_planner/batch_config_template.yaml";
   }
 
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
   YAML::Node batch_config = YAML::LoadFile(batch_config_file);
 
   std::string task_folder =
-      std::string(SRC_DIR) + batch_config["folder"].as<std::string>();
+      path_join(std::string(SRC_DIR), batch_config["folder"].as<std::string>());
   YAML::Node config = YAML::LoadFile(task_folder + "/setup.yaml");
 
   mkdir((task_folder + "/runs").c_str(), 0755);

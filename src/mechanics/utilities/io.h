@@ -11,3 +11,5 @@ void appendData(std::string fileName, MatrixXd  matrix);
 MatrixXd openData(std::string fileToOpen);
 std::vector<std::vector<double>> openVectorData(std::string fileToOpen);
 MatrixXd load_points_from_csv(std::string fileToOpen);
+
+std::string path_join(const std::string &path1, const std::string &path2);

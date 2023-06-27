@@ -4,6 +4,19 @@
 #include <vector>
 using namespace std;
 
+std::string path_join(const std::string &path1, const std::string &path2){
+    std::string path = path1;
+    if (path.back() != '/'){
+        path += '/';
+    }
+    if (path2.front() == '/'){
+        path += path2.substr(1);
+    } else{
+        path += path2;
+    }
+    return path;
+}
+
 void saveData(string fileName, MatrixXd  matrix)
 {
     //https://eigen.tuxfamily.org/dox/structEigen_1_1IOFormat.html

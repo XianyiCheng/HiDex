@@ -14,12 +14,12 @@ int main(int argc, char *argv[])
 
     if (argc > 1)
     {
-        config_file = std::string(SRC_DIR) + argv[1];
+        config_file = path_join(std::string(SRC_DIR), argv[1]);
     }
     else
     {
         // config_file = "/home/xianyi/Research/MCTS/general_planner/setup_template.yaml";
-        config_file = std::string(SRC_DIR) + "/data/reorient_quasidynamic/setup.yaml";
+        config_file = path_join(std::string(SRC_DIR), "/data/reorient_quasidynamic/setup.yaml");
     }
 
     // should use arg to specify the path to the setup.yaml file
@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
     YAML::Node config = YAML::LoadFile(config_file);
 
     std::string visualize_option = config["visualize_option"].as<std::string>();
-    std::string output_file = std::string(SRC_DIR) + config["save_file_path"].as<std::string>();
+    std::string output_file = path_join(std::string(SRC_DIR),config["save_file_path"].as<std::string>());
 
     load_task(task, config);
     load_start_and_goal_poses(task, config);
