@@ -382,12 +382,49 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config, const std::
     rpt->is_patch_contact = config["delta_array"]["patch_contact"].as<bool>();
     world->addRobot(rpt);
   }
-  else if (config["dexterous_direct_drive_hand"])
+  else if (config["fixed_ddhand"])
   {
-    std::cout << "Dexterous direct drive hand options is to be implemented. "
-                 "Exit Program."
-              << std::endl;
-    exit(0);
+    n_robot_contacts = 2;
+    int fingertype;
+    if (config["fixed_ddhand"]["finger_type"].as<std::string>() == "vertical")
+    {
+      fingertype = I_FINGER;
+    }
+    else if (config["fixed_ddhand"]["finger_type"].as<std::string>() == "horizontal")
+    {
+      fingertype = L_FINGER;
+    }
+    else
+    {
+      std::cout << "No valid finger type specified for fixed_ddhand! Exit program." << std::endl;
+      exit(0);
+    }
+
+    DartDDHandScalable *rpt = new DartDDHandScalable(fingertype, config["fixed_ddhand"]["scale"].as<double>());
+    std::vector<double> hand_pose =
+        config["fixed_ddhand"]["hand_pose"].as<std::vector<double>>();
+    Vector7d hand_pos;
+    hand_pos << hand_pose[0], hand_pose[1], hand_pose[2], hand_pose[3],
+        hand_pose[4], hand_pose[5], hand_pose[6];
+    rpt->setHandFrameTransform(hand_pos);
+    world->addRobot(rpt);
+
+    if (config["fixed_ddhand"]["initial_contact_locations"])
+    {
+      {
+        std::vector<double> loc = config["fixed_ddhand"]["initial_contact_locations"]["finger_2"]
+                                      .as<std::vector<double>>();
+        ContactPoint p(Vector3d(loc[0], loc[1], loc[2]), Vector3d(loc[3], loc[4], loc[5]));
+        surface_pts.push_back(p);
+      }
+      {
+        std::vector<double> loc = config["fixed_ddhand"]["initial_contact_locations"]["finger_1"]
+                                      .as<std::vector<double>>();
+        ContactPoint p(Vector3d(loc[0], loc[1], loc[2]), Vector3d(loc[3], loc[4], loc[5]));
+        surface_pts.push_back(p);
+      }
+      task->start_finger_idx = 2 * surface_pts.size() + 1 + surface_pts.size()*(surface_pts.size()-1) - 1;
+    }
   }
   else
   {
@@ -403,6 +440,10 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config, const std::
   task->set_task_parameters(goal_thr, wa, wt, charac_len, mu_env, mu_mnp, oi,
                             f_g, world, n_robot_contacts, task_type,
                             surface_pts, rrt_options, is_refine, refine_dist);
+            
+  std::vector<int> ss = task->get_finger_locations(task->start_finger_idx);
+
+  std::cout << "Start idx " << task->start_finger_idx << " " << ss[0] << " " << ss[1] << std::endl;
 }
 
 void load_start_and_goal_poses(std::shared_ptr<TASK> task,

@@ -9,7 +9,7 @@
 
 #include "../mechanics/manipulators/DartPointManipulator.h"
 #include "../mechanics/manipulators/DartDeltaManipulator.h"
-// #include "../mechanics/manipulators/DartDDHandScalable.h"
+#include "../mechanics/manipulators/DartDDHandScalable.h"
 
 #include "../mechanics/utilities/parser.hpp"
 
@@ -35,5 +35,5 @@ void load_reward_functions(std::shared_ptr<TASK> task, const YAML::Node &config)
 
 void load_mcts_options(HMP::HierarchicalComputeOptions& options, const YAML::Node &config);
 
-void sample_surface_contacts(SkeletonPtr object, std::vector<ContactPoint> *pts, int num_samples,
+void sample_surface_contacts(SkeletonPtr object, std::vector<ContactPoint> *pts, int num_samples, double scale,
                              std::vector<Vector3d> disabled_normal_directions);

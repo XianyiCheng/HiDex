@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        task_folder = path_join(std::string(SRC_DIR), "/data/reorient_quasidynamic");
+        task_folder = path_join(std::string(SRC_DIR), "/data/ddhand_peg_in_hole_upward");
     }
 
     std::string config_file = path_join(task_folder, "setup.yaml");

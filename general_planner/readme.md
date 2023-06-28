@@ -1,10 +1,10 @@
 
 ```
-build/bin/hidex_planner [path to environment setup yaml]
+build/bin/hidex_planner [relative path to task folder]
 ```
 
 ```
-build/bin/hidex_batch [path to batch setup yaml]
+build/bin/hidex_batch [relative path to task folder]
 ```
 
 Normally, the task setup files (yaml, csv, mesh, etc) are in /data/[task name]

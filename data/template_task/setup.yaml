@@ -87,8 +87,10 @@ free_sphere_robot:
 #     robot_4: [8.6602, -5.915, 0]
 #     robot_5: [8.6602, -9.665, 0]
 
-# dexterous_direct_drive_hand:
-#   To_Be_Implemented: 1
+# fixed_ddhand:
+#   hand_pose: [0,0,0,0,0,0,1]
+#   finger_type: "horizontal" # "horizontal" or "vertical" 
+#   scale: 100 # We prefer centimeter as the unit, while inside ddhand, the unit is meter. So we scale up 100 times.
 
  
 

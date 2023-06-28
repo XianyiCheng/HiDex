@@ -4,7 +4,7 @@ import numpy as np
 # Number of points to generate
 n = 10
 # Coordinates of box corners
-x1, y1, x2, y2 = (-1, -1, 1, 1)
+x1, y1, x2, y2 = (-0.5, -0.5, 0.5, 0.5)
 
 # margin to prevent generating points around box corners
 margin = 0.01
@@ -32,9 +32,9 @@ for p in points:
         normals.append((0, 0, -1)) # normal pointing downwards
 
 # Write points and normals to CSV file
-with open('points.csv', 'w', newline='') as csvfile:
+with open('box_l1_2D.csv', 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     # writer.writerow(["x", "y", "normal_x", "normal_y"])
     for i in range(len(points)):
-        # writer.writerow([points[i][0], points[i][1],points[i][2], normals[i][0], normals[i][1], normals[i][2]])
-        writer.writerow([points[i][0], points[i][2],points[i][1], normals[i][0], normals[i][2], normals[i][1]])
+        writer.writerow([points[i][0], points[i][1],points[i][2], normals[i][0], normals[i][1], normals[i][2]])
+        # writer.writerow([points[i][0], points[i][2],points[i][1], normals[i][0], normals[i][2], normals[i][1]])

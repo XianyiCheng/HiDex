@@ -87,18 +87,17 @@ add_executable(test_exp_map test_exp_map.cpp
     ../src/mechanics/manipulators/wholehand/exp_map.cpp)
 target_link_libraries(test_exp_map PRIVATE mcts-mechanics ${dart_libs} dart-optimizer-nlopt ${YAML_LIBRARY} geometry-central)
 
-add_executable(test_forward_integration test_forward_integration.cpp 
-    ../src/tasks/task.cpp 
-    ../src/tasks/setup.cpp
-    ../src/mechanics/manipulators/DartPointManipulator.cpp 
-    ../src/mechanics/manipulators/DartDeltaManipulator.cpp )
+set(m_files ../src/tasks/task.cpp 
+../src/tasks/setup.cpp
+../src/mechanics/manipulators/DartPointManipulator.cpp 
+../src/mechanics/manipulators/DartDeltaManipulator.cpp
+../src/mechanics/manipulators/DartDDHandScalable.cpp
+../src/mechanics/manipulators/ddhand/two_link_kinematics.cpp)
+
+add_executable(test_forward_integration test_forward_integration.cpp ${m_files} )
 
 target_link_libraries(test_forward_integration PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})
 
-add_executable(test_path_join test_path_join.cpp 
-    ../src/tasks/task.cpp 
-    ../src/tasks/setup.cpp
-    ../src/mechanics/manipulators/DartPointManipulator.cpp 
-    ../src/mechanics/manipulators/DartDeltaManipulator.cpp )
+add_executable(test_path_join test_path_join.cpp ${m_files})
 
 target_link_libraries(test_path_join PRIVATE mcts-mechanics ${dart_libs} ${YAML_LIBRARY})
