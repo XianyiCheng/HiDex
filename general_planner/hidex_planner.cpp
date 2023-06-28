@@ -2,8 +2,7 @@
 
 #include "../src/tasks/visualization.h"
 
-// const TASK::State2::Action TASK::State2::no_action = TASK::State2::Action(-1, -1);
-// const TASK::State::Action TASK::State::no_action = -1;
+#include "ddhand_setup.h"
 
 int main(int argc, char *argv[])
 {
@@ -28,7 +27,7 @@ int main(int argc, char *argv[])
     YAML::Node config = YAML::LoadFile(config_file);
 
     std::string visualize_option = config["visualize_option"].as<std::string>();
-    std::string output_file = path_join(task_folder,"output.csv");
+    std::string output_file = path_join(task_folder, "output.csv");
 
     load_task(task, config, task_folder);
     load_start_and_goal_poses(task, config);
@@ -36,7 +35,14 @@ int main(int argc, char *argv[])
 
     if (visualize_option == "csv")
     {
-        visualize_output_file_object_centric(task->m_world, output_file);
+        if (config["fixed_ddhand"])
+        {
+            visualize_ddhand_output_file(task->m_world, output_file);
+        }
+        else
+        {
+            visualize_output_file_object_centric(task->m_world, output_file);
+        }
         task->m_world->startWindow(&argc, argv);
         return 0;
     }
@@ -67,7 +73,8 @@ int main(int argc, char *argv[])
         task, task->get_start_state(), compute_options);
 
     HMP::Node<TASK::State> *current_node = tree.search_tree();
-    if (current_node->m_value <= 0.0){
+    if (current_node->m_value <= 0.0)
+    {
         std::cout << "No solution found" << std::endl;
         return 0;
     }
@@ -80,17 +87,33 @@ int main(int argc, char *argv[])
     VectorXd result = get_results(&tree, task, object_trajectory, action_trajectory,
                                   current_node->m_value);
 
+    MatrixXd output_mat;
+    if (config["fixed_ddhand"])
+    {
+        output_mat = get_ddhand_output(object_trajectory, action_trajectory, task, config_file);
+    }
+    else
+    {
+        output_mat = get_output_object_centric(object_trajectory, action_trajectory, task);
+    }
+
     if ((visualize_option == "save") || (visualize_option == "show"))
     {
         std::remove(output_file.c_str());
-        MatrixXd output_mat = get_output_object_centric(object_trajectory, action_trajectory, task);
         saveData(output_file, output_mat);
         // save_full_output_object_centric(object_trajectory, action_trajectory, task, output_file);
     }
 
     if (visualize_option == "show")
     {
-        visualize_output_file_object_centric(task->m_world, output_file);
+        if (config["fixed_ddhand"])
+        {
+            visualize_ddhand_output_file(task->m_world, output_file);
+        }
+        else
+        {
+            visualize_output_file_object_centric(task->m_world, output_file);
+        }
         // visualize_full_output_file_object_centric(task->m_world, output_file);
         task->m_world->startWindow(&argc, argv);
     }

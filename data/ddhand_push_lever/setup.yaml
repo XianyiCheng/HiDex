@@ -36,6 +36,12 @@ fixed_ddhand:
   hand_pose: [0,0,8.6,0,0,0,1]
   finger_type: "horizontal" # "horizontal" or "vertical" 
   scale: 100 # We prefer centimeter as the unit, while inside ddhand, the unit is meter. So we scale up 100 times.
+  relocation_distance_to_surface: 0.8
+  calibration_location: [-1, 0, 1]
+  default_locations:
+    finger_1: [-2.5, 0, 2]
+    finger_2: [2.5, 0, 2]
+
 
  
 # ---- Start and Goal Pose ----

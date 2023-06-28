@@ -51,6 +51,11 @@ fixed_ddhand:
   initial_contact_locations:
     finger_1: [-0.5, 0, 1.275, 1, 0, 0]
     finger_2: [0.5, 0, 1.275, -1, 0, 0]
+  relocation_distance_to_surface: 0.8
+  calibration_location: [-1, 0, 0.75] 
+  default_locations: 
+    finger_1: [-1, 0, 0.75]
+    finger_2: [1, 0, 0.75]
  
 # ---- Start and Goal Pose ----
 # A pose is specified by the position and quaternion: [x, y, z, qx, qy, qz, qw].
@@ -111,4 +116,4 @@ action_probability_L2: "env"
 # "setup": show the task setup. Press space to show start and goal poses.
 # "save": plan a trajectory, saved in output.csv, no visualization
 # "show": plan a trajectory and show
-visualize_option: "show"
+visualize_option: "csv"
