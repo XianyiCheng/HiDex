@@ -80,7 +80,7 @@ free_sphere_robot:
 #   workspace_radius: 2.4
 #   workspace_height: 10
 #   patch_contact: true
-#   locations:
+#   locations: # the bottom of the delta cylinder workspace
 #     robot_1: [4.3301, -3.75, 0]
 #     robot_2: [4.3301, -7.5, 0]
 #     robot_3: [4.3301, -11.25, 0]
@@ -92,8 +92,8 @@ free_sphere_robot:
 #   finger_type: "horizontal" # "horizontal" or "vertical" 
 #   scale: 100 # We prefer centimeter as the unit, while inside ddhand, the unit is meter. So we scale up 100 times.
 #   relocation_distance_to_surface: 0.8
-#   calibration_location: [-1, 0, 0.75] # in unit length box
-#   default_locations: # actual
+#   calibration_location: [-1, 0, 0.75] # world frame
+#   default_locations: # world frame
 #     finger_1: [-1, 0, 0.75]
 #     finger_2: [1, 0, 0.75]
 

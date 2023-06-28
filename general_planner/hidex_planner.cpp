@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        task_folder = path_join(std::string(SRC_DIR), "/data/inhand");
+        task_folder = path_join(std::string(SRC_DIR), "/data/delta_array");
     }
 
     std::string config_file = path_join(task_folder, "setup.yaml");
