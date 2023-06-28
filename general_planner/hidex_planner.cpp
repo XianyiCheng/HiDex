@@ -1,8 +1,6 @@
 #include "../src/tasks/setup.h"
-
+#include "../src/tasks/ddhand_setup.h"
 #include "../src/tasks/visualization.h"
-
-#include "ddhand_setup.h"
 
 int main(int argc, char *argv[])
 {
@@ -17,7 +15,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        task_folder = path_join(std::string(SRC_DIR), "/data/delta_array");
+        task_folder = path_join(std::string(SRC_DIR), "/data/bookshelf");
     }
 
     std::string config_file = path_join(task_folder, "setup.yaml");

@@ -1,14 +1,14 @@
 #include <cstdio>
 #include <yaml-cpp/yaml.h>
 
-#include "../src/mechanics/utilities/parser.hpp"
+#include "../mechanics/utilities/parser.hpp"
 
 #ifndef DART_UTILS
 #define DART_UTILS
-#include "../src/mechanics/dart_utils/dart_utils.h"
+#include "../mechanics/dart_utils/dart_utils.h"
 #endif
 
-#include "../src/mechanics/utilities/io.h"
+#include "../mechanics/utilities/io.h"
 
 #define CW 1
 #define CCW -1
