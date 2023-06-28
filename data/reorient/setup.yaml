@@ -96,7 +96,6 @@ action_probability_L2: "env"
 # "csv": show the trajecotry in the result csv file
 # "setup": show the task setup
 # "save": plan a trajectory, saved in csv, no visualization
-# "show": plan a trajectory and show, no save
-# "save_n_show": plan a trajectory, saved in csv, and show the results
+# "show": plan a trajectory and show, 
 
-visualize_option: "save_n_show"
+visualize_option: "show"

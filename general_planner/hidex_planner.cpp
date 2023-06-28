@@ -80,13 +80,7 @@ int main(int argc, char *argv[])
     VectorXd result = get_results(&tree, task, object_trajectory, action_trajectory,
                                   current_node->m_value);
 
-    if (visualize_option == "show")
-    {
-        VisualizeStateTraj(task->m_world, task, object_trajectory, action_trajectory);
-        task->m_world->startWindow(&argc, argv);
-    }
-
-    if ((visualize_option == "save") || (visualize_option == "save_n_show"))
+    if ((visualize_option == "save") || (visualize_option == "show"))
     {
         std::remove(output_file.c_str());
         MatrixXd output_mat = get_output_object_centric(object_trajectory, action_trajectory, task);
@@ -94,7 +88,7 @@ int main(int argc, char *argv[])
         // save_full_output_object_centric(object_trajectory, action_trajectory, task, output_file);
     }
 
-    if (visualize_option == "save_n_show")
+    if (visualize_option == "show")
     {
         visualize_output_file_object_centric(task->m_world, output_file);
         // visualize_full_output_file_object_centric(task->m_world, output_file);

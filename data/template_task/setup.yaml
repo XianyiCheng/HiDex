@@ -152,7 +152,6 @@ action_probability_L2: "env"
 # "csv": show the trajecotry in the in output.csv under the task folder. Press space to play the trajectory.
 # "setup": show the task setup. Press space to show start and goal poses.
 # "save": plan a trajectory, saved in output.csv, no visualization
-# "show": plan a trajectory and show, don't save in the csv.
-# "save_n_show": plan a trajectory, saved in output.csv, and show the results. Press space to play the trajectory.
+# "show": plan a trajectory, saved in output.csv, and show the results. Press space to play the trajectory.
 
 visualize_option: "setup"
