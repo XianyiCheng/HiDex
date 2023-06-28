@@ -142,7 +142,7 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config, const std::
     scale << scale_l, scale_l, scale_l;
     object = createFreeObjectfromMesh(
         "mesh_object",
-        path_join(std::string(SRC_DIR), config["mesh_object"]["mesh_file"].as<std::string>()),
+        path_join(task_folder, config["mesh_object"]["mesh_file"].as<std::string>()),
         scale);
   }
   else
@@ -441,9 +441,6 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config, const std::
                             f_g, world, n_robot_contacts, task_type,
                             surface_pts, rrt_options, is_refine, refine_dist);
             
-  std::vector<int> ss = task->get_finger_locations(task->start_finger_idx);
-
-  std::cout << "Start idx " << task->start_finger_idx << " " << ss[0] << " " << ss[1] << std::endl;
 }
 
 void load_start_and_goal_poses(std::shared_ptr<TASK> task,

@@ -75,7 +75,7 @@ transition_pruning: false
 
 rrt_options:
   max_samples: 50
-  goal_biased_prob: 0.5
+  goal_biased_prob: 0.7
   goal_thr: 0.174
   extend_epsilon:
     translation: 0.5
