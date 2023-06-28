@@ -144,11 +144,6 @@ generate_traj_on_box_surface(ContactPoint p_s, ContactPoint p_g,
                                     surface_pts[k].n));
         d_cur = (p_cur - p_g.p).norm();
     }
-    std::cout << "trajectory on surface: " << std::endl;
-    for (auto pp : traj)
-    {
-        std::cout << pp.p.transpose() << std::endl;
-    }
     return traj;
 }
 

@@ -1,7 +1,7 @@
 # ---- Object Setup ----
 
 box_object:
-  shape: [2,2,2]
+  shape: [1,3.4,3.4]
   contact_file: "assets/box_l1_2D.csv" # Relative path in the task folder to the file of sampled surface points on a cube of unit length. We will automatically scale the contact points according to the shape.
   negate_contact_normal: false # Contact normals should point inwards. Compare this with the contact_file and decide whether to negate the contact normal.
   # disabled_normal_directions: [[0,0,-1], [0,0,1]] # If you want to disable some contact points on the object using contact normal directions (pointing inward to the object surface), specify them here. 
@@ -12,16 +12,28 @@ maximum_surface_contact_points: 100 # Maximum number of contact points to sample
 
 environment: 
   block_1:
-    dimension: [20,20,0.2]
-    location: [0,0,-0.1]
+    dimension: [1,5.4,3.4]
+    location: [-1.05, 0, 1.7]
+  block_2:
+    dimension: [1, 5.4, 3.4]
+    location: [1.05, 0, 1.7]
+  block_3:
+    dimension: [3, 1, 3.4]
+    location: [0, 2.25, 1.7]
+  block_4:
+    dimension: [3, 1, 3.4]
+    location: [0, -2.25, 1.7]
+  block_5:
+    dimension: [20, 20, 3.4]
+    location: [0, 0, -1.69999]
 
 characteristic_length: 1
 
-robot_object_friction_coefficient: 0.7
-environment_object_friction_coefficient: 0.4
+robot_object_friction_coefficient: 0.8
+environment_object_friction_coefficient: 0.8
 
 task_dynamics: "quasistatic" # "quasistatic", "quasidynamic", "none", "force_closure"
-object_weight: [0,0,-0.1,0,0,0]
+object_weight: [0.1,0,0,0,0,0]
 object_inertia: 
   [ 0.1, 0, 0, 0, 0, 0, 
     0, 0.1, 0, 0, 0, 0, 
@@ -33,21 +45,22 @@ object_inertia:
 # ---- Robot ----
 
 fixed_ddhand:
-  hand_pose: [0,0,8.6,0,0,0,1]
+  hand_pose: [0,0,11,0,0,0,1]
   finger_type: "horizontal" # "horizontal" or "vertical" 
   scale: 100 # We prefer centimeter as the unit, while inside ddhand, the unit is meter. So we scale up 100 times.
+  initial_contact_locations:
+    finger_1: [-0.5, 0, 1.275, 1, 0, 0]
+    finger_2: [0.5, 0, 1.275, -1, 0, 0]
   relocation_distance_to_surface: 0.8
-  calibration_location: [-1, 0, 1]
-  default_locations:
-    finger_1: [-2.5, 0, 2]
-    finger_2: [2.5, 0, 2]
-
-
+  calibration_location: [-1, 0, 0.75] 
+  default_locations: 
+    finger_1: [-1, 0, 0.75]
+    finger_2: [1, 0, 0.75]
  
 # ---- Start and Goal Pose ----
 # A pose is specified by the position and quaternion: [x, y, z, qx, qy, qz, qw].
-object_start_pose: [0,0,0.99999,0,0,0,1]
-object_goal_pose: [0.1,0,0.99999,0,0.7071,0,0.7071]
+object_start_pose: [0,0,3.4,0,0,0,1]
+object_goal_pose: [0,0,1.7,0,0,0,1]
 
 # ---- Run options ----
 random_seed: 1
@@ -56,25 +69,25 @@ random_seed: 1
 
 refine_object_trajectory: # whether to refine the trajectory for 2nd level search
   enabled: true
-  distance: 0.05
+  distance: 0.02
 
 transition_pruning: false
 
 rrt_options:
   max_samples: 50
-  goal_biased_prob: 0.8
+  goal_biased_prob: 0.5
   goal_thr: 0.174
   extend_epsilon:
     translation: 0.5
-    rotation_degree: 120
+    rotation_degree: 30
   weight:
-    rotation: 1
+    rotation: 0.1
     translation: 1
   sample:
-    position_upper_bound: [1,0,1.5]
-    position_lower_bound: [-1,0,0]
+    position_upper_bound: [2,0,3.5]
+    position_lower_bound: [-2,0,1]
     rotation: 
-      SO3_enabled: true
+      SO3_enabled: false
       axis: [0,1,0] # if SO3_enabled is false, sample rotation on this axis
   search_with_manipulator_config: false # whether to save manipulator config in the search (and the search will consider manipulator config as well)
 
@@ -82,8 +95,8 @@ mcts_options:
   max_time: 5
   l1_1st_max_iterations: 10
   l1_max_iterations: 1
-  l2_1st_max_iterations: 10
-  l2_max_iterations: 1
+  l2_1st_max_iterations: 20
+  l2_max_iterations: 5
   final_l2_1st_max_iterations: 20
   final_l2_max_iterations: 5
 
@@ -103,4 +116,4 @@ action_probability_L2: "env"
 # "setup": show the task setup. Press space to show start and goal poses.
 # "save": plan a trajectory, saved in output.csv, no visualization
 # "show": plan a trajectory and show
-visualize_option: "show"
+visualize_option: "csv"
