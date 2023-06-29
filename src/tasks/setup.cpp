@@ -313,9 +313,11 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config, const std::
   task->if_transition_pruning = config["transition_pruning"].as<bool>();
 
   // ---- Setup the robot ----
+  std::string robot_name;
   int n_robot_contacts;
   if (config["free_sphere_robot"])
   {
+    robot_name = "free_sphere_robot";
     n_robot_contacts =
         config["free_sphere_robot"]["number_of_contacts"].as<int>();
     double robot_radius = config["free_sphere_robot"]["radius"].as<double>();
@@ -349,6 +351,7 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config, const std::
   }
   else if (config["delta_array"])
   {
+    robot_name = "delta_array";
     std::vector<Vector3d> delta_locations;
     for (int i = 1; i <= 20; ++i)
     {
@@ -384,6 +387,7 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config, const std::
   }
   else if (config["fixed_ddhand"])
   {
+    robot_name = "fixed_ddhand";
     n_robot_contacts = 2;
     int fingertype;
     if (config["fixed_ddhand"]["finger_type"].as<std::string>() == "vertical")
@@ -408,28 +412,27 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config, const std::
         hand_pose[4], hand_pose[5], hand_pose[6];
     rpt->setHandFrameTransform(hand_pos);
     world->addRobot(rpt);
-
-    if (config["fixed_ddhand"]["initial_contact_locations"])
-    {
-      {
-        std::vector<double> loc = config["fixed_ddhand"]["initial_contact_locations"]["finger_2"]
-                                      .as<std::vector<double>>();
-        ContactPoint p(Vector3d(loc[0], loc[1], loc[2]), Vector3d(loc[3], loc[4], loc[5]));
-        surface_pts.push_back(p);
-      }
-      {
-        std::vector<double> loc = config["fixed_ddhand"]["initial_contact_locations"]["finger_1"]
-                                      .as<std::vector<double>>();
-        ContactPoint p(Vector3d(loc[0], loc[1], loc[2]), Vector3d(loc[3], loc[4], loc[5]));
-        surface_pts.push_back(p);
-      }
-      task->start_finger_idx = 2 * surface_pts.size() + 1 + surface_pts.size()*(surface_pts.size()-1) - 1;
-    }
   }
   else
   {
     std::cout << "No valid robot specified! Exit program." << std::endl;
     exit(0);
+  }
+
+  if (config[robot_name.c_str()]["initial_contact_locations"]){
+    for (int k = n_robot_contacts; k >= 1; k--){
+      std::string finger_name = "finger_" + std::to_string(k);
+      if (config[robot_name.c_str()]["initial_contact_locations"][finger_name.c_str()]){
+        std::vector<double> loc = config[robot_name.c_str()]["initial_contact_locations"][finger_name.c_str()]
+                                      .as<std::vector<double>>();
+        ContactPoint p(Vector3d(loc[0], loc[1], loc[2]), Vector3d(loc[3], loc[4], loc[5]));
+        surface_pts.push_back(p);
+      }
+      else {
+        std::cout << "Must specify initial contact locations for all fingers! Exit program." << std::endl;
+        exit(0);
+      }
+    }
   }
 
   // ---- Setup the reward and probability options ----
@@ -440,6 +443,10 @@ void load_task(std::shared_ptr<TASK> task, const YAML::Node &config, const std::
   task->set_task_parameters(goal_thr, wa, wt, charac_len, mu_env, mu_mnp, oi,
                             f_g, world, n_robot_contacts, task_type,
                             surface_pts, rrt_options, is_refine, refine_dist);
+
+  if (config[robot_name.c_str()]["initial_contact_locations"]){
+    task->start_finger_idx = task->n_finger_combinations - 1;
+  }
             
 }
 

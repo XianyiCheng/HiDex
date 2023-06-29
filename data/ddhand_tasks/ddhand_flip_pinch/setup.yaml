@@ -18,7 +18,7 @@ environment:
 characteristic_length: 1
 
 robot_object_friction_coefficient: 0.8
-environment_object_friction_coefficient: 0.8
+environment_object_friction_coefficient: 0.4
 
 task_dynamics: "quasidynamic" # "quasistatic", "quasidynamic", "none", "force_closure"
 object_weight: [0,0,-0.1,0,0,0]
@@ -54,17 +54,17 @@ random_seed: -1
 
 refine_object_trajectory: # whether to refine the trajectory for 2nd level search
   enabled: true
-  distance: 0.02
+  distance: 0.1
 
 transition_pruning: false
 
 rrt_options:
   max_samples: 50
-  goal_biased_prob: 0.9
-  goal_thr: 0.174
+  goal_biased_prob: 0.8
+  goal_thr: 0.5
   extend_epsilon:
     translation: 0.5
-    rotation_degree: 30
+    rotation_degree: 120
   weight:
     rotation: 1
     translation: 0.5

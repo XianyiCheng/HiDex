@@ -33,7 +33,7 @@ robot_object_friction_coefficient: 0.8
 environment_object_friction_coefficient: 0.8
 
 task_dynamics: "quasistatic" # "quasistatic", "quasidynamic", "none", "force_closure"
-object_weight: [0,0,0.1,0,0,0]
+object_weight: [0,0,0.1,0,0,0] # Peg in hole upward: graviting pointing to +z 
 object_inertia: 
   [ 0.1, 0, 0, 0, 0, 0, 
     0, 0.1, 0, 0, 0, 0, 
@@ -63,13 +63,13 @@ object_start_pose: [0,0,3.4,0,0,0,1]
 object_goal_pose: [0,0,1.7,0,0,0,1]
 
 # ---- Run options ----
-random_seed: 1
+random_seed: -1
 
 # ---- Planner options ----
 
 refine_object_trajectory: # whether to refine the trajectory for 2nd level search
   enabled: true
-  distance: 0.02
+  distance: 0.1
 
 transition_pruning: false
 

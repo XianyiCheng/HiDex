@@ -358,14 +358,6 @@ bool DartDDHandScalable::isIK(const VectorXd &config,
   if (n == 0) {
     return true;
   }
-  // // hard code for peg out, delete later!!
-  // if (std::find(idx.begin(), idx.end(), 1) != idx.end()) {
-  //   if (config.segment(9, 3).norm() < 1.2) {
-  //     if (config[11] > 0.8) {
-  //       return false;
-  //     }
-  //   }
-  // }
 
   // compute p1 p2 in the hand frame
   Matrix4d T_WH = pose2SE3(hand_pose);
@@ -385,9 +377,9 @@ bool DartDDHandScalable::isIK(const VectorXd &config,
       return false;
     }
     // finger 1 must be on the left to finger 2
-    if (config[0] > config[6]) {
-      return false;
-    }
+    // if (config[0] > config[6]) {
+    //   return false;
+    // }
   }
 
   for (auto i : idx) {

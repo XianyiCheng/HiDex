@@ -78,24 +78,26 @@ And then go back to rebuild dart and this probject.
 # Run Examples
 The setup for different tasks is in `/data/{task-name}/setup.yaml`
 
-To run the planner
+To check a task
 ```
-build/bin/hidex_planner {path_to_setup.yaml}
+build/bin/hidex_planner data/{task-name}
 ```
+Currently, the default is to visualize a plan it has generated and saved before. You can change the `visualize_option` in the setup.yaml in the task folder to do the planning. It includes "csv" (visualize a plan), "setup" (visualize the environment setup and start and goal), "save" (run the planner and save the result), "show" (run the planner, save the result, and visualize the plan). Please check the `setup.yaml` in `data/template_task` for more instructions.
+
 
 Here is an example. Run this in the project root folder
 ```
-build/bin/hidex_planner ./data/bookshelf/setup.yaml
+build/bin/hidex_planner data/bookshelf
 ```
+You will see the plan of pulling a book out of the bookshelf.
 
-You should change the `visualize_option` in the setup.yaml to tell the planner what you want to see.
 
 # Write your own task
 
-1. You first want to create a task folder, it doesn't matter where you put the folder, but we recommend you to put it under `{project-root}/data/`.
+1. You first want to create a task folder, it doesn't matter where you put the folder, but we recommend to put it under `{project-root}/data`. We recommend copying the folder `{project-root}/data/template_task`.
 
-2. If you want to use your own robot models, it requires you to change the source code. Please jump to ???. For starting, we recommend using our preset robot models.
+2. For starting, we recommend using our preset robot models. Then, the only thing you need to do is to modify the `setup.yaml`. Please follow the instructions in `{project-root}/data/template_task/setup.yaml` to make your own task. It is also beneficial to refer to other tasks in the `data` folder.
 
-3. If you are okay to start with the preset robot models, the only thing you need to do is to modify the `setup.yaml`. Please copy the file `{project-root}/data/template_task/setup.yaml` to your task folder. Please carefully follow the instructions in the file to make your own task. 
+3. Now you are ready to run your own task with the command `build/bin/hidex_planner data/{your-task-folder}`
 
-5. Now you are ready to run your own task with the command `build/bin/hidex_planner ./data/{your-task-folder}/setup.yaml`
+4. If you want to use your own robot models, it requires changes to the source code. 

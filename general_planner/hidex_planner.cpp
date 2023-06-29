@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        task_folder = path_join(std::string(SRC_DIR), "/data/bookshelf");
+        task_folder = path_join(std::string(SRC_DIR), "data/placedown");
     }
 
     std::string config_file = path_join(task_folder, "setup.yaml");
