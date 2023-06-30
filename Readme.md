@@ -2,17 +2,16 @@
 
 The following build process is tested on a clean Ubuntu 20.04 system.
 
-Install dependent libraries
+### Dependencies
+
+Install libraries
 ```   
 sudo apt-get install build-essential cmake pkg-config git
 
-sudo apt-get install libglpk-dev libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-regex-dev libboost-system-dev libopenscenegraph-dev libbullet-dev libtinyxml2-dev liburdfdom-dev libxi-dev libxmu-dev freeglut3-dev
-
-sudo apt-get install libnlopt-dev
+sudo apt-get install libglpk-dev libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-regex-dev libboost-system-dev libopenscenegraph-dev libbullet-dev libtinyxml2-dev liburdfdom-dev libxi-dev libxmu-dev freeglut3-dev libnlopt-dev
 ```
 
-install qhull
-
+Install qhull
 ```
 git clone https://github.com/qhull/qhull.git
 cd qhull
@@ -34,14 +33,16 @@ make
 sudo make install
 ```
 
-
 Update the external libraries
 ```
 git submodule update --init --recursive --progress
 ```
 
-You have can build and install dart in the system or build dart in this project. 
-If you want to build and install dart:
+### Install Dart
+
+You can choose to (1) build and install dart in the system or (2) build dart in this project. 
+
+(1) If you want to build and install dart:
 ```
 cd ./src/mechanics/external/dartsim
 mkdir build
@@ -51,8 +52,9 @@ make -j8
 sudo make install
 ```
 
-If you don't want to build and install dart, comment `FIND_PACKAGE(DART REQUIRED COMPONENTS gui collision-bullet utils)` in the ./CMakeLists.txt, and uncomment `add_subdirectory(dartsim)` in ./src/mechanics/external/CMakeLists.txt. And proceed to the next step. 
+(2) If you don't want to build and install dart, comment `FIND_PACKAGE(DART REQUIRED COMPONENTS gui collision-bullet utils)` in the `{project-root}/CMakeLists.txt`, and uncomment `add_subdirectory(dartsim)` in `{project-root}/src/mechanics/external/CMakeLists.txt`. And proceed to the next step. 
 
+### Build this project
 Use cmake to build this project in the project root folder
 ```
 mkdir build
@@ -63,7 +65,8 @@ make
 
 Add `export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"` to ~/.bashrc
 
-If you have error in finding nlopt, please install nlopt from source files
+### Additional Notes
+If there is an error in finding nlopt, please install nlopt from source files
 ```
 git clone https://github.com/stevengj/nlopt.git
 cd nlopt
@@ -76,13 +79,12 @@ sudo make install
 And then go back to rebuild dart and this probject.
 
 # Run Examples
-The setup for different tasks is in `/data/{task-name}/setup.yaml`
 
 To check a task
 ```
 build/bin/hidex_planner data/{task-name}
 ```
-Currently, the default is to visualize a plan it has generated and saved before. You can change the `visualize_option` in the setup.yaml in the task folder to do the planning. It includes "csv" (visualize a plan), "setup" (visualize the environment setup and start and goal), "save" (run the planner and save the result), "show" (run the planner, save the result, and visualize the plan). Please check the `setup.yaml` in `data/template_task` for more instructions.
+Currently, the default is to visualize a plan it has generated and saved before. You can change the `visualize_option` in the setup.yaml in the task folder to run the planning. It includes "csv" (visualize a plan), "setup" (visualize the environment setup and start and goal), "save" (run the planner and save the result), "show" (run the planner, save the result, and visualize the plan). Please check `{project-root}/data/template_task/setup.yaml` for more instructions.
 
 
 Here is an example. Run this in the project root folder
@@ -96,7 +98,7 @@ You will see the plan of pulling a book out of the bookshelf.
 
 1. You first want to create a task folder, it doesn't matter where you put the folder, but we recommend to put it under `{project-root}/data`. We recommend copying the folder `{project-root}/data/template_task`.
 
-2. For starting, we recommend using our preset robot models. Then, the only thing you need to do is to modify the `setup.yaml`. Please follow the instructions in `{project-root}/data/template_task/setup.yaml` to make your own task. It is also beneficial to refer to other tasks in the `data` folder.
+2. For starting, we recommend using our preset robot models. Then, the only thing you need to do is to modify `{project-root}/data/{your_task_folder}/setup.yaml`. Please follow the instructions in `{project-root}/data/template_task/setup.yaml` to make your own task. It is also beneficial to refer to other tasks in the `data` folder.
 
 3. Now you are ready to run your own task with the command `build/bin/hidex_planner data/{your-task-folder}`
 
