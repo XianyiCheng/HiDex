@@ -56,7 +56,7 @@ free_sphere_robot:
  
 # ---- Start and Goal Pose ----
 # A pose is specified by the position and quaternion: [x, y, z, qx, qy, qz, qw].
-object_start_pose: [-1.701,0,0.5,0,0,0,1]
+object_start_pose: [-1.6999,0,0.4999,0,0,0,1]
 object_goal_pose: [-0.5,0,1.7,0,0.7071,0,0.7071]
 # object_goal_pose: [-0.4,0,2.5,0,0.7071,0,0.7071]
 
@@ -74,7 +74,7 @@ transition_pruning: false
 
 rrt_options:
   max_samples: 50
-  goal_biased_prob: 0.8
+  goal_biased_prob: 0.99
   goal_thr: 0.5
   extend_epsilon:
     translation: 0.5
@@ -88,7 +88,7 @@ rrt_options:
     rotation: 
       SO3_enabled: true
       axis: [0,1,0] # if SO3_enabled is false, sample rotation on this axis
-  search_with_manipulator_config: true # whether to save manipulator config in the search (and the search will consider manipulator config as well)
+  search_with_manipulator_config: false # whether to save manipulator config in the search (and the search will consider manipulator config as well)
 
 mcts_options:
   max_time: 5
@@ -100,7 +100,7 @@ mcts_options:
   final_l2_max_iterations: 5
 
 # ---- Reward and Probability ----
-grasp_measure_charac_length: 1.0 # <0, disable grasp measure
+grasp_measure_charac_length: -1 # <0, disable grasp measure
 
 level_1_reward: "CMGLevel1Reward"
 level_2_reward: "CMGLevel2Reward"

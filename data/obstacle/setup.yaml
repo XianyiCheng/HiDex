@@ -20,7 +20,7 @@ environment:
     location: [0,0,-0.4999]
   block_2:
     dimension: [2,10,0.5]
-    location: [0,0,0.24999]
+    location: [0,0,0.26]
 
 characteristic_length: 1
 
@@ -40,8 +40,8 @@ object_inertia:
 # ---- Robot ----
 
 free_sphere_robot: 
-  number_of_contacts: 2
-  radius: 0.1
+  number_of_contacts: 1
+  radius: 0.2
   patch_contact: true # false for point contacts
   # workspace_limits: # comment this out if there is no limits
   #   # [x_min, x_max, y_min, y_max, z_min, z_max]
@@ -68,10 +68,10 @@ rrt_options:
   goal_biased_prob: 0.7
   goal_thr: 1.0
   extend_epsilon:
-    translation: 2
+    translation: 10
     rotation_degree: 120
   weight:
-    rotation: 0.1
+    rotation: 0.01
     translation: 1
   sample:
     position_upper_bound: [10,0,5]
@@ -79,6 +79,7 @@ rrt_options:
     rotation: 
       SO3_enabled: false
       axis: [0,1,0] # if SO3_enabled is false, sample rotation on this axis
+  search_with_manipulator_config: true
 
 mcts_options:
   max_time: 5
@@ -106,4 +107,4 @@ action_probability_L2: "env"
 # "save": plan a trajectory, saved in csv, no visualization
 # "show": plan a trajectory and show, 
 
-visualize_option: "show"
+visualize_option: "csv"
